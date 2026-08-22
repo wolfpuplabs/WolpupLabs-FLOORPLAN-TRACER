@@ -533,6 +533,10 @@
             if (isUndo) { redoStack.push(current); const prev = undoStack.pop(); lines = prev.lines; openings = prev.openings; freeObjects = prev.freeObjects || []; } 
             else { undoStack.push(current); const next = redoStack.pop(); lines = next.lines; openings = next.openings; freeObjects = next.freeObjects || []; }
             document.getElementById('undoBtn').disabled = undoStack.length === 0; document.getElementById('redoBtn').disabled = redoStack.length === 0;
+            // Objek lama dibuang total oleh update3D(), jadi gizmo WAJIB dilepas dulu.
+            // Kalau tidak, gizmo tetap menempel ke mesh yang sudah tidak ada ("gizmo hantu")
+            // dan panel picker-nya yang tak terlihat akan memblokir semua tap di viewport.
+            if (window.transformControl) transformControl.detach();
             selectedItem = null; closeEditPanel(); draw2D(); update3D();
         }
         document.getElementById('undoBtn').onclick = () => restoreState(true); document.getElementById('redoBtn').onclick = () => restoreState(false);
@@ -817,7 +821,7 @@
         });
         
         document.getElementById('clearBtn').onclick = () => { 
-            if (confirm(currentLang === 'id' ? "Yakin ingin menghapus semua denah dan reset dari awal?" : "Are you sure you want to clear all floorplan and reset?")) { initDefaultCanvas(); lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); update3D(); draw2D(); localStorage.removeItem('floorplan_autosave'); }
+            if (confirm(currentLang === 'id' ? "Yakin ingin menghapus semua denah dan reset dari awal?" : "Are you sure you want to clear all floorplan and reset?")) { if (window.transformControl) transformControl.detach(); initDefaultCanvas(); lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); update3D(); draw2D(); localStorage.removeItem('floorplan_autosave'); }
         };
 
         function normalizeModel(model) {
@@ -900,6 +904,13 @@
             // Penting: orientasi TIDAK diubah di tengah drag — gizmo yang berputar sendiri
             // saat sedang ditarik itu justru yang bikin bingung dan tidak ada di editor mana pun.
             if (window.transformControl && !transformControl.dragging) {
+                // Jaring pengaman: kalau objek yang dipegang gizmo sudah tidak ada di scene
+                // (kena undo/redo/reset/load), lepas gizmo saat itu juga.
+                const held = transformControl.object;
+                if (held && held.parent !== modelGroup) {
+                    transformControl.detach();
+                }
+
                 const desiredSpace = getEffectiveSpace();
                 if (transformControl.space !== desiredSpace) transformControl.setSpace(desiredSpace);
                 syncSpaceButton();
@@ -1041,7 +1052,11 @@
                 modelGroup.add(meshGroup); 
             });
 
-            if (window.transformControl && selectedItem) {
+            // Selalu sinkronkan gizmo setelah scene dibangun ulang: kalau ada seleksi,
+            // pasang ke mesh yang BARU; kalau tidak ada, lepas. Sebelumnya blok ini hanya
+            // jalan saat selectedItem terisi, sehingga gizmo bisa tertinggal menempel
+            // ke mesh lama yang sudah dibuang.
+            if (window.transformControl) {
                 updateTransformControlSelection(selectedItem);
             }
         }
@@ -1070,7 +1085,7 @@
                     const loadedData = JSON.parse(event.target.result);
                     lines = loadedData.lines || []; openings = loadedData.openings || []; freeObjects = loadedData.freeObjects || [];
                     if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
-                    undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); draw2D(); update3D(); alert(currentLang === 'id' ? "Proyek berhasil dimuat!" : "Project loaded successfully!");
+                    undoStack = []; redoStack = []; if (window.transformControl) transformControl.detach(); stopDrawing(); closeEditPanel(); draw2D(); update3D(); alert(currentLang === 'id' ? "Proyek berhasil dimuat!" : "Project loaded successfully!");
                 } catch (err) { alert(currentLang === 'id' ? "Gagal memuat file!" : "Failed to load project file."); }
             }; reader.readAsText(file); e.target.value = "";
         });
@@ -1222,8 +1237,10 @@
         });
 
         renderer.domElement.addEventListener('pointerup', (e) => {
-            // Jangan pilih objek jika sedang menggeser kamera, menggeser Gizmo, atau sedang menekan bagian Gizmo
-            if (isDragging3D || transformControl.dragging || transformControl.axis !== null) {
+            // Jangan pilih objek jika sedang menggeser kamera atau sedang menekan bagian Gizmo.
+            // Cek 'axis' hanya berlaku kalau gizmo memang sedang memegang objek — kalau tidak,
+            // nilai axis yang tertinggal bisa memblokir tap selamanya.
+            if (isDragging3D || transformControl.dragging || (transformControl.object && transformControl.axis !== null)) {
                 return;
             }
 
@@ -1269,6 +1286,7 @@
             if (item && item.lineIndex === undefined && !item.isWall) {
                 const mesh = modelGroup.children.find(c => c.userData.id === item.id);
                 if (mesh) transformControl.attach(mesh);
+                else transformControl.detach(); // mesh-nya tidak ada lagi -> jangan gantung
             } else {
                 transformControl.detach();
             }
