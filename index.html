@@ -25,7 +25,14 @@
     <style>
         * { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         input[type="number"], input[type="text"], select { -webkit-user-select: text; user-select: text; }
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Helvetica, sans-serif; background: #d4d4d8; display: flex; flex-direction: row; height: 100dvh; width: 100vw; touch-action: none; }
+        /* Halaman dikunci total dari scroll. Di iOS/iPadOS, bar alamat Safari membuat
+           tinggi dokumen sesaat lebih besar dari area tampak, sehingga halaman bisa
+           ter-scroll turun sedikit saat pertama dibuka. Akibatnya bagian ATAS aplikasi
+           (header sidebar + toolbar transform yang posisinya top:10px) terdorong keluar
+           layar dan terlihat seperti "tidak muncul", lalu normal setelah reload.
+           position:fixed pada body membuat halaman tidak punya ruang scroll sama sekali. */
+        html { height: 100%; overflow: hidden; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Helvetica, sans-serif; background: #d4d4d8; display: flex; flex-direction: row; height: 100dvh; width: 100vw; touch-action: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overscroll-behavior: none; }
 
         /* --- SIDEBAR STYLE --- */
         #sidebar { width: 160px; background: #ffffff; border-right: 1px solid #c8c8cc; display: flex; flex-direction: column; transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 100; flex-shrink: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); position: relative; }
@@ -367,6 +374,9 @@
     </div>
 
     <script>
+        // Cegah browser memulihkan posisi scroll dari sesi sebelumnya.
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
         let lines = []; let openings = []; let freeObjects = [];
         let mode = 'wall'; let scale3D = 0.02; 
         let isTracingMode = false; let isDrawing = false; let currentLine = null;
@@ -507,6 +517,15 @@
         }
         
         window.addEventListener('load', () => { 
+            // Pengaman kedua: kalau browser sempat memulihkan posisi scroll, kembalikan ke atas
+            // supaya header sidebar dan toolbar transform tidak terpotong.
+            const pinToTop = () => window.scrollTo(0, 0);
+            pinToTop();
+            setTimeout(pinToTop, 0);
+            setTimeout(() => { pinToTop(); resizeViewports(); }, 300); // setelah bar alamat Safari settle
+            window.addEventListener('orientationchange', () => setTimeout(() => { pinToTop(); resizeViewports(); }, 300));
+            window.addEventListener('scroll', pinToTop, { passive: true });
+
             initDefaultCanvas(); 
             const saved = localStorage.getItem('floorplan_autosave');
             if (saved) {
