@@ -348,6 +348,7 @@
                 <button id="btnTrSc" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Scale</button>
                 <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
                 <button id="btnTrSpace" style="width:auto; padding:6px 12px; background:#ca8a04; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Toggle Local/World Space">World</button>
+                <button id="btnResetView" style="width:auto; padding:6px 12px; background:#0ea5e9; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Kembalikan sudut pandang kamera (shortcut: F)">Reset View</button>
                 <button id="btnTrView" style="width:auto; padding:6px 12px; background:#0891b2; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Reset sudut pandang ke 3/4 standar (shortcut: F)">Reset View</button>
             </div>
         </div>
@@ -1137,6 +1138,38 @@
 
         scene.add(transformControl);
 
+        const _savedGizmoQuat = new THREE.Quaternion();
+        // ===== PATCH BUG THREE.JS r128 =====
+        // Di TransformControlsGizmo.updateMatrixWorld (baris 961 pada r128) tertulis:
+        //     const space = this.mode === 'scale' ? this.space : 'local';
+        // Ternary-nya TERBALIK dari komentarnya sendiri. Efeknya: untuk mode translate &
+        // rotate, TAMPILAN gizmo SELALU dipaksa 'local' — jadi arah panah tidak pernah
+        // mengikuti World walau setSpace('world') sudah dipanggil. Versi three.js yang
+        // lebih baru menulisnya dengan benar: ( mode === 'scale' ) ? 'local' : this.space.
+        //
+        // Matematika drag-nya sendiri sudah benar (memakai this.space), jadi yang perlu
+        // dikoreksi hanya sisi visual. Caranya: selama pemanggilan updateMatrixWorld,
+        // this.worldQuaternion ditukar sementara ke identity — karena seluruh orientasi
+        // handle di dalam fungsi itu mengalir dari nilai tersebut. Hasilnya persis sama
+        // dengan perilaku World space yang benar, tanpa perlu menyalin ulang ratusan baris.
+        (function patchGizmoSpaceBug() {
+            const gizmo = transformControl._gizmo;
+            if (!gizmo || gizmo.__spacePatched) return;
+            const original = gizmo.updateMatrixWorld;
+            gizmo.updateMatrixWorld = function (force) {
+                const wantWorld = (this.mode !== 'scale') && (this.space === 'world');
+                if (wantWorld) {
+                    _savedGizmoQuat.copy(this.worldQuaternion);
+                    this.worldQuaternion.identity();
+                    original.call(this, force);
+                    this.worldQuaternion.copy(_savedGizmoQuat);
+                } else {
+                    original.call(this, force);
+                }
+            };
+            gizmo.__spacePatched = true;
+        })();
+
         transformControl.addEventListener('dragging-changed', (event) => {
             controls.enabled = !event.value;
             if (event.value) { 
@@ -1254,6 +1287,30 @@
         btnTrSc.onclick = () => setTransformMode('scale', btnTrSc);
         syncSpaceButton();
 
+        // Reset View: kembalikan sudut pandang kamera dan pas-kan ke seluruh denah.
+        // Kalau scene kosong, kembali ke posisi default.
+        const btnResetView = document.getElementById('btnResetView');
+        function resetView() {
+            const box = new THREE.Box3();
+            modelGroup.traverse(o => { if (o.isMesh) box.expandByObject(o); });
+
+            if (box.isEmpty()) {
+                camera.position.set(0, 15, 20);
+                controls.target.set(0, 0, 0);
+            } else {
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z) || 1;
+                // jarak supaya seluruh objek muat di frame, plus sedikit margin
+                const dist = (maxDim / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2))) * 1.9;
+                controls.target.copy(center);
+                camera.position.set(center.x, center.y + dist * 0.6, center.z + dist);
+            }
+            camera.lookAt(controls.target);
+            controls.update();
+        }
+        btnResetView.onclick = resetView;
+
         // Shortcut keyboard standar (Unity/Maya style) — W/E/R ganti mode, X toggle space.
         window.addEventListener('keydown', (e) => {
             if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
@@ -1263,6 +1320,7 @@
             else if (k === 'e') setTransformMode('rotate', btnTrRt);
             else if (k === 'r') setTransformMode('scale', btnTrSc);
             else if (k === 'x') btnTrSpace.onclick();
+            else if (k === 'f') resetView();
         });
 
         // --- SISTEM RAYCASTER BARU (Bebas Flicker & Aman untuk Layar Sentuh) ---
