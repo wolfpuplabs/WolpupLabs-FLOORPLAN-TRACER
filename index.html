@@ -347,7 +347,8 @@
                 <button id="btnTrRt" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Rotate</button>
                 <button id="btnTrSc" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Scale</button>
                 <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
-                <button id="btnTrSpace" style="width:auto; padding:6px 12px; background:#059669; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Toggle Local/World Space">Local</button>
+                <button id="btnTrSpace" style="width:auto; padding:6px 12px; background:#ca8a04; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Toggle Local/World Space">World</button>
+                <button id="btnTrView" style="width:auto; padding:6px 12px; background:#0891b2; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Reset sudut pandang ke 3/4 standar (shortcut: F)">Reset View</button>
             </div>
         </div>
     </div>
@@ -375,6 +376,7 @@
 
         let selectedItem = null; let isDraggingObject = false; let isDraggingCanvas = false; let isPinchZooming = false;
         let undoStack = []; let redoStack = [];
+        let isWorldSpaceMode = true; // status World/Local untuk gizmo transform (dipakai untuk auto-reset orientasi)
 
         const customModels = {};
         const gltfLoader = new THREE.GLTFLoader();
@@ -527,13 +529,45 @@
             redoStack = []; document.getElementById('undoBtn').disabled = false; document.getElementById('redoBtn').disabled = true;
         }
 
+        // Satu pintu untuk melepas gizmo + membersihkan sisa state interaksi.
+        // Dipakai di undo/redo, reset, load, dan hapus objek, supaya tidak ada
+        // "gizmo hantu" yang menempel ke mesh yang sudah dibuang dari scene.
+        function releaseGizmo() {
+            if (!window.transformControl) return;
+            transformControl.detach();
+            transformControl.axis = null;      // buang sisa axis yang bisa memblokir tap
+            transformControl.dragging = false; // buang sisa status drag yang tidak selesai
+            isDragging3D = false;              // buang sisa status geser kamera
+            if (typeof controls !== 'undefined' && controls) controls.enabled = true;
+        }
+
         function restoreState(isUndo) {
             stopDrawing();
+            // Ingat objek yang sedang dipilih supaya seleksi + gizmo bisa dipasang ulang
+            // ke mesh BARU setelah scene dibangun ulang. Undo seharusnya tidak membatalkan seleksi.
+            const keepId = (selectedItem && !selectedItem.isWall && selectedItem.lineIndex === undefined)
+                ? selectedItem.id : null;
             const current = { lines: JSON.parse(JSON.stringify(lines)), openings: JSON.parse(JSON.stringify(openings)), freeObjects: JSON.parse(JSON.stringify(freeObjects)) };
             if (isUndo) { redoStack.push(current); const prev = undoStack.pop(); lines = prev.lines; openings = prev.openings; freeObjects = prev.freeObjects || []; } 
             else { undoStack.push(current); const next = redoStack.pop(); lines = next.lines; openings = next.openings; freeObjects = next.freeObjects || []; }
             document.getElementById('undoBtn').disabled = undoStack.length === 0; document.getElementById('redoBtn').disabled = redoStack.length === 0;
+            // Objek lama dibuang total oleh update3D(), jadi gizmo WAJIB dilepas dulu.
+            // Kalau tidak, gizmo tetap menempel ke mesh yang sudah tidak ada ("gizmo hantu")
+            // dan panel picker-nya yang tak terlihat akan memblokir semua tap di viewport.
+            releaseGizmo();
             selectedItem = null; closeEditPanel(); draw2D(); update3D();
+
+            // Pasang ulang seleksi ke mesh yang baru dibuat (kalau objeknya masih ada).
+            // Kalau objeknya justru yang dihapus oleh undo, gizmo tetap lepas dengan bersih.
+            if (keepId !== null) {
+                const again = freeObjects.find(o => o.id === keepId);
+                if (again) {
+                    selectedItem = again;
+                    openEditPanel(again);
+                    updateTransformControlSelection(again);
+                    draw2D();
+                }
+            }
         }
         document.getElementById('undoBtn').onclick = () => restoreState(true); document.getElementById('redoBtn').onclick = () => restoreState(false);
 
@@ -721,7 +755,7 @@
                 if (selectedItem.isWall) { const idx = selectedItem.index; lines.splice(idx, 1); openings = openings.filter(o => o.lineIndex !== idx); openings.forEach(o => { if (o.lineIndex > idx) o.lineIndex--; }); }
                 else if (selectedItem.lineIndex !== undefined) { openings = openings.filter(o => o.id !== selectedItem.id); }
                 else { freeObjects = freeObjects.filter(o => o.id !== selectedItem.id); }
-                if(window.transformControl) transformControl.detach();
+                releaseGizmo();
                 closeEditPanel(); update3D(); draw2D(); 
             }
         });
@@ -817,7 +851,7 @@
         });
         
         document.getElementById('clearBtn').onclick = () => { 
-            if (confirm(currentLang === 'id' ? "Yakin ingin menghapus semua denah dan reset dari awal?" : "Are you sure you want to clear all floorplan and reset?")) { initDefaultCanvas(); lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); update3D(); draw2D(); localStorage.removeItem('floorplan_autosave'); }
+            if (confirm(currentLang === 'id' ? "Yakin ingin menghapus semua denah dan reset dari awal?" : "Are you sure you want to clear all floorplan and reset?")) { releaseGizmo(); initDefaultCanvas(); lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); update3D(); draw2D(); localStorage.removeItem('floorplan_autosave'); }
         };
 
         function normalizeModel(model) {
@@ -891,6 +925,26 @@
                 }
             } else {
                 selectionBox.visible = false;
+            }
+
+            // --- ORIENTASI GIZMO: dikunci ke kaidah standar 3D editor ---
+            // Disinkronkan tiap frame supaya label tombol & orientasi gizmo TIDAK PERNAH
+            // desync (dulu bisa nyangkut di Local walau tombol tertulis World, terutama
+            // di layar sentuh saat event drag-end gagal ter-trigger).
+            // Penting: orientasi TIDAK diubah di tengah drag — gizmo yang berputar sendiri
+            // saat sedang ditarik itu justru yang bikin bingung dan tidak ada di editor mana pun.
+            if (window.transformControl && !transformControl.dragging) {
+                // Jaring pengaman: kalau objek yang dipegang gizmo sudah tidak ada di scene
+                // (kena undo/redo/reset/load), lepas gizmo saat itu juga.
+                const held = transformControl.object;
+                if (held && held.parent !== modelGroup) {
+                    transformControl.detach();
+                }
+
+                // Ditulis paksa tiap frame supaya panah gizmo SELALU kembali ke sumbu dunia
+                // begitu drag selesai — inilah 'auto reset' arah panah yang diminta.
+                forceGizmoSpace(getEffectiveSpace());
+                syncSpaceButton();
             }
             
             renderer.render(scene, camera); 
@@ -1029,7 +1083,11 @@
                 modelGroup.add(meshGroup); 
             });
 
-            if (window.transformControl && selectedItem) {
+            // Selalu sinkronkan gizmo setelah scene dibangun ulang: kalau ada seleksi,
+            // pasang ke mesh yang BARU; kalau tidak ada, lepas. Sebelumnya blok ini hanya
+            // jalan saat selectedItem terisi, sehingga gizmo bisa tertinggal menempel
+            // ke mesh lama yang sudah dibuang.
+            if (window.transformControl) {
                 updateTransformControlSelection(selectedItem);
             }
         }
@@ -1058,23 +1116,36 @@
                     const loadedData = JSON.parse(event.target.result);
                     lines = loadedData.lines || []; openings = loadedData.openings || []; freeObjects = loadedData.freeObjects || [];
                     if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
-                    undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); draw2D(); update3D(); alert(currentLang === 'id' ? "Proyek berhasil dimuat!" : "Project loaded successfully!");
+                    undoStack = []; redoStack = []; releaseGizmo(); stopDrawing(); closeEditPanel(); draw2D(); update3D(); alert(currentLang === 'id' ? "Proyek berhasil dimuat!" : "Project loaded successfully!");
                 } catch (err) { alert(currentLang === 'id' ? "Gagal memuat file!" : "Failed to load project file."); }
             }; reader.readAsText(file); e.target.value = "";
         });
 
         // === TRANSFORM CONTROLS LOGIC (3D EDITOR) ===
         window.transformControl = new THREE.TransformControls(camera, renderer.domElement);
-        transformControl.size = 1.3; 
+        // Ukuran gizmo. Di layar sempit (HP/tablet) gizmo dibuat lebih besar supaya
+        // ketiga sumbunya terbaca jelas dan gampang ditarik pakai jari.
+        function updateGizmoSize() {
+            transformControl.size = window.innerWidth <= 1100 ? 2.4 : 1.8;
+        }
+        updateGizmoSize();
+        window.addEventListener('resize', updateGizmoSize);
         
-        // Default to local space for better rotation & move orientation intuitively
-        transformControl.setSpace('local');
+        // Default World: panah gizmo sejajar sumbu dunia.
+        isWorldSpaceMode = true;
+        transformControl.setSpace('world');
 
         scene.add(transformControl);
 
         transformControl.addEventListener('dragging-changed', (event) => {
             controls.enabled = !event.value;
-            if (event.value) { saveState(); }
+            if (event.value) { 
+                saveState();
+            }
+            // Catatan: orientasi gizmo (World/Local) sekarang dikoreksi otomatis
+            // setiap frame di dalam animate(), jadi tidak perlu diatur di sini lagi.
+            // Ini membuat gizmo SELALU auto-reset walau event drag-end ini gagal
+            // ter-trigger (misal di layar sentuh/mobile).
         });
 
         transformControl.addEventListener('change', () => {
@@ -1121,21 +1192,78 @@
         const btnTrMv = document.getElementById('btnTrMv'); const btnTrRt = document.getElementById('btnTrRt'); const btnTrSc = document.getElementById('btnTrSc');
         const btnTrSpace = document.getElementById('btnTrSpace');
 
+        // three.js hanya menyebarkan nilai 'space' ke gizmo internal SAAT NILAINYA BERUBAH.
+        // Kalau properti luar sudah terlanjur 'world' tapi gizmo internal masih 'local',
+        // setSpace('world') akan di-skip diam-diam dan panah tetap miring ikut objek.
+        // Jadi kita tulis paksa ke objek internalnya juga.
+        function forceGizmoSpace(space) {
+            transformControl.space = space;
+            transformControl.children.forEach(child => {
+                if (child && 'space' in child) child.space = space;
+            });
+        }
+
+        // Ruang orientasi yang SEHARUSNYA dipakai, mengikuti kaidah standar 3D editor:
+        //  - Scale  : SELALU Local. Skala non-uniform cuma bermakna di sumbu objek sendiri,
+        //             jadi Blender/Unity/Maya semuanya mengunci scale gizmo ke Local.
+        //  - Move   : ikut pilihan user (World / Local).
+        //  - Rotate : ikut pilihan user, dan TIDAK berubah di tengah drag.
+        function getEffectiveSpace() {
+            if (transformControl.getMode() === 'scale') return 'local';
+            return isWorldSpaceMode ? 'world' : 'local';
+        }
+
+        // Label tombol selalu diturunkan dari kondisi gizmo yang SEBENARNYA,
+        // supaya tulisan tidak pernah berbohong terhadap apa yang tampil di layar.
+        function syncSpaceButton() {
+            const locked = transformControl.getMode() === 'scale';
+            const label = locked ? 'Local 🔒' : (isWorldSpaceMode ? 'World' : 'Local');
+            const bg = locked ? '#52525b' : (isWorldSpaceMode ? '#ca8a04' : '#059669');
+            if (btnTrSpace.innerText !== label) btnTrSpace.innerText = label;
+            if (btnTrSpace.style.background !== bg) btnTrSpace.style.background = bg;
+            btnTrSpace.style.opacity = locked ? '0.6' : '1';
+            btnTrSpace.style.cursor = locked ? 'not-allowed' : 'pointer';
+            btnTrSpace.title = locked
+                ? 'Mode Scale selalu memakai sumbu Local (standar 3D editor)'
+                : 'Toggle Local / World Space  (shortcut: X)';
+        }
+
         btnTrSpace.onclick = () => {
-            const newSpace = transformControl.space === 'local' ? 'world' : 'local';
-            transformControl.setSpace(newSpace);
-            btnTrSpace.innerText = newSpace === 'local' ? 'Local' : 'World';
-            btnTrSpace.style.background = newSpace === 'local' ? '#059669' : '#ca8a04';
+            // Di mode Scale, toggle tidak berlaku — beri tahu, jangan diam-diam mengabaikan.
+            if (transformControl.getMode() === 'scale') {
+                btnTrSpace.animate(
+                    [{ transform: 'translateX(0)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }],
+                    { duration: 220 }
+                );
+                return;
+            }
+            isWorldSpaceMode = !isWorldSpaceMode;
+            forceGizmoSpace(getEffectiveSpace());
+            syncSpaceButton();
         };
 
         function setTransformMode(tMode, activeBtn) {
             transformControl.setMode(tMode);
+            forceGizmoSpace(getEffectiveSpace());
             [btnTrMv, btnTrRt, btnTrSc].forEach(b => { b.style.background = '#3f3f46'; b.classList.remove('active'); });
             activeBtn.style.background = '#2563eb'; activeBtn.classList.add('active');
+            syncSpaceButton();
         }
         btnTrMv.onclick = () => setTransformMode('translate', btnTrMv);
         btnTrRt.onclick = () => setTransformMode('rotate', btnTrRt);
         btnTrSc.onclick = () => setTransformMode('scale', btnTrSc);
+        syncSpaceButton();
+
+        // Shortcut keyboard standar (Unity/Maya style) — W/E/R ganti mode, X toggle space.
+        window.addEventListener('keydown', (e) => {
+            if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const k = e.key.toLowerCase();
+            if (k === 'w') setTransformMode('translate', btnTrMv);
+            else if (k === 'e') setTransformMode('rotate', btnTrRt);
+            else if (k === 'r') setTransformMode('scale', btnTrSc);
+            else if (k === 'x') btnTrSpace.onclick();
+        });
 
         // --- SISTEM RAYCASTER BARU (Bebas Flicker & Aman untuk Layar Sentuh) ---
         const raycaster = new THREE.Raycaster(); 
@@ -1158,8 +1286,10 @@
         });
 
         renderer.domElement.addEventListener('pointerup', (e) => {
-            // Jangan pilih objek jika sedang menggeser kamera, menggeser Gizmo, atau sedang menekan bagian Gizmo
-            if (isDragging3D || transformControl.dragging || transformControl.axis !== null) {
+            // Jangan pilih objek jika sedang menggeser kamera atau sedang menekan bagian Gizmo.
+            // Cek 'axis' hanya berlaku kalau gizmo memang sedang memegang objek — kalau tidak,
+            // nilai axis yang tertinggal bisa memblokir tap selamanya.
+            if (isDragging3D || transformControl.dragging || (transformControl.object && transformControl.axis !== null)) {
                 return;
             }
 
@@ -1205,6 +1335,7 @@
             if (item && item.lineIndex === undefined && !item.isWall) {
                 const mesh = modelGroup.children.find(c => c.userData.id === item.id);
                 if (mesh) transformControl.attach(mesh);
+                else transformControl.detach(); // mesh-nya tidak ada lagi -> jangan gantung
             } else {
                 transformControl.detach();
             }
