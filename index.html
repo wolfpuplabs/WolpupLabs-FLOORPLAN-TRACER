@@ -349,12 +349,13 @@
         
         <div id="render-container">
             <!-- Pindah ke kanan (right: 10px) agar tidak terhalang sidebar -->
-            <div id="transformUI" style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 6px; background: rgba(24, 24, 27, 0.8); padding: 8px; border-radius: 8px; backdrop-filter: blur(4px);">
+            <div id="transformUI" style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 6px; background: rgba(24, 24, 27, 0.92); padding: 8px; border-radius: 8px; transform: translateZ(0); will-change: transform; isolation: isolate;">
                 <button id="btnTrMv" class="active" style="width:auto; padding:6px 12px; background:#2563eb; color:#fff; border:none; font-weight:bold; border-radius:4px;">Move</button>
                 <button id="btnTrRt" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Rotate</button>
                 <button id="btnTrSc" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Scale</button>
                 <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
                 <button id="btnTrSpace" style="width:auto; padding:6px 12px; background:#ca8a04; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Toggle Local/World Space">World</button>
+                <span id="buildBadge" style="align-self:center; padding:0 4px 0 8px; font-size:10px; font-weight:700; color:#a1a1aa; letter-spacing:0.5px;">B8</span>
             </div>
         </div>
     </div>
@@ -525,6 +526,25 @@
             setTimeout(() => { pinToTop(); resizeViewports(); }, 300); // setelah bar alamat Safari settle
             window.addEventListener('orientationchange', () => setTimeout(() => { pinToTop(); resizeViewports(); }, 300));
             window.addEventListener('scroll', pinToTop, { passive: true });
+
+            // Pemeriksaan mandiri: pastikan toolbar transform benar-benar berada di dalam
+            // layar setelah layout selesai. Kalau posisinya di luar viewport (halaman sempat
+            // ter-scroll) atau ukurannya nol (belum ter-komposit), paksa perbaiki.
+            function ensureToolbarVisible() {
+                const ui = document.getElementById('transformUI');
+                if (!ui) return;
+                const r = ui.getBoundingClientRect();
+                const offscreen = r.bottom <= 0 || r.top >= window.innerHeight || r.width === 0 || r.height === 0;
+                if (offscreen) {
+                    pinToTop();
+                    // paksa repaint supaya Safari meng-komposit ulang lapisan di atas canvas WebGL
+                    ui.style.display = 'none';
+                    void ui.offsetHeight;
+                    ui.style.display = 'flex';
+                    resizeViewports();
+                }
+            }
+            [100, 500, 1200].forEach(t => setTimeout(ensureToolbarVisible, t));
 
             initDefaultCanvas(); 
             const saved = localStorage.getItem('floorplan_autosave');
@@ -903,9 +923,37 @@
         };
 
         function normalizeModel(model) {
-            const wrapper = new THREE.Group(); const box = new THREE.Box3().setFromObject(model); const center = box.getCenter(new THREE.Vector3()); const size = box.getSize(new THREE.Vector3());
-            model.position.set(-center.x, -box.min.y, -center.z); wrapper.add(model);
-            const maxDim = Math.max(size.x, size.y, size.z); if (maxDim > 5.0) { const scaleFactor = 3.0 / maxDim; wrapper.scale.set(scaleFactor, scaleFactor, scaleFactor); } return wrapper;
+            const wrapper = new THREE.Group();
+
+            // Matriks anak-anaknya harus diperbarui DULU. Box3.setFromObject membaca
+            // matrixWorld tiap node; kalau belum diperbarui, kotak pembatasnya bisa salah,
+            // sehingga penengahan dan penskalaan ikut meleset.
+            model.updateMatrixWorld(true);
+
+            const box = new THREE.Box3().setFromObject(model);
+            if (box.isEmpty()) { wrapper.add(model); return wrapper; }
+
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            model.position.set(-center.x, -box.min.y, -center.z);
+            wrapper.add(model);
+
+            // Model dari berbagai sumber datang dengan satuan berbeda-beda (meter, sentimeter,
+            // inci, atau satuan bebas). Dulu hanya model KEBESARAN yang dikecilkan, sedangkan
+            // model KEKECILAN dibiarkan apa adanya — hasilnya sebesar beberapa sentimeter di
+            // ruangan 6 m, jadi terlihat seperti "tidak muncul". Sekarang keduanya dinormalkan
+            // ke ukuran yang wajar supaya selalu terlihat, dan tetap bisa diatur lewat slider skala.
+            const maxDim = Math.max(size.x, size.y, size.z);
+            if (maxDim > 0 && isFinite(maxDim)) {
+                const TARGET = 2.0;   // meter, kira-kira sebesar perabot
+                const MAX_OK = 5.0;   // kebesaran -> kecilkan
+                const MIN_OK = 0.5;   // kekecilan -> besarkan
+                if (maxDim > MAX_OK || maxDim < MIN_OK) {
+                    const f = TARGET / maxDim;
+                    wrapper.scale.set(f, f, f);
+                }
+            }
+            return wrapper;
         }
 
         function addCustomModelToScene(type, modelId) {
@@ -914,8 +962,16 @@
             const wsRect = document.getElementById('workspace-container').getBoundingClientRect();
             let { x, y } = getTrueCoords(wsRect.left + (wsRect.width / 2), wsRect.top + (wsRect.height / 2));
             
-            freeObjects.push({ id: Date.now(), type: type, modelId: modelId, x: x, y: y, rotationX: 0, rotationY: 0, rotationZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0, flipX: false, flipZ: false });
+            const newObj = { id: Date.now(), type: type, modelId: modelId, x: x, y: y, rotationX: 0, rotationY: 0, rotationZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0, flipX: false, flipZ: false };
+            freeObjects.push(newObj);
             setMode('select', document.getElementById('modeSelect')); update3D(); draw2D();
+
+            // Langsung dipilih supaya gizmo + kotak sorot menunjukkan di mana objeknya berada.
+            // Tanpa ini, model yang kecil atau tertutup tembok terasa seperti "tidak muncul".
+            selectedItem = newObj;
+            openEditPanel(newObj);
+            updateTransformControlSelection(newObj);
+            draw2D();
         }
 
         document.getElementById('upload3DModel').addEventListener('change', (e) => {
