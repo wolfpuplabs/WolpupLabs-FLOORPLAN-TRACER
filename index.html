@@ -1,11 +1,9 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Floorplan Tracer - 3D Free Drawing</title>
     
-    <!-- KONFIGURASI ICON & WEB APP APPLE (iOS/iPadOS) -->
     <link rel="apple-touch-icon" sizes="180x180" href="/logo-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -16,120 +14,49 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/OBJExporter.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     
     <style>
-        * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            box-sizing: border-box;
-        }
+        * { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        input[type="number"], input[type="text"], select { -webkit-user-select: text; user-select: text; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Helvetica, sans-serif; background: #d4d4d8; display: flex; flex-direction: row; height: 100dvh; width: 100vw; touch-action: none; }
 
-        input[type="number"], input[type="text"], select {
-            -webkit-user-select: text;
-            user-select: text;
-        }
-
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            font-family: 'Segoe UI', Tahoma, Helvetica, sans-serif; 
-            background: #d4d4d8; 
-            display: flex; 
-            flex-direction: row; 
-            height: 100dvh; 
-            width: 100vw;
-            touch-action: none; 
-        }
-
-        /* --- SIDEBAR STYLE (160px) --- */
-        #sidebar {
-            width: 160px;
-            background: #ffffff;
-            border-right: 1px solid #c8c8cc;
-            display: flex;
-            flex-direction: column;
-            transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-            z-index: 100;
-            flex-shrink: 0;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            position: relative;
-        }
-
-        #sidebar.collapsed {
-            margin-left: -160px; 
-        }
-
-        #sidebarToggleBtn {
-            position: absolute; top: 20px; right: -32px; width: 32px; height: 50px;
-            background: #ffffff; border: 1px solid #c8c8cc; border-left: none; 
-            border-radius: 0 8px 8px 0; cursor: pointer; z-index: 60;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: bold; color: #3f3f46;
-            box-shadow: 4px 0 6px rgba(0,0,0,0.05); transition: 0.2s;
-        }
+        /* --- SIDEBAR STYLE --- */
+        #sidebar { width: 160px; background: #ffffff; border-right: 1px solid #c8c8cc; display: flex; flex-direction: column; transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 100; flex-shrink: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); position: relative; }
+        #sidebar.collapsed { margin-left: -160px; }
+        #sidebarToggleBtn { position: absolute; top: 20px; right: -32px; width: 32px; height: 50px; background: #ffffff; border: 1px solid #c8c8cc; border-left: none; border-radius: 0 8px 8px 0; cursor: pointer; z-index: 60; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #3f3f46; box-shadow: 4px 0 6px rgba(0,0,0,0.05); transition: 0.2s; }
         #sidebarToggleBtn:hover { background: #f4f4f5; color: #2563eb; }
-
-        .sidebar-header {
-            padding: 12px 10px; border-bottom: 1px solid #e4e4e7;
-            display: flex; flex-direction: column; gap: 8px; align-items: flex-start; background: #fafafa;
-        }
-
-        .app-brand {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            width: 100%;
-        }
-
+        .sidebar-header { padding: 12px 10px; border-bottom: 1px solid #e4e4e7; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; background: #fafafa; }
+        .app-brand { display: flex; align-items: center; gap: 6px; width: 100%; }
         .app-brand h3 { margin: 0; font-size: 13px; color: #18181b; line-height: 1.2; word-wrap: break-word;}
-
-        .lang-btn-group {
-            display: flex; width: 100%; border: 1px solid #d4d4d8; border-radius: 6px; overflow: hidden; background: #e4e4e7;
-        }
-        .lang-btn {
-            flex: 1; padding: 4px 0; font-size: 10px; font-weight: bold; border: none; background: transparent; color: #71717a; cursor: pointer; text-align: center;
-        }
+        .lang-btn-group { display: flex; width: 100%; border: 1px solid #d4d4d8; border-radius: 6px; overflow: hidden; background: #e4e4e7; }
+        .lang-btn { flex: 1; padding: 4px 0; font-size: 10px; font-weight: bold; border: none; background: transparent; color: #71717a; cursor: pointer; text-align: center; }
         .lang-btn.active { background: #2563eb; color: #ffffff; }
-
         .sidebar-content { flex: 1; overflow-y: auto; }
         .sidebar-section { padding: 12px 10px; border-bottom: 1px solid #e4e4e7; }
         .sidebar-section h4 { margin: 0 0 10px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; font-weight: 700; }
         .sidebar-section label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 4px; color: #3f3f46; }
-
-        button, select, input[type="number"], input[type="file"]::file-selector-button { 
-            padding: 6px 8px; cursor: pointer; border: 1px solid #d4d4d8; background: #ffffff; 
-            border-radius: 4px; font-size: 11px; color: #3f3f46; transition: 0.15s; width: 100%;
-        }
+        button, select, input[type="number"], input[type="file"]::file-selector-button { padding: 6px 8px; cursor: pointer; border: 1px solid #d4d4d8; background: #ffffff; border-radius: 4px; font-size: 11px; color: #3f3f46; transition: 0.15s; width: 100%; }
         input[type="file"] { width: 100%; font-size: 10px; margin-bottom: 8px; }
         input[type="file"]::file-selector-button { background: #f4f4f5; width: auto; margin-right: 6px; padding: 4px 6px;}
         input[type="number"] { cursor: text; background: #fff; width: 100%; margin-bottom: 8px;}
         input[type="range"] { width: 100%; margin-bottom: 10px; accent-color: #2563eb; }
-        
         button:hover, select:hover { background: #e4e4e7; }
         button:disabled { cursor: not-allowed; opacity: 0.4; }
         button.active { background: #2563eb; color: white; border-color: #1d4ed8; font-weight: 600; }
         
-        /* STYLE KHUSUS TOMBOL ALAT GAMBAR (ICONS) */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-        .tool-btn {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 6px; height: 55px; padding: 6px; line-height: 1;
-        }
+        .tool-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; height: 55px; padding: 6px; line-height: 1; }
         .tool-btn svg { width: 20px; height: 20px; stroke-width: 1.8; }
         .tool-btn span { font-size: 10px; font-weight: 600; }
-        .tool-btn-wide {
-            display: flex; flex-direction: row; align-items: center; justify-content: center;
-            gap: 8px; height: 36px; grid-column: span 2;
-        }
+        .tool-btn-wide { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; height: 36px; grid-column: span 2; }
         .tool-btn-wide svg { width: 16px; height: 16px; stroke-width: 2; }
         .tool-btn-wide span { font-size: 11px; font-weight: 600; }
-
         .btn-row { display: flex; gap: 6px; margin-bottom: 8px; }
         .btn-danger { background: #fee2e2; color: #dc2626; border-color: #fca5a5; font-weight: 600; }
         .btn-danger:hover { background: #fecaca; }
@@ -139,7 +66,6 @@
         .btn-purple:hover { background: #7c3aed; }
         .edit-btn-secondary { background: #e4e4e7; color: #18181b; width: 100%; border: none; font-weight: 600; margin-bottom: 10px; }
         .edit-btn-secondary:hover { background: #d4d4d8; }
-
         #emptySelectionMsg { font-size: 11px; color: #71717a; text-align: center; padding: 10px 0; font-style: italic; }
         #wallLineControls { background: #f4f4f5; padding: 8px; border-radius: 6px; margin-bottom: 10px; border: 1px dashed #a1a1aa; text-align: center; }
 
@@ -150,85 +76,26 @@
         #workspace { transform-origin: 0 0; position: relative; }
         #floorplan-img { display: none; max-width: none; pointer-events: none; }
         #draw-canvas { position: absolute; top: 0; left: 0; }
-        #render-container { background: #18181b; }
+        #render-container { background: #18181b; position: relative; }
 
-        /* --- HELP / INFO MODAL --- */
-        #helpBtnToggle {
-            position: absolute; bottom: 20px; right: 20px; width: 45px; height: 45px; border-radius: 50%;
-            background-color: #2563eb; color: white; font-size: 20px; font-weight: bold; border: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 30; display: flex; justify-content: center;
-            align-items: center; cursor: pointer; padding: 0; transition: transform 0.2s;
-        }
+        /* --- MODALS --- */
+        #helpBtnToggle { position: absolute; bottom: 20px; right: 20px; width: 45px; height: 45px; border-radius: 50%; background-color: #2563eb; color: white; font-size: 20px; font-weight: bold; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 30; display: flex; justify-content: center; align-items: center; cursor: pointer; padding: 0; transition: transform 0.2s; }
         #helpBtnToggle:hover { transform: scale(1.1); background-color: #1d4ed8; }
-
-        #helpModal {
-            display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px);
-        }
-        .help-content {
-            background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;
-        }
+        #helpModal { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .help-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; }
         .help-content h3 { margin-top: 0; color: #18181b; font-size: 18px; border-bottom: 2px solid #e4e4e7; padding-bottom: 10px;}
         .help-content ul { padding-left: 20px; color: #3f3f46; font-size: 14px; line-height: 1.6; }
         .help-content li { margin-bottom: 10px; }
         .close-help { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #71717a; padding: 0; width: auto; line-height: 1; }
         .close-help:hover { color: #ef4444; }
 
-        /* --- Modal AR UI REDESIGN --- */
-        #ar-modal { 
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-            background: rgba(15, 15, 20, 0.85); backdrop-filter: blur(8px);
-            z-index: 1000; justify-content: center; align-items: center; 
-        }
-        
-        model-viewer { 
-            width: 90vw; 
-            height: 75vh; /* Aman dari nav bar mobile/tablet */
-            max-height: 800px; /* Batas tinggi maksimal */
-            background-color: #18181b; 
-            border-radius: 16px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            border: 1px solid #3f3f46;
-            position: relative;
-            overflow: hidden; /* Memastikan shadow dan sudut membulat rapi */
-        }
-
-        #closeArBtn { 
-            position: absolute; top: 16px; right: 16px; 
-            width: auto; 
-            padding: 8px 20px; 
-            background: rgba(239, 68, 68, 0.15); 
-            color: #fca5a5; 
-            border: 1px solid rgba(239, 68, 68, 0.3); 
-            border-radius: 30px; 
-            font-weight: 600; font-size: 14px; 
-            z-index: 1001; cursor: pointer;
-            backdrop-filter: blur(4px);
-            transition: all 0.2s;
-        }
-        #closeArBtn:hover {
-            background: rgba(239, 68, 68, 0.9); color: white;
-        }
-
-        #arViewBtn {
-            width: auto; 
-            background-color: white; 
-            color: #2563eb;
-            border-radius: 30px; 
-            border: none; 
-            position: absolute; 
-            bottom: 25px; left: 50%; transform: translateX(-50%); 
-            padding: 12px 24px; 
-            font-weight: bold; font-size: 14px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-            display: flex; align-items: center; gap: 8px;
-            cursor: pointer; transition: transform 0.2s;
-            z-index: 1002;
-        }
-        #arViewBtn:hover {
-            transform: translateX(-50%) scale(1.05);
-        }
+        #ar-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 15, 20, 0.85); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; }
+        .ar-container { width: 90vw; height: 75vh; max-height: 800px; background-color: #18181b; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); border: 1px solid #3f3f46; position: relative; overflow: hidden; }
+        model-viewer { width: 100%; height: 100%; background-color: transparent; outline: none; }
+        #closeArBtn { position: absolute; top: 16px; right: 16px; width: auto; padding: 8px 20px; background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 30px; font-weight: 600; font-size: 14px; z-index: 1005; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.2s; }
+        #closeArBtn:hover { background: rgba(239, 68, 68, 0.9); color: white; }
+        #arViewBtn { width: auto; background-color: white; color: #2563eb; border-radius: 30px; border: none; position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); padding: 12px 24px; font-weight: bold; font-size: 14px; box-shadow: 0 8px 25px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.2s; z-index: 1002; }
+        #arViewBtn:hover { transform: translateX(-50%) scale(1.05); }
 
         @media (max-width: 1100px) {
             #main-container { flex-direction: column; }
@@ -236,8 +103,6 @@
             #sidebar.collapsed { margin-left: 0; transform: translateX(-100%); }
             #workspace-container { flex: none; height: 50%; width: 100%; border-right: none; border-bottom: 2px solid #a1a1aa; }
             #render-container { flex: none; height: 50%; width: 100%; }
-            /* Memastikan tombol aman di layar sempit iPad/iPhone */
-            #closeArBtn { top: 12px; right: 12px; padding: 8px 16px; font-size: 13px; }
         }
     </style>
 </head>
@@ -247,7 +112,6 @@
         <button id="sidebarToggleBtn" title="Toggle Sidebar">&lt;</button>
         
         <div class="sidebar-header">
-            <!-- HEADER LOGO BERSAMA NAMA APP -->
             <div class="app-brand">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32" style="flex-shrink: 0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 136, 255, 0.25);">
                     <defs>
@@ -261,21 +125,15 @@
                       </linearGradient>
                     </defs>
                     <rect width="512" height="512" rx="120" fill="url(#bgGradient)"/>
-                    <path d="M 160 220 L 160 380 C 160 395 170 405 185 405 L 327 405 C 342 405 352 395 352 380 L 352 220"
-                          fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M 110 240 L 256 110 L 402 240"
-                          fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M 160 195 L 160 110 L 200 110 L 200 155"
-                          fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M 216 405 L 216 320 C 216 305 226 295 241 295 L 271 295 C 286 295 296 305 296 405"
-                          fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M 70 330 C 120 380 180 340 210 260 C 240 180 320 220 370 280 C 400 316 440 290 440 290"
-                          fill="none" stroke="url(#tracerGradient)" stroke-width="24" stroke-dasharray="0 40" stroke-linecap="round"/>
+                    <path d="M 160 220 L 160 380 C 160 395 170 405 185 405 L 327 405 C 342 405 352 395 352 380 L 352 220" fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M 110 240 L 256 110 L 402 240" fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M 160 195 L 160 110 L 200 110 L 200 155" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M 216 405 L 216 320 C 216 305 226 295 241 295 L 271 295 C 286 295 296 305 296 405" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M 70 330 C 120 380 180 340 210 260 C 240 180 320 220 370 280 C 400 316 440 290 440 290" fill="none" stroke="url(#tracerGradient)" stroke-width="24" stroke-dasharray="0 40" stroke-linecap="round"/>
                     <path d="M 415 255 L 465 285 L 425 325 Z" fill="#FFB300" stroke="#FFB300" stroke-width="8" stroke-linejoin="round"/>
                 </svg>
                 <h3 id="txtTitle">Floorplan Tracer</h3>
             </div>
-            
             <div class="lang-btn-group">
                 <button class="lang-btn" id="btnLangID">ID</button>
                 <button class="lang-btn active" id="btnLangEN">EN</button>
@@ -290,7 +148,11 @@
                 
                 <button id="saveProjBtn" style="margin-bottom: 8px; font-weight: bold; background: #e0f2fe; color: #0369a1; border-color: #7dd3fc;">Save Project (.json)</button>
                 <label id="txtLblLoadProj" style="margin-top: 4px;">Load Project:</label>
-                <input type="file" id="loadProj" accept=".json" style="margin-bottom: 12px;">
+                <input type="file" id="loadProj" accept=".json" style="margin-bottom: 8px;">
+
+                <!-- FITUR UPLOAD 3D GABUNGAN -->
+                <label id="txtLblLoad3D" style="margin-top: 8px; color: #8b5cf6;">Upload 3D (.glb, .gltf, .obj):</label>
+                <input type="file" id="upload3DModel" accept=".glb,.gltf,.obj" style="margin-bottom: 12px;">
 
                 <div class="btn-row">
                     <button id="undoBtn" disabled style="flex:1;">Undo</button>
@@ -301,7 +163,6 @@
 
             <div class="sidebar-section">
                 <h4 id="txtSec2">Draw Tools</h4>
-                
                 <div class="grid-2">
                     <button id="modeSelect" class="tool-btn">
                         <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path></svg>
@@ -363,10 +224,8 @@
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                     <label id="txtLblWallH" style="margin:0;">Wall Height (m)</label>
                     <input type="number" id="valWallH" value="3.0" step="0.1">
-                    
                     <label id="txtLblWallT" style="margin-top: 4px; margin-bottom:0;">Wall Thick (m)</label>
                     <input type="number" id="valWallT" value="0.15" step="0.05">
-
                     <label style="margin-top: 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: #3f3f46;">
                         <input type="checkbox" id="chkShowRoof" style="margin:0; width: 14px; height: 14px; cursor: pointer;">
                         <span id="txtLblRoof">Show Roof</span>
@@ -375,7 +234,7 @@
             </div>
 
             <div class="sidebar-section">
-                <h4 id="txtSec3">Properties</h4>
+                <h4 id="txtSec4">Properties</h4>
                 <div id="emptySelectionMsg">Select object on canvas.</div>
                 
                 <div id="edit-panel-content" style="display: none;">
@@ -392,15 +251,12 @@
                     <div id="wallObjectControls">
                         <label><span id="txtLblPos">Slide Pos:</span> <span id="valPos">50</span>%</label>
                         <input type="range" id="editPos" min="0" max="100" step="1" value="50">
-
                         <label><span id="txtLblWidth">Width:</span> <span id="valWidth">0.9</span> m</label>
                         <input type="range" id="editWidth" min="0.4" max="4.0" step="0.1" value="0.9">
                         
-                        <!-- CONTROLS TINGGI & ELEVASI BARU -->
                         <div id="heightElevControls" style="display: none;">
                             <label><span id="txtLblHeight">Height:</span> <span id="valHeight">1.2</span> m</label>
                             <input type="range" id="editHeight" min="0.4" max="3.0" step="0.1" value="1.2">
-                            
                             <label><span id="txtLblElev">Elevation:</span> <span id="valElev">0.9</span> m</label>
                             <input type="range" id="editElev" min="0" max="2.0" step="0.1" value="0.9">
                         </div>
@@ -412,17 +268,39 @@
                         </div>
                     </div>
 
-                    <div id="freeObjectControls">
-                        <label><span id="txtLblRot">Rotation:</span> <span id="valRot">0</span>°</label>
-                        <input type="range" id="editRot" min="0" max="360" step="5" value="0">
+                    <!-- ADVANCED OBJECT EDITOR -->
+                    <div id="freeObjectControls" style="display: none; background: #f4f4f5; padding: 10px; border-radius: 6px; border: 1px solid #d4d4d8; margin-bottom: 10px;">
+                        <h5 style="margin: 0 0 8px 0; font-size: 11px; color: #2563eb;">3D OBJECT EDITOR</h5>
+                        
+                        <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                            <button id="btnFlipX" class="edit-btn-secondary" style="margin-bottom: 0; padding: 6px; font-size: 10px; font-weight:bold; background:#e0e7ff; color:#4f46e5;">Flip X</button>
+                            <button id="btnFlipZ" class="edit-btn-secondary" style="margin-bottom: 0; padding: 6px; font-size: 10px; font-weight:bold; background:#e0e7ff; color:#4f46e5;">Flip Z</button>
+                        </div>
 
-                        <label><span id="txtLblScale">Scale:</span> <span id="valScale">1.0</span>x</label>
-                        <input type="range" id="editScale" min="0.5" max="3.0" step="0.1" value="1.0">
+                        <label><span>Elevasi (Naik/Turun):</span> <span id="valObjElev">0</span> m</label>
+                        <input type="range" id="editObjElev" min="-1.0" max="5.0" step="0.1" value="0">
+                        <label><span>Rotasi Y (Kiri/Kanan):</span> <span id="valRotY">0</span>°</label>
+                        <input type="range" id="editRotY" min="0" max="360" step="5" value="0">
+                        <label><span>Rotasi X (Tunduk/Tengadah):</span> <span id="valRotX">0</span>°</label>
+                        <input type="range" id="editRotX" min="-180" max="180" step="5" value="0">
+                        <label><span>Rotasi Z (Miring):</span> <span id="valRotZ">0</span>°</label>
+                        <input type="range" id="editRotZ" min="-180" max="180" step="5" value="0">
+                    
+                        <!-- SLIDER SKALA UNIFORM -->
+                        <label><span>Skala Global (Uniform):</span> <span id="valScaleU">1.0</span>x</label>
+                        <input type="range" id="editScaleU" min="0.1" max="5.0" step="0.1" value="1.0">
+                        <hr style="border: 0; border-top: 1px dashed #d4d4d8; margin: 8px 0;">
+
+                        <label><span>Skala X (Lebar):</span> <span id="valScaleX">1.0</span>x</label>
+                        <input type="range" id="editScaleX" min="0.1" max="5.0" step="0.1" value="1.0">
+                        <label><span>Skala Y (Tinggi):</span> <span id="valScaleY">1.0</span>x</label>
+                        <input type="range" id="editScaleY" min="0.1" max="5.0" step="0.1" value="1.0">
+                        <label><span>Skala Z (Dalam):</span> <span id="valScaleZ">1.0</span>x</label>
+                        <input type="range" id="editScaleZ" min="0.1" max="5.0" step="0.1" value="1.0">
 
                         <div id="stairsControls">
                             <label><span id="txtLblSteps">Steps:</span> <span id="valSteps">14</span></label>
                             <input type="range" id="editSteps" min="5" max="25" step="1" value="14">
-
                             <label><span id="txtLblStairW">Stairs W:</span> <span id="valStairW">1.0</span> m</label>
                             <input type="range" id="editStairW" min="0.8" max="2.5" step="0.1" value="1.0">
                         </div>
@@ -433,7 +311,7 @@
             </div>
 
             <div class="sidebar-section" style="border-bottom: none;">
-                <h4 id="txtSec4">Output</h4>
+                <h4 id="txtSec5">Output</h4>
                 <button id="arBtn" class="btn-purple" style="margin-bottom: 8px;">View AR</button>
                 <button id="exportBtn" class="btn-primary" style="margin-bottom: 8px;">Export GLB</button>
                 <button id="exportObjBtn" class="btn-primary" style="background: #f59e0b; border-color: #d97706;">Export OBJ</button>
@@ -447,9 +325,7 @@
                 <img id="floorplan-img" src="">
                 <canvas id="draw-canvas"></canvas>
             </div>
-            
             <button id="helpBtnToggle" title="Panduan">?</button>
-
             <div id="helpModal">
                 <div class="help-content">
                     <button class="close-help" id="closeHelpBtn">&times;</button>
@@ -462,56 +338,57 @@
                 </div>
             </div>
         </div>
-        <div id="render-container"></div>
+        
+        <div id="render-container">
+            <!-- Pindah ke kanan (right: 10px) agar tidak terhalang sidebar -->
+            <div id="transformUI" style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 6px; background: rgba(24, 24, 27, 0.8); padding: 8px; border-radius: 8px; backdrop-filter: blur(4px);">
+                <button id="btnTrMv" class="active" style="width:auto; padding:6px 12px; background:#2563eb; color:#fff; border:none; font-weight:bold; border-radius:4px;">Move</button>
+                <button id="btnTrRt" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Rotate</button>
+                <button id="btnTrSc" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Scale</button>
+                <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
+                <button id="btnTrSpace" style="width:auto; padding:6px 12px; background:#059669; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Toggle Local/World Space">Local</button>
+            </div>
+        </div>
     </div>
 
     <div id="ar-modal">
-        <!-- TOMBOL CLOSE SEKARANG BERADA DI DALAM model-viewer -->
-        <model-viewer id="arViewer" ar ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="1" alt="Denah 3D AR">
-            
+        <div class="ar-container">
             <button id="closeArBtn">&times; Close AR</button>
-            
-            <button slot="ar-button" id="arViewBtn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                </svg>
-                <span id="txtArViewBtn">View in AR</span>
-            </button>
-            
-        </model-viewer>
+            <model-viewer id="arViewer" ar ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="1" alt="Denah 3D AR">
+                <button slot="ar-button" id="arViewBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    </svg>
+                    <span id="txtArViewBtn">View in AR</span>
+                </button>
+            </model-viewer>
+        </div>
     </div>
 
     <script>
-        // === STATE & DATA INISIALISASI AWAL ===
         let lines = []; let openings = []; let freeObjects = [];
         let mode = 'wall'; let scale3D = 0.02; 
-        let isTracingMode = false;
-        let isDrawing = false; let currentLine = null;
+        let isTracingMode = false; let isDrawing = false; let currentLine = null;
         let isSnappingEnabled = true;
+        let center2DX = 0, center2DY = 0; 
 
-        let selectedItem = null; let isDraggingObject = false; let isDraggingCanvas = false;
-        let isPinchZooming = false;
+        let selectedItem = null; let isDraggingObject = false; let isDraggingCanvas = false; let isPinchZooming = false;
         let undoStack = []; let redoStack = [];
 
-        // === AUTOSAVE LOGIC ===
+        const customModels = {};
+        const gltfLoader = new THREE.GLTFLoader();
+        const objLoader = new THREE.OBJLoader();
+
         let autosaveTimeout;
         function triggerAutosave() {
             clearTimeout(autosaveTimeout);
             autosaveTimeout = setTimeout(() => {
-                const projectData = {
-                    lines: lines,
-                    openings: openings,
-                    freeObjects: freeObjects,
-                    wallHeight: inputWallH.value,
-                    wallThick: inputWallT.value
-                };
+                const projectData = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value };
                 localStorage.setItem('floorplan_autosave', JSON.stringify(projectData));
-            }, 1500); // 1.5 detik delay untuk efisiensi render
+            }, 1500); 
         }
 
-        // === TRANSLATION & VARIANTS LOGIC ===
         let currentLang = 'en';
-        
         const variantData = {
             door: { id: ["Single (Biasa)", "Double (Kupu-kupu)", "Sliding (Geser)"], en: ["Single", "Double", "Sliding"] },
             window: { id: ["Standar", "Kaca Full", "Bergaris (Mullions)", "Melengkung Atas"], en: ["Standard", "Full Glass", "Mullions", "Arched Top"] },
@@ -526,203 +403,124 @@
 
         const texts = {
             id: {
-                title: "Floorplan Tracer", sec1: "File & Sistem", sec2: "Alat Gambar", sec3: "Properti Objek", sec4: "Output",
+                title: "Floorplan Tracer", sec1: "File & Sistem", sec2: "Alat Gambar", sec4: "Properti Objek", sec5: "Output",
                 lblUpload: "Upload Denah:", saveProj: "Simpan Proyek (.json)", loadProj: "Muat Proyek:", undo: "Undo", redo: "Redo", clear: "Reset Baru",
                 sel: "Pilih / Edit", wall: "Tembok", door: "Pintu", win: "Jendela", stairs: "Tangga",
-                optDef: "+ Tambah Mebel...", grp1: "Ruang Utama", grp2: "Dapur", grp3: "Kamar Mandi", grp4: "Dekorasi & Tanaman",
-                snapBtn: "Snap (Magnet)",
+                optDef: "+ Tambah Mebel...", grp1: "Ruang Utama", grp2: "Dapur", grp3: "Kamar Mandi", grp4: "Dekorasi & Tanaman", snapBtn: "Snap (Magnet)",
                 bed: "Kasur", sofa: "Sofa", table: "Meja", chair: "Kursi", tv: "TV", buffet: "Bufet", wardrobe: "Lemari",
                 kitchen: "Kitchen Set", stove: "Kompor", fridge: "Kulkas", toilet: "Kloset / Toilet", shower: "Shower", bathtub: "Bathtub",
                 lamp: "Lampu Lantai", carpet: "Karpet", curtain: "Tirai", plant: "Tanaman Dalam", tree: "Pohon",
                 lblWallH: "Tinggi Tembok (m)", lblWallT: "Tebal Tembok (m)", lblRoof: "Tampilkan Atap", emptyMsg: "Pilih objek di kanvas.",
-                lblVariant: "Tipe / Varian:", lblPos: "Geser Posisi:", lblWidth: "Lebar:", 
-                lblHeight: "Tinggi:", lblElev: "Elevasi (Tinggi dr Lantai):",
-                lblSwing: "Rotasi Pintu:", flipBtn: "Balik Engsel",
-                lblRot: "Rotasi:", lblScale: "Skala:", lblSteps: "Anak Tangga:", lblStairW: "Lebar Tangga:", lblWallLen: "Panjang Tembok:",
+                lblVariant: "Tipe / Varian:", lblPos: "Geser Posisi:", lblWidth: "Lebar:", lblHeight: "Tinggi:", lblElev: "Elevasi (Tinggi dr Lantai):",
+                lblSwing: "Rotasi Pintu:", flipBtn: "Balik Engsel", lblSteps: "Anak Tangga:", lblStairW: "Lebar Tangga:", lblWallLen: "Panjang Tembok:",
                 delBtn: "Hapus", arBtn: "View AR", exportBtn: "Export GLB", exportObjBtn: "Export OBJ",
-                gTitle: "Panduan Singkat", 
-                g1: "<b>Free Draw / Bebas:</b> Mulai gambar langsung! Tiap kotak (grid) = 1 meter.",
+                gTitle: "Panduan Singkat", g1: "<b>Free Draw:</b> Mulai gambar langsung! Tiap kotak (grid) = 1 meter.",
                 g2: "<b>Tembok:</b> Tap 1x titik awal, tap posisi lain. Tap 2x (atau ESC) untuk mengakhiri garis tembok.",
                 g3: "<b>Edit & Hapus Tembok:</b> Gunakan Mode 'Pilih/Edit', klik garis tembok untuk menggeser posisinya atau menghapusnya.",
-                closeAr: "Tutup AR", viewArBtn: "Lihat di Ruangan (AR)"
+                closeAr: "Tutup AR", viewArBtn: "Lihat di Ruangan (AR)", lblLoad3D: "Upload 3D (.glb, .gltf, .obj):"
             },
             en: {
-                title: "Floorplan Tracer", sec1: "File & System", sec2: "Draw Tools", sec3: "Properties", sec4: "Output",
+                title: "Floorplan Tracer", sec1: "File & System", sec2: "Draw Tools", sec4: "Properties", sec5: "Output",
                 lblUpload: "Upload Floorplan:", saveProj: "Save Project (.json)", loadProj: "Load Project:", undo: "Undo", redo: "Redo", clear: "Reset Plan",
                 sel: "Select/Edit", wall: "Wall", door: "Door", win: "Window", stairs: "Stairs",
-                optDef: "+ Add Furniture...", grp1: "Living Area", grp2: "Kitchen", grp3: "Bathroom", grp4: "Decor & Plants",
-                snapBtn: "Snap (Magnet)",
+                optDef: "+ Add Furniture...", grp1: "Living Area", grp2: "Kitchen", grp3: "Bathroom", grp4: "Decor & Plants", snapBtn: "Snap (Magnet)",
                 bed: "Bed", sofa: "Sofa", table: "Table", chair: "Chair", tv: "TV", buffet: "Sideboard", wardrobe: "Wardrobe",
                 kitchen: "Kitchen Set", stove: "Stove", fridge: "Fridge", toilet: "Toilet/WC", shower: "Shower", bathtub: "Bathtub",
                 lamp: "Standing Lamp", carpet: "Carpet", curtain: "Curtain", plant: "Indoor Plant", tree: "Tree",
                 lblWallH: "Wall Height (m)", lblWallT: "Wall Thick (m)", lblRoof: "Show Roof", emptyMsg: "Select object on canvas.",
-                lblVariant: "Style / Variant:", lblPos: "Slide Pos:", lblWidth: "Width:", 
-                lblHeight: "Height:", lblElev: "Elevation (from floor):",
-                lblSwing: "Door Swing:", flipBtn: "Flip Hinge",
-                lblRot: "Rotation:", lblScale: "Scale:", lblSteps: "Steps:", lblStairW: "Stairs W:", lblWallLen: "Wall Length:",
+                lblVariant: "Style / Variant:", lblPos: "Slide Pos:", lblWidth: "Width:", lblHeight: "Height:", lblElev: "Elevation (from floor):",
+                lblSwing: "Door Swing:", flipBtn: "Flip Hinge", lblSteps: "Steps:", lblStairW: "Stairs W:", lblWallLen: "Wall Length:",
                 delBtn: "Delete", arBtn: "View AR", exportBtn: "Export GLB", exportObjBtn: "Export OBJ",
-                gTitle: "Quick Guide", 
-                g1: "<b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.",
+                gTitle: "Quick Guide", g1: "<b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.",
                 g2: "<b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.",
                 g3: "<b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.",
-                closeAr: "Close AR", viewArBtn: "View in AR"
+                closeAr: "Close AR", viewArBtn: "View in AR", lblLoad3D: "Upload 3D (.glb, .gltf, .obj):"
             }
         };
 
         function setLanguage(lang) {
             currentLang = lang; const t = texts[currentLang];
-            document.getElementById('btnLangID').classList.toggle('active', lang === 'id');
-            document.getElementById('btnLangEN').classList.toggle('active', lang === 'en');
-
+            document.getElementById('btnLangID').classList.toggle('active', lang === 'id'); document.getElementById('btnLangEN').classList.toggle('active', lang === 'en');
             document.getElementById('txtTitle').innerText = t.title; document.getElementById('txtSec1').innerText = t.sec1;
-            document.getElementById('txtSec2').innerText = t.sec2; document.getElementById('txtSec3').innerText = t.sec3;
-            document.getElementById('txtSec4').innerText = t.sec4; 
-            document.getElementById('txtLblUpload').innerText = t.lblUpload;
-            document.getElementById('saveProjBtn').innerText = t.saveProj;
-            document.getElementById('txtLblLoadProj').innerText = t.loadProj;
-            
-            document.getElementById('undoBtn').innerText = t.undo; document.getElementById('redoBtn').innerText = t.redo;
-            document.getElementById('clearBtn').innerText = t.clear; 
-            
-            document.getElementById('txtModeSelect').innerText = t.sel;
-            document.getElementById('txtModeWall').innerText = t.wall; 
-            document.getElementById('txtModeDoor').innerText = t.door;
-            document.getElementById('txtModeWindow').innerText = t.win; 
-            document.getElementById('txtModeStairs').innerText = t.stairs;
-            
-            document.getElementById('txtOptDefault').innerText = t.optDef; 
-            document.getElementById('optGrp1').label = t.grp1;
-            document.getElementById('optGrp2').label = t.grp2; 
-            document.getElementById('optGrp3').label = t.grp3;
-            document.getElementById('optGrp4').label = t.grp4;
-            
+            document.getElementById('txtSec2').innerText = t.sec2; document.getElementById('txtSec4').innerText = t.sec4; document.getElementById('txtSec5').innerText = t.sec5; 
+            document.getElementById('txtLblUpload').innerText = t.lblUpload; document.getElementById('saveProjBtn').innerText = t.saveProj; document.getElementById('txtLblLoadProj').innerText = t.loadProj;
+            if(document.getElementById('txtLblLoad3D')) document.getElementById('txtLblLoad3D').innerText = t.lblLoad3D;
+            document.getElementById('undoBtn').innerText = t.undo; document.getElementById('redoBtn').innerText = t.redo; document.getElementById('clearBtn').innerText = t.clear; 
+            document.getElementById('txtModeSelect').innerText = t.sel; document.getElementById('txtModeWall').innerText = t.wall; 
+            document.getElementById('txtModeDoor').innerText = t.door; document.getElementById('txtModeWindow').innerText = t.win; document.getElementById('txtModeStairs').innerText = t.stairs;
+            document.getElementById('txtOptDefault').innerText = t.optDef; document.getElementById('optGrp1').label = t.grp1; document.getElementById('optGrp2').label = t.grp2; 
+            document.getElementById('optGrp3').label = t.grp3; document.getElementById('optGrp4').label = t.grp4;
             document.getElementById('txtBtnSnap').innerText = t.snapBtn; document.getElementById('txtLblWallLen').innerText = t.lblWallLen;
-            
-            document.getElementById('optBed').innerText = t.bed; document.getElementById('optSofa').innerText = t.sofa;
-            document.getElementById('optTable').innerText = t.table; document.getElementById('optChair').innerText = t.chair;
+            document.getElementById('optBed').innerText = t.bed; document.getElementById('optSofa').innerText = t.sofa; document.getElementById('optTable').innerText = t.table; document.getElementById('optChair').innerText = t.chair;
             document.getElementById('optTv').innerText = t.tv; document.getElementById('optBuffet').innerText = t.buffet; document.getElementById('optWardrobe').innerText = t.wardrobe;
-            document.getElementById('optKitchen').innerText = t.kitchen; document.getElementById('optStove').innerText = t.stove;
-            document.getElementById('optFridge').innerText = t.fridge; document.getElementById('optToilet').innerText = t.toilet;
-            document.getElementById('optShower').innerText = t.shower; document.getElementById('optBathtub').innerText = t.bathtub;
-            document.getElementById('optLamp').innerText = t.lamp; document.getElementById('optCarpet').innerText = t.carpet; document.getElementById('optCurtain').innerText = t.curtain;
+            document.getElementById('optKitchen').innerText = t.kitchen; document.getElementById('optStove').innerText = t.stove; document.getElementById('optFridge').innerText = t.fridge; document.getElementById('optToilet').innerText = t.toilet;
+            document.getElementById('optShower').innerText = t.shower; document.getElementById('optBathtub').innerText = t.bathtub; document.getElementById('optLamp').innerText = t.lamp; document.getElementById('optCarpet').innerText = t.carpet; document.getElementById('optCurtain').innerText = t.curtain;
             document.getElementById('optPlant').innerText = t.plant; document.getElementById('optTree').innerText = t.tree;
-
-            document.getElementById('txtLblWallH').innerText = t.lblWallH; document.getElementById('txtLblWallT').innerText = t.lblWallT;
-            document.getElementById('txtLblRoof').innerText = t.lblRoof;
-            document.getElementById('emptySelectionMsg').innerText = t.emptyMsg; 
-            document.getElementById('txtLblVariant').innerText = t.lblVariant;
-            document.getElementById('txtLblPos').innerText = t.lblPos;
-            document.getElementById('txtLblWidth').innerText = t.lblWidth; 
-            
-            document.getElementById('txtLblHeight').innerText = t.lblHeight; 
-            document.getElementById('txtLblElev').innerText = t.lblElev;
-
-            document.getElementById('txtLblSwing').innerText = t.lblSwing;
-            document.getElementById('flipHingeBtn').innerText = t.flipBtn; document.getElementById('txtLblRot').innerText = t.lblRot;
-            document.getElementById('txtLblScale').innerText = t.lblScale; document.getElementById('txtLblSteps').innerText = t.lblSteps;
-            document.getElementById('txtLblStairW').innerText = t.lblStairW; document.getElementById('delObjBtn').innerText = t.delBtn;
+            document.getElementById('txtLblWallH').innerText = t.lblWallH; document.getElementById('txtLblWallT').innerText = t.lblWallT; document.getElementById('txtLblRoof').innerText = t.lblRoof;
+            document.getElementById('emptySelectionMsg').innerText = t.emptyMsg; document.getElementById('txtLblVariant').innerText = t.lblVariant;
+            document.getElementById('txtLblPos').innerText = t.lblPos; document.getElementById('txtLblWidth').innerText = t.lblWidth; 
+            document.getElementById('txtLblHeight').innerText = t.lblHeight; document.getElementById('txtLblElev').innerText = t.lblElev;
+            document.getElementById('txtLblSwing').innerText = t.lblSwing; document.getElementById('flipHingeBtn').innerText = t.flipBtn; 
+            document.getElementById('txtLblSteps').innerText = t.lblSteps; document.getElementById('txtLblStairW').innerText = t.lblStairW; document.getElementById('delObjBtn').innerText = t.delBtn;
             document.getElementById('arBtn').innerText = t.arBtn; document.getElementById('exportBtn').innerText = t.exportBtn;
             if (document.getElementById('exportObjBtn')) document.getElementById('exportObjBtn').innerText = t.exportObjBtn;
-            document.getElementById('txtGuideTitle').innerText = t.gTitle; document.getElementById('txtGuide1').innerHTML = t.g1;
-            document.getElementById('txtGuide2').innerHTML = t.g2; document.getElementById('txtGuide3').innerHTML = t.g3;
-
-            // Update terjemahan tombol UI AR baru
-            if (document.getElementById('closeArBtn')) document.getElementById('closeArBtn').innerHTML = `&times; ${t.closeAr}`;
-            if (document.getElementById('txtArViewBtn')) document.getElementById('txtArViewBtn').innerText = t.viewArBtn;
-
-            // Re-render select option jika sedang terbuka
-            if (typeof selectedItem !== 'undefined' && selectedItem !== null) {
-                openEditPanel(selectedItem);
-            }
+            document.getElementById('txtGuideTitle').innerText = t.gTitle; document.getElementById('txtGuide1').innerHTML = t.g1; document.getElementById('txtGuide2').innerHTML = t.g2; document.getElementById('txtGuide3').innerHTML = t.g3;
+            if (typeof selectedItem !== 'undefined' && selectedItem !== null) { openEditPanel(selectedItem); }
         }
 
-        // Terapkan bahasa di awal
-        setLanguage('en');
+        setLanguage('en'); document.getElementById('btnLangID').addEventListener('click', () => setLanguage('id')); document.getElementById('btnLangEN').addEventListener('click', () => setLanguage('en'));
 
-        document.getElementById('btnLangID').addEventListener('click', () => setLanguage('id'));
-        document.getElementById('btnLangEN').addEventListener('click', () => setLanguage('en'));
-
-        // === UI SIDEBAR TOGGLE ===
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+        const sidebar = document.getElementById('sidebar'); const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
         function updateToggleIcon() { sidebarToggleBtn.innerHTML = sidebar.classList.contains('collapsed') ? '&gt;' : '&lt;'; }
         if (window.innerWidth <= 1100) { sidebar.classList.add('collapsed'); updateToggleIcon(); }
 
-        const helpBtnToggle = document.getElementById('helpBtnToggle');
-        const helpModal = document.getElementById('helpModal');
-        const closeHelpBtn = document.getElementById('closeHelpBtn');
-        helpBtnToggle.addEventListener('click', () => { helpModal.style.display = 'flex'; });
-        closeHelpBtn.addEventListener('click', () => { helpModal.style.display = 'none'; });
-        window.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.style.display = 'none'; });
-        sidebarToggleBtn.addEventListener('click', () => { sidebar.classList.toggle('collapsed'); updateToggleIcon(); });
+        const helpBtnToggle = document.getElementById('helpBtnToggle'); const helpModal = document.getElementById('helpModal'); const closeHelpBtn = document.getElementById('closeHelpBtn');
+        helpBtnToggle.addEventListener('click', () => { helpModal.style.display = 'flex'; }); closeHelpBtn.addEventListener('click', () => { helpModal.style.display = 'none'; });
+        window.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.style.display = 'none'; }); sidebarToggleBtn.addEventListener('click', () => { sidebar.classList.toggle('collapsed'); updateToggleIcon(); });
 
-        const workspaceContainer = document.getElementById('workspace-container');
-        const workspace = document.getElementById('workspace');
-        const canvas = document.getElementById('draw-canvas');
-        const ctx = canvas.getContext('2d');
-        const imgElement = document.getElementById('floorplan-img');
+        const workspaceContainer = document.getElementById('workspace-container'); const workspace = document.getElementById('workspace');
+        const canvas = document.getElementById('draw-canvas'); const ctx = canvas.getContext('2d'); const imgElement = document.getElementById('floorplan-img');
         const renderContainer = document.getElementById('render-container');
         
-        const inputWallH = document.getElementById('valWallH');
-        const inputWallT = document.getElementById('valWallT');
-        const chkShowRoof = document.getElementById('chkShowRoof');
-        const furnitureSelect = document.getElementById('furnitureSelect');
-        const btnSnap = document.getElementById('btnSnap');
+        const inputWallH = document.getElementById('valWallH'); const inputWallT = document.getElementById('valWallT'); const chkShowRoof = document.getElementById('chkShowRoof');
+        const furnitureSelect = document.getElementById('furnitureSelect'); const btnSnap = document.getElementById('btnSnap');
 
-        btnSnap.addEventListener('click', () => {
-            isSnappingEnabled = !isSnappingEnabled;
-            btnSnap.classList.toggle('active', isSnappingEnabled);
-            btnSnap.style.opacity = isSnappingEnabled ? '1' : '0.55';
-            draw2D();
+        btnSnap.addEventListener('click', () => { isSnappingEnabled = !isSnappingEnabled; btnSnap.classList.toggle('active', isSnappingEnabled); btnSnap.style.opacity = isSnappingEnabled ? '1' : '0.55'; draw2D(); });
+        
+        [inputWallH, inputWallT].forEach(el => {
+            el.addEventListener('pointerdown', () => saveState());
+            el.addEventListener('change', () => { update3D(); draw2D(); });
         });
-
-        inputWallH.addEventListener('change', () => { saveState(); update3D(); draw2D(); });
-        inputWallT.addEventListener('change', () => { saveState(); update3D(); draw2D(); });
         chkShowRoof.addEventListener('change', () => { update3D(); });
 
         let scale = 1; let panX = 0, panY = 0; let startPanX = 0, startPanY = 0;
 
         function initDefaultCanvas() {
             imgElement.src = ""; imgElement.style.display = "none"; isTracingMode = false;
-            canvas.width = 5000; canvas.height = 5000;
-            workspace.style.backgroundColor = "#ffffff"; workspace.style.boxShadow = "none";
-            scale3D = 0.02;
+            canvas.width = 5000; canvas.height = 5000; workspace.style.backgroundColor = "#ffffff"; workspace.style.boxShadow = "none"; scale3D = 0.02;
             setTimeout(() => {
                 const panelWidth = workspaceContainer.clientWidth; const panelHeight = workspaceContainer.clientHeight;
-                scale = 0.8; panX = (panelWidth - (canvas.width * scale)) / 2; panY = (panelHeight - (canvas.height * scale)) / 2;
-                applyTransform(); draw2D();
+                scale = 0.8; panX = (panelWidth - (canvas.width * scale)) / 2; panY = (panelHeight - (canvas.height * scale)) / 2; applyTransform(); draw2D();
             }, 50);
         }
         
-        // Cek dan Load LocalStorage pada saat startup
         window.addEventListener('load', () => { 
             initDefaultCanvas(); 
-            
             const saved = localStorage.getItem('floorplan_autosave');
             if (saved) {
                 try {
                     const loadedData = JSON.parse(saved);
-                    // Validasi minimal ada garis atau objek untuk di restore
                     if (loadedData.lines && (loadedData.lines.length > 0 || loadedData.freeObjects.length > 0)) {
-                        lines = loadedData.lines || [];
-                        openings = loadedData.openings || [];
-                        freeObjects = loadedData.freeObjects || [];
-                        
-                        if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight;
-                        if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
-                        
-                        update3D();
-                        draw2D();
+                        lines = loadedData.lines || []; openings = loadedData.openings || []; freeObjects = loadedData.freeObjects || [];
+                        if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
+                        update3D(); draw2D();
                     }
-                } catch (err) {
-                    console.error("Autosave load error:", err);
-                }
+                } catch (err) {}
             }
         });
         
         function applyTransform() { workspace.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; }
 
-        // === UNDO / REDO ===
         function saveState() {
             undoStack.push({ lines: JSON.parse(JSON.stringify(lines)), openings: JSON.parse(JSON.stringify(openings)), freeObjects: JSON.parse(JSON.stringify(freeObjects)) });
             redoStack = []; document.getElementById('undoBtn').disabled = false; document.getElementById('redoBtn').disabled = true;
@@ -731,121 +529,57 @@
         function restoreState(isUndo) {
             stopDrawing();
             const current = { lines: JSON.parse(JSON.stringify(lines)), openings: JSON.parse(JSON.stringify(openings)), freeObjects: JSON.parse(JSON.stringify(freeObjects)) };
-            if (isUndo) {
-                redoStack.push(current); const prev = undoStack.pop();
-                lines = prev.lines; openings = prev.openings; freeObjects = prev.freeObjects || [];
-            } else {
-                undoStack.push(current); const next = redoStack.pop();
-                lines = next.lines; openings = next.openings; freeObjects = next.freeObjects || [];
-            }
+            if (isUndo) { redoStack.push(current); const prev = undoStack.pop(); lines = prev.lines; openings = prev.openings; freeObjects = prev.freeObjects || []; } 
+            else { undoStack.push(current); const next = redoStack.pop(); lines = next.lines; openings = next.openings; freeObjects = next.freeObjects || []; }
             document.getElementById('undoBtn').disabled = undoStack.length === 0; document.getElementById('redoBtn').disabled = redoStack.length === 0;
             selectedItem = null; closeEditPanel(); draw2D(); update3D();
         }
-        document.getElementById('undoBtn').onclick = () => restoreState(true);
-        document.getElementById('redoBtn').onclick = () => restoreState(false);
+        document.getElementById('undoBtn').onclick = () => restoreState(true); document.getElementById('redoBtn').onclick = () => restoreState(false);
 
-        // === PAN, ZOOM & SELECTION ===
-        
-        workspaceContainer.addEventListener('wheel', (e) => {
-            e.preventDefault(); 
-            const zoomFactor = Math.exp(e.deltaY * -0.002);
-            const newScale = Math.min(Math.max(0.05, scale * zoomFactor), 10);
-            const rect = workspaceContainer.getBoundingClientRect(); 
-            const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top;
-            panX = mouseX - ((mouseX - panX) * (newScale / scale)); panY = mouseY - ((mouseY - panY) * (newScale / scale));
-            scale = newScale; applyTransform();
-        }, { passive: false });
-
+        workspaceContainer.addEventListener('wheel', (e) => { e.preventDefault(); const zoomFactor = Math.exp(e.deltaY * -0.002); const newScale = Math.min(Math.max(0.05, scale * zoomFactor), 10); const rect = workspaceContainer.getBoundingClientRect(); const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top; panX = mouseX - ((mouseX - panX) * (newScale / scale)); panY = mouseY - ((mouseY - panY) * (newScale / scale)); scale = newScale; applyTransform(); }, { passive: false });
         let lastMidX = 0, lastMidY = 0, lastDist = 0;
-
-        workspaceContainer.addEventListener('touchstart', (e) => {
-            if (e.touches.length >= 2) {
-                isPinchZooming = true; stopDrawing(); isDraggingObject = false; isDraggingCanvas = false; 
-                lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                lastMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2; lastMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            }
-        }, { passive: false });
-
-        workspaceContainer.addEventListener('touchmove', (e) => {
-            if (e.touches.length >= 2 && isPinchZooming) {
-                e.preventDefault(); 
-                const currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                const currentMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2; const currentMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                panX += (currentMidX - lastMidX); panY += (currentMidY - lastMidY);
-                if (lastDist > 0) {
-                    const zoomFactor = currentDist / lastDist;
-                    const newScale = Math.min(Math.max(0.05, scale * zoomFactor), 10);
-                    const rect = workspaceContainer.getBoundingClientRect();
-                    const focusX = currentMidX - rect.left; const focusY = currentMidY - rect.top;
-                    panX = focusX - ((focusX - panX) * (newScale / scale)); panY = focusY - ((focusY - panY) * (newScale / scale));
-                    scale = newScale;
-                }
-                lastMidX = currentMidX; lastMidY = currentMidY; lastDist = currentDist; applyTransform();
-            }
-        }, { passive: false });
-
+        workspaceContainer.addEventListener('touchstart', (e) => { if (e.touches.length >= 2) { isPinchZooming = true; stopDrawing(); isDraggingObject = false; isDraggingCanvas = false; lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); lastMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2; lastMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2; } }, { passive: false });
+        workspaceContainer.addEventListener('touchmove', (e) => { if (e.touches.length >= 2 && isPinchZooming) { e.preventDefault(); const currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); const currentMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2; const currentMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2; panX += (currentMidX - lastMidX); panY += (currentMidY - lastMidY); if (lastDist > 0) { const zoomFactor = currentDist / lastDist; const newScale = Math.min(Math.max(0.05, scale * zoomFactor), 10); const rect = workspaceContainer.getBoundingClientRect(); const focusX = currentMidX - rect.left; const focusY = currentMidY - rect.top; panX = focusX - ((focusX - panX) * (newScale / scale)); panY = focusY - ((focusY - panY) * (newScale / scale)); scale = newScale; } lastMidX = currentMidX; lastMidY = currentMidY; lastDist = currentDist; applyTransform(); } }, { passive: false });
         window.addEventListener('touchend', (e) => { if (e.touches.length < 2) isPinchZooming = false; });
 
         canvas.addEventListener('pointerdown', (e) => {
-            if (isPinchZooming) return; 
-            if (e.pointerType === 'touch' && !e.isPrimary) return; 
-            if (e.button === 2 || e.button === 1) { 
-                isDraggingCanvas = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY; workspaceContainer.style.cursor = 'grabbing'; stopDrawing(); return;
-            }
+            if (isPinchZooming) return; if (e.pointerType === 'touch' && !e.isPrimary) return; 
+            if (e.button === 2 || e.button === 1) { isDraggingCanvas = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY; workspaceContainer.style.cursor = 'grabbing'; stopDrawing(); return; }
             if (e.button !== 0 && e.button !== undefined) return;
             
             let { x, y } = getTrueCoords(e.clientX, e.clientY);
             
             if (mode === 'select') {
                 let clickedItem = null; let minDist = 30 / scale;
-                openings.forEach(op => {
-                    let l = lines[op.lineIndex];
-                    if(l) { const cx = l.start.x + (l.end.x - l.start.x) * op.ratio; const cy = l.start.y + (l.end.y - l.start.y) * op.ratio; if (Math.hypot(cx - x, cy - y) < minDist) { clickedItem = op; minDist = Math.hypot(cx - x, cy - y); } }
-                });
+                openings.forEach(op => { let l = lines[op.lineIndex]; if(l) { const cx = l.start.x + (l.end.x - l.start.x) * op.ratio; const cy = l.start.y + (l.end.y - l.start.y) * op.ratio; if (Math.hypot(cx - x, cy - y) < minDist) { clickedItem = op; minDist = Math.hypot(cx - x, cy - y); } } });
                 freeObjects.forEach(obj => { if (Math.hypot(obj.x - x, obj.y - y) < minDist) { clickedItem = obj; minDist = Math.hypot(obj.x - x, obj.y - y); } });
-
-                if (!clickedItem) {
-                    let wallHit = findNearestLine(x, y, 15 / scale); 
-                    if (wallHit) { clickedItem = { isWall: true, index: wallHit.index, ...lines[wallHit.index] }; }
-                }
+                if (!clickedItem) { let wallHit = findNearestLine(x, y, 15 / scale); if (wallHit) { clickedItem = { isWall: true, index: wallHit.index, ...lines[wallHit.index] }; } }
 
                 if (clickedItem) { 
-                    selectedItem = clickedItem; openEditPanel(selectedItem); 
+                    selectedItem = clickedItem; 
+                    saveState(); 
+                    openEditPanel(selectedItem); 
                     isDraggingObject = true;
-                    if (selectedItem.isWall) {
-                        saveState(); 
-                        selectedItem.dragStartX = x; selectedItem.dragStartY = y;
-                        selectedItem.origStart = { ...lines[selectedItem.index].start };
-                        selectedItem.origEnd = { ...lines[selectedItem.index].end };
-                    }
+                    if (selectedItem.isWall) { selectedItem.dragStartX = x; selectedItem.dragStartY = y; selectedItem.origStart = { ...lines[selectedItem.index].start }; selectedItem.origEnd = { ...lines[selectedItem.index].end }; }
+                    if (window.transformControl) updateTransformControlSelection(selectedItem);
                 } else { 
-                    selectedItem = null; closeEditPanel(); isDraggingCanvas = true; 
-                    startPanX = e.clientX - panX; startPanY = e.clientY - panY; workspaceContainer.style.cursor = 'grabbing';
+                    selectedItem = null; closeEditPanel(); isDraggingCanvas = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY; workspaceContainer.style.cursor = 'grabbing';
+                    if (window.transformControl) window.transformControl.detach();
                 } 
                 draw2D();
             } 
             else if (mode === 'wall') {
                 let snap = getSnapped(x, y, isDrawing ? currentLine.start : null);
                 if (!isDrawing) { saveState(); isDrawing = true; currentLine = { start: snap, end: snap }; } 
-                else { const dist = Math.hypot(snap.x - currentLine.start.x, snap.y - currentLine.start.y);
-                    if (dist < 10 / scale) { stopDrawing(); } else { currentLine.end = snap; lines.push({...currentLine}); update3D(); currentLine = { start: snap, end: snap }; }
-                } draw2D();
+                else { const dist = Math.hypot(snap.x - currentLine.start.x, snap.y - currentLine.start.y); if (dist < 10 / scale) { stopDrawing(); } else { currentLine.end = snap; lines.push({...currentLine}); update3D(); currentLine = { start: snap, end: snap }; } } draw2D();
             } 
             else if (mode === 'door' || mode === 'window') {
                 let nearest = findNearestLine(x, y, 30 / scale);
-                if (nearest) { 
-                    saveState(); 
-                    openings.push({ 
-                        id: Date.now(), type: mode, variant: 0, lineIndex: nearest.index, ratio: nearest.ratio, 
-                        width3D: mode === 'door' ? 0.9 : 1.2, height3D: mode === 'door' ? 2.1 : 1.2, 
-                        elevation: mode === 'door' ? 0 : 0.9, swing: 85, flipHinge: false 
-                    }); 
-                    update3D(); draw2D(); 
-                }
+                if (nearest) { saveState(); openings.push({ id: Date.now(), type: mode, variant: 0, lineIndex: nearest.index, ratio: nearest.ratio, width3D: mode === 'door' ? 0.9 : 1.2, height3D: mode === 'door' ? 2.1 : 1.2, elevation: mode === 'door' ? 0 : 0.9, swing: 85, flipHinge: false }); update3D(); draw2D(); }
             }
             else { 
                 saveState(); let snapPos = getSnapped(x, y);
-                freeObjects.push({ id: Date.now(), type: mode, variant: 0, x: snapPos.x, y: snapPos.y, rotation: 0, scaleVal: 1.0, steps: 14, width3D: mode === 'stairs' ? 1.0 : 1.0 });
+                freeObjects.push({ id: Date.now(), type: mode, variant: 0, x: snapPos.x, y: snapPos.y, rotationX: 0, rotationY: 0, rotationZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0, steps: 14, width3D: mode === 'stairs' ? 1.0 : 1.0, flipX: false, flipZ: false });
                 furnitureSelect.value = ""; setMode('select', document.getElementById('modeSelect')); update3D(); draw2D();
             }
         });
@@ -860,8 +594,7 @@
                     if (selectedItem.isWall) {
                         let dx = x - selectedItem.dragStartX; let dy = y - selectedItem.dragStartY;
                         if (isSnappingEnabled) { const gridSnap = 50; dx = Math.round(dx / gridSnap) * gridSnap; dy = Math.round(dy / gridSnap) * gridSnap; }
-                        lines[selectedItem.index].start = { x: selectedItem.origStart.x + dx, y: selectedItem.origStart.y + dy };
-                        lines[selectedItem.index].end = { x: selectedItem.origEnd.x + dx, y: selectedItem.origEnd.y + dy };
+                        lines[selectedItem.index].start = { x: selectedItem.origStart.x + dx, y: selectedItem.origStart.y + dy }; lines[selectedItem.index].end = { x: selectedItem.origEnd.x + dx, y: selectedItem.origEnd.y + dy };
                         draw2D(); update3D();
                     }
                     else if (selectedItem.lineIndex === undefined) { 
@@ -873,407 +606,260 @@
 
         window.addEventListener('pointerup', () => { 
             if (isDraggingCanvas) { isDraggingCanvas = false; workspaceContainer.style.cursor = 'crosshair'; }
-            if (isDraggingObject) { isDraggingObject = false; if(!selectedItem?.isWall) saveState(); } 
+            if (isDraggingObject) { isDraggingObject = false; } 
             workspaceContainer.style.cursor = 'crosshair'; 
         });
 
-        // === TOOLS & DRAWING LOGIC ===
         function stopDrawing() { if (isDrawing && currentLine) draw2D(); isDrawing = false; currentLine = null; draw2D(); }
-        document.getElementById('modeSelect').onclick = (e) => setMode('select', e.currentTarget);
-        document.getElementById('modeWall').onclick = (e) => setMode('wall', e.currentTarget);
-        document.getElementById('modeDoor').onclick = (e) => setMode('door', e.currentTarget);
-        document.getElementById('modeWindow').onclick = (e) => setMode('window', e.currentTarget);
-        document.getElementById('modeStairs').onclick = (e) => setMode('stairs', e.currentTarget);
-        furnitureSelect.addEventListener('change', (e) => { if(e.target.value) setMode(e.target.value, null); });
-
-        function setMode(newMode, btn) {
-            stopDrawing(); mode = newMode; 
-            document.querySelectorAll('#sidebar .tool-btn, #sidebar .tool-btn-wide').forEach(b => b.classList.remove('active'));
-            if(btn) btn.classList.add('active');
-            if (mode !== 'select') closeEditPanel();
-            if(window.innerWidth <= 1100 && mode !== 'select' && !sidebar.classList.contains('collapsed')){ sidebar.classList.add('collapsed'); updateToggleIcon(); }
-            draw2D();
-        }
-
+        document.getElementById('modeSelect').onclick = (e) => setMode('select', e.currentTarget); document.getElementById('modeWall').onclick = (e) => setMode('wall', e.currentTarget); document.getElementById('modeDoor').onclick = (e) => setMode('door', e.currentTarget); document.getElementById('modeWindow').onclick = (e) => setMode('window', e.currentTarget); document.getElementById('modeStairs').onclick = (e) => setMode('stairs', e.currentTarget); furnitureSelect.addEventListener('change', (e) => { if(e.target.value) setMode(e.target.value, null); });
+        function setMode(newMode, btn) { stopDrawing(); mode = newMode; document.querySelectorAll('#sidebar .tool-btn, #sidebar .tool-btn-wide').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); if (mode !== 'select') closeEditPanel(); if(window.innerWidth <= 1100 && mode !== 'select' && !sidebar.classList.contains('collapsed')){ sidebar.classList.add('collapsed'); updateToggleIcon(); } draw2D(); }
         window.addEventListener('keydown', (e) => { if (e.key === 'Escape') stopDrawing(); });
         function getTrueCoords(x, y) { const rect = canvas.getBoundingClientRect(); return { x: (x - rect.left) * (canvas.width / rect.width), y: (y - rect.top) * (canvas.height / rect.height) }; }
-        const SNAP_RADIUS = 20;
         
         function getSnapped(x, y, refPoint = null) {
-            if (!isSnappingEnabled) return { x, y };
-            let snapX = x, snapY = y; let minDist = SNAP_RADIUS / scale; let snappedToPoint = false;
-            for (let l of lines) {
-                if (Math.hypot(l.start.x - x, l.start.y - y) < minDist) { snapX = l.start.x; snapY = l.start.y; snappedToPoint = true; break; }
-                if (Math.hypot(l.end.x - x, l.end.y - y) < minDist) { snapX = l.end.x; snapY = l.end.y; snappedToPoint = true; break; }
-            }
-            if (!snappedToPoint) {
-                for (let l of lines) {
-                    const l2 = Math.pow(l.end.x - l.start.x, 2) + Math.pow(l.end.y - l.start.y, 2); if (l2 === 0) continue;
-                    let t = Math.max(0, Math.min(1, ((x - l.start.x) * (l.end.x - l.start.x) + (y - l.start.y) * (l.end.y - l.start.y)) / l2));
-                    const projX = l.start.x + t * (l.end.x - l.start.x); const projY = l.start.y + t * (l.end.y - l.start.y);
-                    if (Math.hypot(x - projX, y - projY) < minDist) { snapX = projX; snapY = projY; snappedToPoint = true; break; }
-                }
-            }
-            if (!snappedToPoint && !isTracingMode) {
-                const gridSnap = 50; 
-                if (Math.abs(x % gridSnap) < minDist) snapX = Math.round(x / gridSnap) * gridSnap;
-                if (Math.abs(y % gridSnap) < minDist) snapY = Math.round(y / gridSnap) * gridSnap;
-            }
-            if (refPoint && !snappedToPoint) {
-                const dx = snapX - refPoint.x; const dy = snapY - refPoint.y; const angle = Math.atan2(dy, dx);
-                const orthoAngle = Math.round(angle / (Math.PI/2)) * (Math.PI/2);
-                if (Math.abs(angle - orthoAngle) < 0.15) { const dist = Math.hypot(dx, dy); snapX = refPoint.x + Math.cos(orthoAngle) * dist; snapY = refPoint.y + Math.sin(orthoAngle) * dist; }
-            } return { x: snapX, y: snapY };
+            if (!isSnappingEnabled) return { x, y }; let snapX = x, snapY = y; let minDist = 20 / scale; let snappedToPoint = false;
+            for (let l of lines) { if (Math.hypot(l.start.x - x, l.start.y - y) < minDist) { snapX = l.start.x; snapY = l.start.y; snappedToPoint = true; break; } if (Math.hypot(l.end.x - x, l.end.y - y) < minDist) { snapX = l.end.x; snapY = l.end.y; snappedToPoint = true; break; } }
+            if (!snappedToPoint) { for (let l of lines) { const l2 = Math.pow(l.end.x - l.start.x, 2) + Math.pow(l.end.y - l.start.y, 2); if (l2 === 0) continue; let t = Math.max(0, Math.min(1, ((x - l.start.x) * (l.end.x - l.start.x) + (y - l.start.y) * (l.end.y - l.start.y)) / l2)); const projX = l.start.x + t * (l.end.x - l.start.x); const projY = l.start.y + t * (l.end.y - l.start.y); if (Math.hypot(x - projX, y - projY) < minDist) { snapX = projX; snapY = projY; snappedToPoint = true; break; } } }
+            if (!snappedToPoint && !isTracingMode) { const gridSnap = 50; if (Math.abs(x % gridSnap) < minDist) snapX = Math.round(x / gridSnap) * gridSnap; if (Math.abs(y % gridSnap) < minDist) snapY = Math.round(y / gridSnap) * gridSnap; }
+            if (refPoint && !snappedToPoint) { const dx = snapX - refPoint.x; const dy = snapY - refPoint.y; const angle = Math.atan2(dy, dx); const orthoAngle = Math.round(angle / (Math.PI/2)) * (Math.PI/2); if (Math.abs(angle - orthoAngle) < 0.15) { const dist = Math.hypot(dx, dy); snapX = refPoint.x + Math.cos(orthoAngle) * dist; snapY = refPoint.y + Math.sin(orthoAngle) * dist; } } return { x: snapX, y: snapY };
         }
 
         function findNearestLine(px, py, tolerance) {
             let minDist = tolerance; let result = null;
-            lines.forEach((l, index) => {
-                const l2 = Math.pow(l.end.x - l.start.x, 2) + Math.pow(l.end.y - l.start.y, 2); if (l2 === 0) return;
-                let t = Math.max(0, Math.min(1, ((px - l.start.x) * (l.end.x - l.start.x) + (py - l.start.y) * (l.end.y - l.start.y)) / l2));
-                const projX = l.start.x + t * (l.end.x - l.start.x); const projY = l.start.y + t * (l.end.y - l.start.y);
-                const dist = Math.hypot(px - projX, py - projY); if (dist < minDist) { minDist = dist; result = { index, ratio: t }; }
-            }); return result;
+            lines.forEach((l, index) => { const l2 = Math.pow(l.end.x - l.start.x, 2) + Math.pow(l.end.y - l.start.y, 2); if (l2 === 0) return; let t = Math.max(0, Math.min(1, ((px - l.start.x) * (l.end.x - l.start.x) + (py - l.start.y) * (l.end.y - l.start.y)) / l2)); const projX = l.start.x + t * (l.end.x - l.start.x); const projY = l.start.y + t * (l.end.y - l.start.y); const dist = Math.hypot(px - projX, py - projY); if (dist < minDist) { minDist = dist; result = { index, ratio: t }; } }); return result;
         }
 
-        // === PANEL EDITOR ===
         const emptySelectionMsg = document.getElementById('emptySelectionMsg'); const editPanelContent = document.getElementById('edit-panel-content');
-        const wallLineControls = document.getElementById('wallLineControls');
-        const variantControls = document.getElementById('variantControls'); const editVariant = document.getElementById('editVariant');
+        const wallLineControls = document.getElementById('wallLineControls'); const variantControls = document.getElementById('variantControls'); const editVariant = document.getElementById('editVariant');
         const wallObjectControls = document.getElementById('wallObjectControls'); const freeObjectControls = document.getElementById('freeObjectControls');
-        const stairsControls = document.getElementById('stairsControls'); const editPos = document.getElementById('editPos'); 
-        const editWidth = document.getElementById('editWidth'); const editSwing = document.getElementById('editSwing'); 
+        const editPos = document.getElementById('editPos'); const editWidth = document.getElementById('editWidth'); const editSwing = document.getElementById('editSwing'); 
+        const heightElevControls = document.getElementById('heightElevControls'); const editHeight = document.getElementById('editHeight'); const editElev = document.getElementById('editElev');
         
-        const heightElevControls = document.getElementById('heightElevControls');
-        const editHeight = document.getElementById('editHeight'); 
-        const editElev = document.getElementById('editElev');
-        
-        const editRot = document.getElementById('editRot'); const editScale = document.getElementById('editScale'); 
-        const editSteps = document.getElementById('editSteps'); const editStairW = document.getElementById('editStairW');
+        const editObjElev = document.getElementById('editObjElev'); const editRotY = document.getElementById('editRotY'); const editRotX = document.getElementById('editRotX');
+        const editRotZ = document.getElementById('editRotZ'); 
+        const editScaleU = document.getElementById('editScaleU'); 
+        const editScaleX = document.getElementById('editScaleX'); const editScaleY = document.getElementById('editScaleY'); const editScaleZ = document.getElementById('editScaleZ'); 
+        const stairsControls = document.getElementById('stairsControls'); const editSteps = document.getElementById('editSteps'); const editStairW = document.getElementById('editStairW');
 
         function openEditPanel(item) {
             emptySelectionMsg.style.display = 'none'; editPanelContent.style.display = 'block';
+            if (item.type && variantData[item.type]) { variantControls.style.display = 'block'; editVariant.innerHTML = ''; let options = variantData[item.type][currentLang]; options.forEach((optText, index) => { let opt = document.createElement('option'); opt.value = index; opt.innerText = optText; editVariant.appendChild(opt); }); editVariant.value = item.variant || 0; } else { variantControls.style.display = 'none'; }
             
-            // Check Variants
-            if (item.type && variantData[item.type]) {
-                variantControls.style.display = 'block';
-                editVariant.innerHTML = '';
-                let options = variantData[item.type][currentLang];
-                options.forEach((optText, index) => {
-                    let opt = document.createElement('option');
-                    opt.value = index; opt.innerText = optText;
-                    editVariant.appendChild(opt);
-                });
-                editVariant.value = item.variant || 0;
-            } else {
-                variantControls.style.display = 'none';
-            }
-
             if (item.isWall) {
-                wallLineControls.style.display = 'block';
-                wallObjectControls.style.display = 'none'; freeObjectControls.style.display = 'none';
-                
-                const dx = item.end.x - item.start.x;
-                const dy = item.end.y - item.start.y;
-                const lengthMeters = (Math.sqrt(dx*dx + dy*dy) * scale3D).toFixed(2);
-                document.getElementById('valWallLen').innerText = lengthMeters;
-            } 
-            else if (item.lineIndex !== undefined) { 
-                wallLineControls.style.display = 'none';
-                wallObjectControls.style.display = 'block'; freeObjectControls.style.display = 'none';
+                wallLineControls.style.display = 'block'; wallObjectControls.style.display = 'none'; freeObjectControls.style.display = 'none';
+                const dx = item.end.x - item.start.x; const dy = item.end.y - item.start.y; document.getElementById('valWallLen').innerText = (Math.sqrt(dx*dx + dy*dy) * scale3D).toFixed(2);
+            } else if (item.lineIndex !== undefined) { 
+                wallLineControls.style.display = 'none'; wallObjectControls.style.display = 'block'; freeObjectControls.style.display = 'none';
                 editPos.value = Math.round(item.ratio * 100); document.getElementById('valPos').innerText = Math.round(item.ratio * 100);
                 editWidth.value = item.width3D; document.getElementById('valWidth').innerText = item.width3D;
-                
-                heightElevControls.style.display = 'block';
-                editHeight.value = item.height3D; document.getElementById('valHeight').innerText = item.height3D;
+                heightElevControls.style.display = 'block'; editHeight.value = item.height3D; document.getElementById('valHeight').innerText = item.height3D;
                 editElev.value = item.elevation; document.getElementById('valElev').innerText = item.elevation;
-
-                if (item.type === 'door' && (!item.variant || item.variant != 2)) { // if not sliding
-                    document.getElementById('doorControls').style.display = 'block'; editSwing.value = item.swing; document.getElementById('valSwing').innerText = item.swing; 
-                } else { 
-                    document.getElementById('doorControls').style.display = 'none'; 
-                }
+                if (item.type === 'door' && (!item.variant || item.variant != 2)) { document.getElementById('doorControls').style.display = 'block'; editSwing.value = item.swing; document.getElementById('valSwing').innerText = item.swing; } else { document.getElementById('doorControls').style.display = 'none'; }
             } else { 
-                wallLineControls.style.display = 'none';
-                wallObjectControls.style.display = 'none'; freeObjectControls.style.display = 'block';
-                editRot.value = item.rotation || 0; document.getElementById('valRot').innerText = item.rotation || 0;
-                editScale.value = item.scaleVal || 1.0; document.getElementById('valScale').innerText = item.scaleVal || 1.0;
-                if (item.type === 'stairs') { stairsControls.style.display = 'block'; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } 
-                else { stairsControls.style.display = 'none'; }
+                wallLineControls.style.display = 'none'; wallObjectControls.style.display = 'none'; freeObjectControls.style.display = 'block';
+                editObjElev.value = item.elevation || 0; document.getElementById('valObjElev').innerText = item.elevation || 0;
+                editRotY.value = item.rotationY !== undefined ? item.rotationY : (item.rotation || 0); document.getElementById('valRotY').innerText = editRotY.value;
+                editRotX.value = item.rotationX || 0; document.getElementById('valRotX').innerText = item.rotationX || 0;
+                editRotZ.value = item.rotationZ || 0; document.getElementById('valRotZ').innerText = item.rotationZ || 0;
+                
+                editScaleU.value = item.scaleX !== undefined ? item.scaleX : (item.scaleVal || 1.0); document.getElementById('valScaleU').innerText = editScaleU.value;
+                editScaleX.value = item.scaleX !== undefined ? item.scaleX : (item.scaleVal || 1.0); document.getElementById('valScaleX').innerText = editScaleX.value;
+                editScaleY.value = item.scaleY !== undefined ? item.scaleY : (item.scaleVal || 1.0); document.getElementById('valScaleY').innerText = editScaleY.value;
+                editScaleZ.value = item.scaleZ !== undefined ? item.scaleZ : (item.scaleVal || 1.0); document.getElementById('valScaleZ').innerText = editScaleZ.value;
+
+                if (item.type === 'stairs') { stairsControls.style.display = 'block'; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } else { stairsControls.style.display = 'none'; }
             }
-            if(window.innerWidth > 900) { sidebar.querySelector('.sidebar-content').scrollTo({ top: sidebar.scrollHeight, behavior: 'smooth' }); }
         }
 
         function closeEditPanel() { emptySelectionMsg.style.display = 'block'; editPanelContent.style.display = 'none'; selectedItem = null; }
 
-        editVariant.addEventListener('change', (e) => {
-            if (selectedItem) {
-                saveState();
-                selectedItem.variant = parseInt(e.target.value);
-                if(selectedItem.type === 'door'){
-                    document.getElementById('doorControls').style.display = (selectedItem.variant === 2) ? 'none' : 'block';
-                }
-                update3D(); draw2D();
-            }
+        const uiSliders = [editPos, editWidth, editHeight, editElev, editSwing, editObjElev, editRotY, editRotX, editRotZ, editScaleU, editScaleX, editScaleY, editScaleZ, editSteps, editStairW];
+        uiSliders.forEach(slider => { if (slider) slider.addEventListener('pointerdown', () => saveState()); });
+
+        editVariant.addEventListener('pointerdown', () => saveState());
+        editVariant.addEventListener('change', (e) => { if (selectedItem) { selectedItem.variant = parseInt(e.target.value); if(selectedItem.type === 'door') document.getElementById('doorControls').style.display = (selectedItem.variant === 2) ? 'none' : 'block'; update3D(); draw2D(); } });
+        
+        editPos.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.ratio = parseFloat(e.target.value) / 100; document.getElementById('valPos').innerText = e.target.value; update3D(); draw2D(); } }); 
+        editWidth.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.width3D = parseFloat(e.target.value); document.getElementById('valWidth').innerText = selectedItem.width3D; update3D(); draw2D(); } }); 
+        editHeight.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.height3D = parseFloat(e.target.value); document.getElementById('valHeight').innerText = selectedItem.height3D; update3D(); draw2D(); } }); 
+        editElev.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.elevation = parseFloat(e.target.value); document.getElementById('valElev').innerText = selectedItem.elevation; update3D(); draw2D(); } }); 
+        editSwing.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'door') { selectedItem.swing = parseFloat(e.target.value); document.getElementById('valSwing').innerText = selectedItem.swing; update3D(); draw2D(); } }); 
+        
+        editObjElev.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.elevation = parseFloat(e.target.value); document.getElementById('valObjElev').innerText = selectedItem.elevation; update3D(); } }); 
+        editRotY.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.rotationY = parseInt(e.target.value); document.getElementById('valRotY').innerText = selectedItem.rotationY; update3D(); draw2D(); } }); 
+        editRotX.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.rotationX = parseInt(e.target.value); document.getElementById('valRotX').innerText = selectedItem.rotationX; update3D(); } }); 
+        editRotZ.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.rotationZ = parseInt(e.target.value); document.getElementById('valRotZ').innerText = selectedItem.rotationZ; update3D(); } }); 
+        
+        editScaleU.addEventListener('input', (e) => { 
+            if (selectedItem && !selectedItem.isWall) { 
+                let val = parseFloat(e.target.value);
+                selectedItem.scaleX = val; selectedItem.scaleY = val; selectedItem.scaleZ = val; 
+                document.getElementById('valScaleU').innerText = val; 
+                document.getElementById('editScaleX').value = val; document.getElementById('valScaleX').innerText = val;
+                document.getElementById('editScaleY').value = val; document.getElementById('valScaleY').innerText = val;
+                document.getElementById('editScaleZ').value = val; document.getElementById('valScaleZ').innerText = val;
+                update3D(); draw2D(); 
+            } 
         });
 
-        editPos.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.ratio = parseFloat(e.target.value) / 100; document.getElementById('valPos').innerText = e.target.value; update3D(); draw2D(); } });
-        editPos.addEventListener('change', () => saveState());
-        editWidth.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.width3D = parseFloat(e.target.value); document.getElementById('valWidth').innerText = selectedItem.width3D; update3D(); draw2D(); } });
-        editWidth.addEventListener('change', () => saveState());
+        editScaleX.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.scaleX = parseFloat(e.target.value); document.getElementById('valScaleX').innerText = selectedItem.scaleX; update3D(); draw2D(); } }); 
+        editScaleY.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.scaleY = parseFloat(e.target.value); document.getElementById('valScaleY').innerText = selectedItem.scaleY; update3D(); draw2D(); } }); 
+        editScaleZ.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.scaleZ = parseFloat(e.target.value); document.getElementById('valScaleZ').innerText = selectedItem.scaleZ; update3D(); draw2D(); } }); 
         
-        editHeight.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.height3D = parseFloat(e.target.value); document.getElementById('valHeight').innerText = selectedItem.height3D; update3D(); draw2D(); } });
-        editHeight.addEventListener('change', () => saveState());
-        editElev.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.elevation = parseFloat(e.target.value); document.getElementById('valElev').innerText = selectedItem.elevation; update3D(); draw2D(); } });
-        editElev.addEventListener('change', () => saveState());
-        
-        editSwing.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'door') { selectedItem.swing = parseFloat(e.target.value); document.getElementById('valSwing').innerText = selectedItem.swing; update3D(); draw2D(); } });
-        editSwing.addEventListener('change', () => saveState());
-        editRot.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex === undefined && !selectedItem.isWall) { selectedItem.rotation = parseInt(e.target.value); document.getElementById('valRot').innerText = selectedItem.rotation; update3D(); draw2D(); } });
-        editRot.addEventListener('change', () => saveState());
-        editScale.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex === undefined && !selectedItem.isWall) { selectedItem.scaleVal = parseFloat(e.target.value); document.getElementById('valScale').innerText = selectedItem.scaleVal; update3D(); draw2D(); } });
-        editScale.addEventListener('change', () => saveState());
-        editSteps.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.steps = parseInt(e.target.value); document.getElementById('valSteps').innerText = selectedItem.steps; update3D(); draw2D(); } });
-        editSteps.addEventListener('change', () => saveState());
-        editStairW.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.width3D = parseFloat(e.target.value); document.getElementById('valStairW').innerText = selectedItem.width3D; update3D(); draw2D(); } });
-        editStairW.addEventListener('change', () => saveState());
+        editSteps.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.steps = parseInt(e.target.value); document.getElementById('valSteps').innerText = selectedItem.steps; update3D(); draw2D(); } }); 
+        editStairW.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.width3D = parseFloat(e.target.value); document.getElementById('valStairW').innerText = selectedItem.width3D; update3D(); draw2D(); } }); 
 
         document.getElementById('flipHingeBtn').addEventListener('click', () => { if (selectedItem && selectedItem.type === 'door') { saveState(); selectedItem.flipHinge = !selectedItem.flipHinge; update3D(); draw2D(); }});
         
+        document.getElementById('btnFlipX').addEventListener('click', () => { if (selectedItem && !selectedItem.isWall) { saveState(); selectedItem.flipX = !selectedItem.flipX; update3D(); draw2D(); }});
+        document.getElementById('btnFlipZ').addEventListener('click', () => { if (selectedItem && !selectedItem.isWall) { saveState(); selectedItem.flipZ = !selectedItem.flipZ; update3D(); draw2D(); }});
+
         document.getElementById('delObjBtn').addEventListener('click', () => { 
             if (selectedItem) { 
                 saveState(); 
-                if (selectedItem.isWall) {
-                    const idx = selectedItem.index; lines.splice(idx, 1);
-                    openings = openings.filter(o => o.lineIndex !== idx);
-                    openings.forEach(o => { if (o.lineIndex > idx) o.lineIndex--; });
-                }
+                if (selectedItem.isWall) { const idx = selectedItem.index; lines.splice(idx, 1); openings = openings.filter(o => o.lineIndex !== idx); openings.forEach(o => { if (o.lineIndex > idx) o.lineIndex--; }); }
                 else if (selectedItem.lineIndex !== undefined) { openings = openings.filter(o => o.id !== selectedItem.id); }
                 else { freeObjects = freeObjects.filter(o => o.id !== selectedItem.id); }
+                if(window.transformControl) transformControl.detach();
                 closeEditPanel(); update3D(); draw2D(); 
             }
         });
 
         function drawCanvasGrid() {
             if (isTracingMode) return; 
-            ctx.save(); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); 
-            ctx.strokeStyle = isSnappingEnabled ? '#d4d4d8' : '#f0f0f4'; ctx.lineWidth = 1;
-            const gridSize = 50; 
-            for (let x = 0; x <= canvas.width; x += gridSize) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
-            for (let y = 0; y <= canvas.height; y += gridSize) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
-            ctx.restore();
+            ctx.save(); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.strokeStyle = isSnappingEnabled ? '#d4d4d8' : '#f0f0f4'; ctx.lineWidth = 1; const gridSize = 50; 
+            for (let x = 0; x <= canvas.width; x += gridSize) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); } for (let y = 0; y <= canvas.height; y += gridSize) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); } ctx.restore();
         }
 
-        // === FUNGSI BANTUAN TAMPILAN UKURAN PANJANG ===
         function drawLineLengthLabel(p1, p2, text, color = '#2563eb') {
-            const dx = p2.x - p1.x;
-            const dy = p2.y - p1.y;
-            const midX = (p1.x + p2.x) / 2;
-            const midY = (p1.y + p2.y) / 2;
-            
-            let angle = Math.atan2(dy, dx);
-            if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
-
-            ctx.save();
-            ctx.translate(midX, midY);
-            ctx.rotate(angle);
-
-            const fontSize = Math.max(12, Math.min(20, 14 / scale));
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            
-            const textWidth = ctx.measureText(text).width;
-            const padding = 4;
-
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.roundRect(-textWidth / 2 - padding, -fontSize / 2 - padding - 15, textWidth + padding * 2, fontSize + padding * 2, 4);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = color;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, 0, -15);
-
-            ctx.restore();
+            const dx = p2.x - p1.x; const dy = p2.y - p1.y; const midX = (p1.x + p2.x) / 2; const midY = (p1.y + p2.y) / 2; let angle = Math.atan2(dy, dx); if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
+            ctx.save(); ctx.translate(midX, midY); ctx.rotate(angle); const fontSize = Math.max(12, Math.min(20, 14 / scale)); ctx.font = `bold ${fontSize}px sans-serif`; const textWidth = ctx.measureText(text).width; const padding = 4;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'; ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(-textWidth / 2 - padding, -fontSize / 2 - padding - 15, textWidth + padding * 2, fontSize + padding * 2, 4); ctx.fill(); ctx.stroke(); ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 0, -15); ctx.restore();
         }
 
-        // === 2D RENDER ===
         function draw2D() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); 
-            ctx.lineCap = 'round';
-            drawCanvasGrid();
-            
+            ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.lineCap = 'round'; drawCanvasGrid();
             const globalThick2D = parseFloat(inputWallT.value) / scale3D; ctx.lineWidth = Math.max(2, globalThick2D); 
-            
             lines.forEach((l, idx) => { 
                 ctx.beginPath(); ctx.moveTo(l.start.x, l.start.y); ctx.lineTo(l.end.x, l.end.y); 
-                if (selectedItem && selectedItem.isWall && selectedItem.index === idx) {
-                    ctx.strokeStyle = '#2563eb'; ctx.shadowColor = '#2563eb'; ctx.shadowBlur = 15;
-                } else {
-                    ctx.strokeStyle = 'rgba(37, 99, 235, 0.45)'; ctx.shadowBlur = 0;
-                }
-                ctx.stroke(); 
-
-                const dx = l.end.x - l.start.x;
-                const dy = l.end.y - l.start.y;
-                const distMeters = (Math.hypot(dx, dy) * scale3D).toFixed(2);
-                drawLineLengthLabel(l.start, l.end, `${distMeters} m`, selectedItem && selectedItem.isWall && selectedItem.index === idx ? '#2563eb' : '#475569');
+                if (selectedItem && selectedItem.isWall && selectedItem.index === idx) { ctx.strokeStyle = '#2563eb'; ctx.shadowColor = '#2563eb'; ctx.shadowBlur = 15; } else { ctx.strokeStyle = 'rgba(37, 99, 235, 0.45)'; ctx.shadowBlur = 0; }
+                ctx.stroke(); const dx = l.end.x - l.start.x; const dy = l.end.y - l.start.y; drawLineLengthLabel(l.start, l.end, `${(Math.hypot(dx, dy) * scale3D).toFixed(2)} m`, selectedItem && selectedItem.isWall && selectedItem.index === idx ? '#2563eb' : '#475569');
             });
             ctx.shadowBlur = 0; 
-
-            if (isDrawing && currentLine) { 
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)'; 
-                ctx.beginPath(); 
-                ctx.moveTo(currentLine.start.x, currentLine.start.y); 
-                ctx.lineTo(currentLine.end.x, currentLine.end.y); 
-                ctx.stroke(); 
-
-                const dx = currentLine.end.x - currentLine.start.x;
-                const dy = currentLine.end.y - currentLine.start.y;
-                const distMeters = (Math.hypot(dx, dy) * scale3D).toFixed(2);
-                drawLineLengthLabel(currentLine.start, currentLine.end, `${distMeters} m`, '#dc2626');
-            }
+            if (isDrawing && currentLine) { ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)'; ctx.beginPath(); ctx.moveTo(currentLine.start.x, currentLine.start.y); ctx.lineTo(currentLine.end.x, currentLine.end.y); ctx.stroke(); const dx = currentLine.end.x - currentLine.start.x; const dy = currentLine.end.y - currentLine.start.y; drawLineLengthLabel(currentLine.start, currentLine.end, `${(Math.hypot(dx, dy) * scale3D).toFixed(2)} m`, '#dc2626'); }
 
             openings.forEach(op => {
                 let l = lines[op.lineIndex]; if(!l) return;
-                
-                const dx = l.end.x - l.start.x; const dy = l.end.y - l.start.y;
-                const lineLen = Math.hypot(dx, dy);
-                
-                // LOGIKA CEGAH TEMBUS DI KANVAS 2D 
-                let opW = op.width3D / scale3D;
-                if (opW > lineLen) opW = lineLen;
-                
-                let opCenter = lineLen * op.ratio;
-                if (opCenter - opW/2 < 0) opCenter = opW/2;
-                if (opCenter + opW/2 > lineLen) opCenter = lineLen - opW/2;
-                
-                let safeRatio = opCenter / lineLen;
-                
-                const angle = Math.atan2(dy, dx); 
-                const cx = l.start.x + dx * safeRatio; 
-                const cy = l.start.y + dy * safeRatio; 
-                
+                const dx = l.end.x - l.start.x; const dy = l.end.y - l.start.y; const lineLen = Math.hypot(dx, dy); let opW = op.width3D / scale3D; if (opW > lineLen) opW = lineLen;
+                let opCenter = lineLen * op.ratio; if (opCenter - opW/2 < 0) opCenter = opW/2; if (opCenter + opW/2 > lineLen) opCenter = lineLen - opW/2; let safeRatio = opCenter / lineLen;
+                const angle = Math.atan2(dy, dx); const cx = l.start.x + dx * safeRatio; const cy = l.start.y + dy * safeRatio; 
                 ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle); if (op.flipHinge) { ctx.scale(-1, 1); }
                 if (op === selectedItem) { ctx.shadowColor = '#2563eb'; ctx.shadowBlur = 15; ctx.fillStyle = 'rgba(37, 99, 235, 0.4)'; ctx.fillRect(-opW/2, -ctx.lineWidth, opW, ctx.lineWidth*2); }
                 
                 if (op.type === 'door') { 
-                    ctx.clearRect(-opW/2, -ctx.lineWidth, opW, ctx.lineWidth * 2); 
-                    ctx.lineWidth = Math.max(2, canvas.width * 0.002); 
-                    
-                    if (op.variant === 1) { // Double
-                        let swingDir = op.swing >= 0 ? -1 : 1;
-                        ctx.beginPath(); ctx.moveTo(-opW/2, 0); ctx.lineTo(-opW/2, (opW/2) * swingDir); 
-                        ctx.moveTo(opW/2, 0); ctx.lineTo(opW/2, (opW/2) * swingDir);
-                        ctx.strokeStyle = '#8B4513'; ctx.stroke(); 
-                        
-                        ctx.beginPath(); ctx.arc(-opW/2, 0, opW/2, swingDir < 0 ? -Math.PI/2 : 0, swingDir < 0 ? 0 : Math.PI/2);
-                        ctx.stroke();
-                        ctx.beginPath(); ctx.arc(opW/2, 0, opW/2, swingDir < 0 ? Math.PI : Math.PI/2, swingDir < 0 ? Math.PI/2 : Math.PI, true);
-                        ctx.strokeStyle = 'rgba(139, 69, 19, 0.6)'; ctx.stroke();
-                    } 
-                    else if (op.variant === 2) { // Sliding
-                        ctx.beginPath();
-                        ctx.moveTo(-opW/2, -ctx.lineWidth/2); ctx.lineTo(0, -ctx.lineWidth/2);
-                        ctx.moveTo(0, ctx.lineWidth/2); ctx.lineTo(opW/2, ctx.lineWidth/2);
-                        ctx.strokeStyle = '#8B4513'; ctx.stroke(); 
-                    } 
-                    else { // Single
-                        let swingDir = op.swing >= 0 ? -1 : 1; 
-                        ctx.beginPath(); ctx.moveTo(-opW/2, 0); ctx.lineTo(-opW/2, opW * swingDir); ctx.strokeStyle = '#8B4513'; ctx.stroke(); 
-                        ctx.beginPath(); ctx.arc(-opW/2, 0, opW, swingDir < 0 ? -Math.PI/2 : 0, swingDir < 0 ? 0 : Math.PI/2); ctx.strokeStyle = 'rgba(139, 69, 19, 0.6)'; ctx.stroke();
-                    }
-                } 
-                else { // Window
-                    ctx.fillStyle = 'rgba(14, 165, 233, 0.8)'; const th = ctx.lineWidth * 1.5; 
-                    ctx.fillRect(-opW/2, -th/2, opW, th); ctx.strokeStyle = '#333'; ctx.lineWidth = 1; 
-                    ctx.strokeRect(-opW/2, -th/2, opW, th);
-                    
-                    if (op.variant === 2 || op.variant === 3) { 
-                        ctx.beginPath();
-                        const numV = Math.max(1, Math.floor(opW*scale3D / 0.6));
-                        const spaceV = opW / (numV + 1);
-                        for(let i = 1; i <= numV; i++) {
-                            const xOff = -opW/2 + (i * spaceV);
-                            ctx.moveTo(xOff, -th/2); ctx.lineTo(xOff, th/2);
-                        }
-                        ctx.moveTo(-opW/2, 0); ctx.lineTo(opW/2, 0);
-                        ctx.stroke();
-                    }
-                }
-                ctx.restore();
+                    ctx.clearRect(-opW/2, -ctx.lineWidth, opW, ctx.lineWidth * 2); ctx.lineWidth = Math.max(2, canvas.width * 0.002); 
+                    if (op.variant === 1) { let swingDir = op.swing >= 0 ? -1 : 1; ctx.beginPath(); ctx.moveTo(-opW/2, 0); ctx.lineTo(-opW/2, (opW/2) * swingDir); ctx.moveTo(opW/2, 0); ctx.lineTo(opW/2, (opW/2) * swingDir); ctx.strokeStyle = '#8B4513'; ctx.stroke(); ctx.beginPath(); ctx.arc(-opW/2, 0, opW/2, swingDir < 0 ? -Math.PI/2 : 0, swingDir < 0 ? 0 : Math.PI/2); ctx.stroke(); ctx.beginPath(); ctx.arc(opW/2, 0, opW/2, swingDir < 0 ? Math.PI : Math.PI/2, swingDir < 0 ? Math.PI/2 : Math.PI, true); ctx.strokeStyle = 'rgba(139, 69, 19, 0.6)'; ctx.stroke(); } 
+                    else if (op.variant === 2) { ctx.beginPath(); ctx.moveTo(-opW/2, -ctx.lineWidth/2); ctx.lineTo(0, -ctx.lineWidth/2); ctx.moveTo(0, ctx.lineWidth/2); ctx.lineTo(opW/2, ctx.lineWidth/2); ctx.strokeStyle = '#8B4513'; ctx.stroke(); } 
+                    else { let swingDir = op.swing >= 0 ? -1 : 1; ctx.beginPath(); ctx.moveTo(-opW/2, 0); ctx.lineTo(-opW/2, opW * swingDir); ctx.strokeStyle = '#8B4513'; ctx.stroke(); ctx.beginPath(); ctx.arc(-opW/2, 0, opW, swingDir < 0 ? -Math.PI/2 : 0, swingDir < 0 ? 0 : Math.PI/2); ctx.strokeStyle = 'rgba(139, 69, 19, 0.6)'; ctx.stroke(); }
+                } else { 
+                    ctx.fillStyle = 'rgba(14, 165, 233, 0.8)'; const th = ctx.lineWidth * 1.5; ctx.fillRect(-opW/2, -th/2, opW, th); ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.strokeRect(-opW/2, -th/2, opW, th);
+                    if (op.variant === 2 || op.variant === 3) { ctx.beginPath(); const numV = Math.max(1, Math.floor(opW*scale3D / 0.6)); const spaceV = opW / (numV + 1); for(let i = 1; i <= numV; i++) { const xOff = -opW/2 + (i * spaceV); ctx.moveTo(xOff, -th/2); ctx.lineTo(xOff, th/2); } ctx.moveTo(-opW/2, 0); ctx.lineTo(opW/2, 0); ctx.stroke(); }
+                } ctx.restore();
             });
 
             freeObjects.forEach(obj => {
-                ctx.save(); ctx.translate(obj.x, obj.y); ctx.rotate((obj.rotation || 0) * Math.PI / 180); const s = obj.scaleVal || 1.0;
+                ctx.save(); ctx.translate(obj.x, obj.y); ctx.rotate((obj.rotationY !== undefined ? obj.rotationY : (obj.rotation || 0)) * Math.PI / 180); 
+                const sX = obj.scaleX !== undefined ? obj.scaleX : (obj.scaleVal || 1.0);
+                const sZ = obj.scaleZ !== undefined ? obj.scaleZ : (obj.scaleVal || 1.0);
+                
+                ctx.scale(obj.flipX ? -1 : 1, obj.flipZ ? -1 : 1);
+
                 if (obj === selectedItem) { ctx.shadowColor = '#2563eb'; ctx.shadowBlur = 15; }
                 if (obj.type === 'stairs') { 
-                    const w = ((obj.width3D || 1.0) / scale3D) * s; const h = (1.5 / scale3D) * s; 
-                    ctx.fillStyle = 'rgba(212, 212, 216, 0.8)'; ctx.fillRect(-w/2, -h/2, w, h); 
-                    ctx.strokeStyle = '#3f3f46'; ctx.lineWidth = 1.5; ctx.strokeRect(-w/2, -h/2, w, h); 
+                    const w = ((obj.width3D || 1.0) / scale3D) * sX; const h = (1.5 / scale3D) * sZ; 
+                    ctx.fillStyle = 'rgba(212, 212, 216, 0.8)'; ctx.fillRect(-w/2, -h/2, w, h); ctx.strokeStyle = '#3f3f46'; ctx.lineWidth = 1.5; ctx.strokeRect(-w/2, -h/2, w, h); 
                     const steps = obj.steps || 14; for(let i=1; i<steps; i++) { let yStep = -h/2 + (h/steps)*i; ctx.beginPath(); ctx.moveTo(-w/2, yStep); ctx.lineTo(w/2, yStep); ctx.stroke(); } 
-                } 
-                else { 
-                    const size = (30 / scale) * s; 
-                    let color = '#06b6d4'; // default
+                } else { 
+                    const sizeX = (30 / scale) * sX; const sizeZ = (30 / scale) * sZ;
+                    let color = '#06b6d4';
                     if (['bed','sofa','table','chair','tv','buffet','wardrobe'].includes(obj.type)) color = '#f59e0b';
                     else if (['kitchen_set','stove','fridge'].includes(obj.type)) color = '#ec4899';
                     else if (['standing_lamp'].includes(obj.type)) color = '#eab308';
                     else if (['plant','tree'].includes(obj.type)) color = '#22c55e';
                     else if (['carpet','curtain'].includes(obj.type)) color = '#a855f7';
-                    
-                    ctx.fillStyle = color; 
-                    ctx.strokeStyle = '#27272a'; ctx.lineWidth = 1; 
+                    else if (obj.type === 'custom_glb') color = '#8b5cf6';
+                    else if (obj.type === 'custom_obj') color = '#f59e0b';
+                    ctx.fillStyle = color; ctx.strokeStyle = '#27272a'; ctx.lineWidth = 1; 
 
-                    // Special shapes for 2D variants
-                    if ((obj.type === 'table' || obj.type === 'carpet') && obj.variant === 1) {
-                        ctx.beginPath(); ctx.arc(0, 0, size/2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                    } else if (obj.type === 'curtain') {
-                        ctx.fillRect(-size, -size/4, size*2, size/2); ctx.strokeRect(-size, -size/4, size*2, size/2);
-                    } else {
-                        ctx.fillRect(-size/2, -size/2, size, size); ctx.strokeRect(-size/2, -size/2, size, size); 
-                    }
+                    if ((obj.type === 'table' || obj.type === 'carpet') && obj.variant === 1) { ctx.beginPath(); ctx.ellipse(0, 0, sizeX/2, sizeZ/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); } 
+                    else if (obj.type === 'curtain') { ctx.fillRect(-sizeX, -sizeZ/4, sizeX*2, sizeZ/2); ctx.strokeRect(-sizeX, -sizeZ/4, sizeX*2, sizeZ/2); } 
+                    else { ctx.fillRect(-sizeX/2, -sizeZ/2, sizeX, sizeZ); ctx.strokeRect(-sizeX/2, -sizeZ/2, sizeX, sizeZ); }
                     
-                    ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(10, size*0.35)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
-                    const labels = { bed:'BED', sofa:'SOFA', table:'TBL', chair:'CHR', tv:'TV', buffet:'BUF', wardrobe:'WRD', kitchen_set:'KIT', stove:'STV', fridge:'FRG', toilet:'WC', shower:'SHW', bathtub:'BAT', standing_lamp:'LMP', carpet:'CRP', curtain:'CUR', plant:'PLT', tree:'TRE' }; 
-                    ctx.fillText(labels[obj.type] || 'OBJ', 0, 0); 
-                }
-                ctx.restore();
-            });
-            
-            // Panggil trigger autosave setiap kali kanvas diupdate
-            triggerAutosave();
+                    ctx.scale(obj.flipX ? -1 : 1, obj.flipZ ? -1 : 1);
+                    ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(10, Math.min(sizeX,sizeZ)*0.35)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
+                    const labels = { bed:'BED', sofa:'SOFA', table:'TBL', chair:'CHR', tv:'TV', buffet:'BUF', wardrobe:'WRD', kitchen_set:'KIT', stove:'STV', fridge:'FRG', toilet:'WC', shower:'SHW', bathtub:'BAT', standing_lamp:'LMP', carpet:'CRP', curtain:'CUR', plant:'PLT', tree:'TRE', custom_glb:'GLB', custom_obj:'OBJ' }; ctx.fillText(labels[obj.type] || 'OBJ', 0, 0); 
+                } ctx.restore();
+            }); triggerAutosave();
         }
 
-        // === SMART TRACING ===
         document.getElementById('upload').addEventListener('change', (e) => {
             const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
             reader.onload = (event) => {
                 imgElement.src = event.target.result; imgElement.style.display = "block";
                 imgElement.onload = () => {
-                    canvas.width = imgElement.width; canvas.height = imgElement.height; 
-                    isTracingMode = true; workspace.style.backgroundColor = "transparent"; workspace.style.boxShadow = "none";
+                    canvas.width = imgElement.width; canvas.height = imgElement.height; isTracingMode = true; workspace.style.backgroundColor = "transparent"; workspace.style.boxShadow = "none";
                     const panelWidth = workspaceContainer.clientWidth; const panelHeight = workspaceContainer.clientHeight;
-                    scale = Math.min(panelWidth / imgElement.width, panelHeight / imgElement.height) * 0.9;
-                    panX = (panelWidth - (imgElement.width * scale)) / 2; panY = (panelHeight - (imgElement.height * scale)) / 2; applyTransform(); 
-                    scale3D = 20 / Math.max(canvas.width, canvas.height); 
-                    lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); draw2D(); update3D();
+                    scale = Math.min(panelWidth / imgElement.width, panelHeight / imgElement.height) * 0.9; panX = (panelWidth - (imgElement.width * scale)) / 2; panY = (panelHeight - (imgElement.height * scale)) / 2; applyTransform(); 
+                    scale3D = 20 / Math.max(canvas.width, canvas.height); lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); draw2D(); update3D();
                 }
             }; reader.readAsDataURL(file);
         });
         
         document.getElementById('clearBtn').onclick = () => { 
-            // Tambah konfirmasi agar tidak langsung hapus
-            if (confirm(currentLang === 'id' ? "Yakin ingin menghapus semua denah dan reset dari awal?" : "Are you sure you want to clear all floorplan and reset?")) {
-                initDefaultCanvas(); lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); update3D(); draw2D(); 
-                localStorage.removeItem('floorplan_autosave');
-            }
+            if (confirm(currentLang === 'id' ? "Yakin ingin menghapus semua denah dan reset dari awal?" : "Are you sure you want to clear all floorplan and reset?")) { initDefaultCanvas(); lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); update3D(); draw2D(); localStorage.removeItem('floorplan_autosave'); }
         };
 
-        // === 3D ENGINE ===
+        function normalizeModel(model) {
+            const wrapper = new THREE.Group(); const box = new THREE.Box3().setFromObject(model); const center = box.getCenter(new THREE.Vector3()); const size = box.getSize(new THREE.Vector3());
+            model.position.set(-center.x, -box.min.y, -center.z); wrapper.add(model);
+            const maxDim = Math.max(size.x, size.y, size.z); if (maxDim > 5.0) { const scaleFactor = 3.0 / maxDim; wrapper.scale.set(scaleFactor, scaleFactor, scaleFactor); } return wrapper;
+        }
+
+        function addCustomModelToScene(type, modelId) {
+            saveState(); 
+            // Upload baru langsung di tengah layar (Viewport Center)
+            const wsRect = document.getElementById('workspace-container').getBoundingClientRect();
+            let { x, y } = getTrueCoords(wsRect.left + (wsRect.width / 2), wsRect.top + (wsRect.height / 2));
+            
+            freeObjects.push({ id: Date.now(), type: type, modelId: modelId, x: x, y: y, rotationX: 0, rotationY: 0, rotationZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0, flipX: false, flipZ: false });
+            setMode('select', document.getElementById('modeSelect')); update3D(); draw2D();
+        }
+
+        document.getElementById('upload3DModel').addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return; 
+            const filename = file.name.toLowerCase();
+            const url = URL.createObjectURL(file);
+            
+            if (filename.endsWith('.glb') || filename.endsWith('.gltf')) {
+                gltfLoader.load(url, (gltf) => { 
+                    const modelId = 'glb_' + Date.now(); customModels[modelId] = normalizeModel(gltf.scene); 
+                    addCustomModelToScene('custom_glb', modelId); URL.revokeObjectURL(url); e.target.value = ""; 
+                }, undefined, (error) => { alert(currentLang === 'id' ? "Gagal memuat model GLB!" : "Failed to load GLB model!"); });
+            } 
+            else if (filename.endsWith('.obj')) {
+                objLoader.load(url, (obj) => { 
+                    const modelId = 'obj_' + Date.now(); 
+                    obj.traverse(function (child) { if (child.isMesh) child.material = new THREE.MeshLambertMaterial({ color: 0xcccccc }); }); 
+                    customModels[modelId] = normalizeModel(obj); 
+                    addCustomModelToScene('custom_obj', modelId); URL.revokeObjectURL(url); e.target.value = ""; 
+                }, undefined, (error) => { alert(currentLang === 'id' ? "Gagal memuat model OBJ!" : "Failed to load OBJ model!"); });
+            }
+            else {
+                alert(currentLang === 'id' ? "Format file tidak didukung! Gunakan .glb, .gltf, atau .obj" : "Unsupported format! Use .glb, .gltf, or .obj");
+                e.target.value = "";
+            }
+        });
+
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, renderContainer.clientWidth / renderContainer.clientHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(renderContainer.clientWidth, renderContainer.clientHeight); renderer.setClearColor(0x27272a); renderContainer.appendChild(renderer.domElement);
@@ -1281,14 +867,34 @@
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.6); dirLight.position.set(20, 40, 20); scene.add(dirLight); scene.add(new THREE.GridHelper(50, 50, 0x555555, 0x333333));
         const modelGroup = new THREE.Group(); scene.add(modelGroup); camera.position.set(0, 15, 20); 
 
-        function resizeViewports() {
-            const renderRect = renderContainer.getBoundingClientRect();
-            if (renderRect.width > 0 && renderRect.height > 0) { camera.aspect = renderRect.width / renderRect.height; camera.updateProjectionMatrix(); renderer.setSize(renderRect.width, renderRect.height); }
-        }
-        window.addEventListener('resize', resizeViewports);
-        const resizeObserver = new ResizeObserver(() => resizeViewports());
-        resizeObserver.observe(renderContainer); resizeObserver.observe(workspaceContainer);
-        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); } animate();
+        // --- SISTEM HIGHLIGHT BOX ---
+        const selectionBox = new THREE.BoxHelper(undefined, 0x3b82f6); 
+        selectionBox.visible = false;
+        scene.add(selectionBox);
+
+        function resizeViewports() { const renderRect = renderContainer.getBoundingClientRect(); if (renderRect.width > 0 && renderRect.height > 0) { camera.aspect = renderRect.width / renderRect.height; camera.updateProjectionMatrix(); renderer.setSize(renderRect.width, renderRect.height); } }
+        window.addEventListener('resize', resizeViewports); const resizeObserver = new ResizeObserver(() => resizeViewports()); resizeObserver.observe(renderContainer); resizeObserver.observe(workspaceContainer);
+        
+        function animate() { 
+            requestAnimationFrame(animate); 
+            controls.update(); 
+            
+            // Kotak highlight akan menempel dan bergeser secara real-time
+            if (selectedItem && selectedItem.lineIndex === undefined && !selectedItem.isWall) {
+                const mesh = modelGroup.children.find(c => c.userData.id === selectedItem.id);
+                if (mesh) {
+                    selectionBox.setFromObject(mesh);
+                    selectionBox.visible = true;
+                } else {
+                    selectionBox.visible = false;
+                }
+            } else {
+                selectionBox.visible = false;
+            }
+            
+            renderer.render(scene, camera); 
+        } 
+        animate();
 
         function createStairsMesh(stepsCount, stairWidth, totalHeight) {
             const stairsGroup = new THREE.Group(); const matStairs = new THREE.MeshLambertMaterial({ color: 0xd2b48c }); const stepHeight = totalHeight / stepsCount; const stepDepth = 0.28;
@@ -1297,100 +903,21 @@
 
         function createFurnitureMesh(type, variant = 0) {
             const group = new THREE.Group(); 
-            const matWood = new THREE.MeshLambertMaterial({ color: 0x8b5a2b }); 
-            const matWoodDark = new THREE.MeshLambertMaterial({ color: 0x5c4033 });
-            const matFabric = new THREE.MeshLambertMaterial({ color: 0x34495e }); 
-            const matCarpet = new THREE.MeshLambertMaterial({ color: 0x9b59b6 }); 
-            const matCurtain = new THREE.MeshLambertMaterial({ color: 0xf5f5dc });
-            const matWhite = new THREE.MeshLambertMaterial({ color: 0xecf0f1 }); 
-            const matMetal = new THREE.MeshLambertMaterial({ color: 0x7f8c8d }); 
-            const matBlack = new THREE.MeshLambertMaterial({ color: 0x111111 }); 
-            const matGlass = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.4 });
-            const matGreen = new THREE.MeshLambertMaterial({ color: 0x2e8b57 });
+            const matWood = new THREE.MeshLambertMaterial({ color: 0x8b5a2b }); const matWoodDark = new THREE.MeshLambertMaterial({ color: 0x5c4033 }); const matFabric = new THREE.MeshLambertMaterial({ color: 0x34495e }); const matCarpet = new THREE.MeshLambertMaterial({ color: 0x9b59b6 }); const matCurtain = new THREE.MeshLambertMaterial({ color: 0xf5f5dc }); const matWhite = new THREE.MeshLambertMaterial({ color: 0xecf0f1 }); const matMetal = new THREE.MeshLambertMaterial({ color: 0x7f8c8d }); const matBlack = new THREE.MeshLambertMaterial({ color: 0x111111 }); const matGlass = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.4 }); const matGreen = new THREE.MeshLambertMaterial({ color: 0x2e8b57 });
 
             if (type === 'bed') { const frame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.3, 2.0), matWood); frame.position.y = 0.15; group.add(frame); const mattress = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.25, 1.9), matWhite); mattress.position.set(0, 0.4, 0); group.add(mattress); const pillow = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.4), matFabric); pillow.position.set(0, 0.55, -0.7); group.add(pillow); } 
-            
-            else if (type === 'sofa') { 
-                const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, 0.8), matFabric); base.position.y = 0.25; group.add(base); 
-                const back = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 0.2), matFabric); back.position.set(0, 0.6, -0.3); group.add(back); 
-                if (variant === 1) { // L-Shape
-                    const lBase = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 1.2), matFabric); lBase.position.set(-0.5, 0.25, 1.0); group.add(lBase);
-                }
-            } 
-            
-            else if (type === 'table') { 
-                if (variant === 1) { // Round
-                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.05, 32), matWood); top.position.y = 0.75; group.add(top);
-                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.72, 16), matWood); leg.position.y = 0.36; group.add(leg);
-                    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 32), matWood); foot.position.y = 0.025; group.add(foot);
-                } else { // Rectangular
-                    const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.8), matWood); top.position.y = 0.75; group.add(top); 
-                    for(let x of [-0.5, 0.5]) { for(let z of [-0.3, 0.3]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.72, 0.06), matWood); leg.position.set(x, 0.36, z); group.add(leg); } }
-                }
-            } 
-            
-            else if (type === 'chair') { 
-                if (variant === 1) { // Stool
-                    const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16), matWood); seat.position.y = 0.75; group.add(seat);
-                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.7, 8), matMetal); leg.position.y = 0.35; group.add(leg);
-                } else if (variant === 2) { // Armchair
-                    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.6), matFabric); seat.position.y = 0.3; group.add(seat);
-                    const back = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.15), matFabric); back.position.set(0, 0.65, -0.225); group.add(back);
-                    for(let x of [-0.25, 0.25]){ const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.6), matFabric); arm.position.set(x, 0.5, 0); group.add(arm); }
-                } else { // Standard
-                    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.04, 0.45), matWood); seat.position.y = 0.45; group.add(seat); 
-                    const back = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.04), matWood); back.position.set(0, 0.68, -0.2); group.add(back); 
-                }
-            } 
-
-            else if (type === 'carpet') {
-                if (variant === 1) { // Round
-                    const carpet = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.02, 32), matCarpet); carpet.position.y = 0.01; group.add(carpet);
-                } else { // Rect
-                    const carpet = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.02, 1.5), matCarpet); carpet.position.y = 0.01; group.add(carpet);
-                }
-            }
-
-            else if (type === 'curtain') {
-                const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.2, 8), matMetal); rail.rotation.z = Math.PI/2; rail.position.y = 2.4; group.add(rail);
-                if (variant === 1) { // Closed
-                    const fabric = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.3, 0.05), matCurtain); fabric.position.y = 1.25; group.add(fabric);
-                } else { // Open
-                    for (let x of [-0.8, 0.8]) { const fabric = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.3, 0.05), matCurtain); fabric.position.set(x, 1.25, 0); group.add(fabric); }
-                }
-            }
-
+            else if (type === 'sofa') { const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, 0.8), matFabric); base.position.y = 0.25; group.add(base); const back = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 0.2), matFabric); back.position.set(0, 0.6, -0.3); group.add(back); if (variant === 1) { const lBase = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 1.2), matFabric); lBase.position.set(-0.5, 0.25, 1.0); group.add(lBase); } } 
+            else if (type === 'table') { if (variant === 1) { const top = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.05, 32), matWood); top.position.y = 0.75; group.add(top); const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.72, 16), matWood); leg.position.y = 0.36; group.add(leg); const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 32), matWood); foot.position.y = 0.025; group.add(foot); } else { const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.8), matWood); top.position.y = 0.75; group.add(top); for(let x of [-0.5, 0.5]) { for(let z of [-0.3, 0.3]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.72, 0.06), matWood); leg.position.set(x, 0.36, z); group.add(leg); } } } } 
+            else if (type === 'chair') { if (variant === 1) { const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16), matWood); seat.position.y = 0.75; group.add(seat); const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.7, 8), matMetal); leg.position.y = 0.35; group.add(leg); } else if (variant === 2) { const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.6), matFabric); seat.position.y = 0.3; group.add(seat); const back = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.15), matFabric); back.position.set(0, 0.65, -0.225); group.add(back); for(let x of [-0.25, 0.25]){ const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.6), matFabric); arm.position.set(x, 0.5, 0); group.add(arm); } } else { const seat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.04, 0.45), matWood); seat.position.y = 0.45; group.add(seat); const back = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.04), matWood); back.position.set(0, 0.68, -0.2); group.add(back); } } 
+            else if (type === 'carpet') { if (variant === 1) { const carpet = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.02, 32), matCarpet); carpet.position.y = 0.01; group.add(carpet); } else { const carpet = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.02, 1.5), matCarpet); carpet.position.y = 0.01; group.add(carpet); } }
+            else if (type === 'curtain') { const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.2, 8), matMetal); rail.rotation.z = Math.PI/2; rail.position.y = 2.4; group.add(rail); if (variant === 1) { const fabric = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.3, 0.05), matCurtain); fabric.position.y = 1.25; group.add(fabric); } else { for (let x of [-0.8, 0.8]) { const fabric = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.3, 0.05), matCurtain); fabric.position.set(x, 1.25, 0); group.add(fabric); } } }
             else if (type === 'tv') { const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 0.2), matBlack); base.position.y = 0.02; group.add(base); const pole = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.05), matBlack); pole.position.y = 0.12; group.add(pole); const screen = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.05), matBlack); screen.position.set(0, 0.55, 0); group.add(screen); }
-            else if (type === 'buffet') { const body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 0.45), matWood); body.position.y = 0.35; group.add(body); }
-            else if (type === 'wardrobe') { const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.0, 0.6), matWood); body.position.y = 1.0; group.add(body); }
-            else if (type === 'kitchen_set') { const counter = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.85, 0.6), matWood); counter.position.y = 0.425; group.add(counter); const sink = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.4), matMetal); sink.position.set(-0.5, 0.86, 0); group.add(sink); } 
-            else if (type === 'stove') { const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.85, 0.6), matMetal); body.position.y = 0.425; group.add(body); const burner = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.04, 16), matBlack); burner.position.set(0, 0.87, 0); group.add(burner); } 
-            else if (type === 'fridge') { const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.7), matMetal); body.position.y = 0.9; group.add(body); const handle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.4, 0.04), matWhite); handle.position.set(0.35, 1.1, 0.37); group.add(handle); } 
-            else if (type === 'toilet') { const base = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.6), matWhite); base.position.y = 0.2; group.add(base); const tank = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.25), matWhite); tank.position.set(0, 0.65, -0.2); group.add(tank); } 
-            else if (type === 'shower') { const tray = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 1.0), matWhite); tray.position.y = 0.05; group.add(tray); const glass = new THREE.Mesh(new THREE.BoxGeometry(0.02, 2.0, 1.0), matGlass); glass.position.set(0.49, 1.0, 0); group.add(glass); const head = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 16), matMetal); head.position.set(0, 1.9, 0); group.add(head); } 
-            else if (type === 'bathtub') { const tub = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.55, 0.75), matWhite); tub.position.y = 0.275; group.add(tub); } 
+            else if (type === 'buffet') { const body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 0.45), matWood); body.position.y = 0.35; group.add(body); } else if (type === 'wardrobe') { const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.0, 0.6), matWood); body.position.y = 1.0; group.add(body); }
+            else if (type === 'kitchen_set') { const counter = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.85, 0.6), matWood); counter.position.y = 0.425; group.add(counter); const sink = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.4), matMetal); sink.position.set(-0.5, 0.86, 0); group.add(sink); } else if (type === 'stove') { const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.85, 0.6), matMetal); body.position.y = 0.425; group.add(body); const burner = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.04, 16), matBlack); burner.position.set(0, 0.87, 0); group.add(burner); } else if (type === 'fridge') { const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.7), matMetal); body.position.y = 0.9; group.add(body); const handle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.4, 0.04), matWhite); handle.position.set(0.35, 1.1, 0.37); group.add(handle); } 
+            else if (type === 'toilet') { const base = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.6), matWhite); base.position.y = 0.2; group.add(base); const tank = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.25), matWhite); tank.position.set(0, 0.65, -0.2); group.add(tank); } else if (type === 'shower') { const tray = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 1.0), matWhite); tray.position.y = 0.05; group.add(tray); const glass = new THREE.Mesh(new THREE.BoxGeometry(0.02, 2.0, 1.0), matGlass); glass.position.set(0.49, 1.0, 0); group.add(glass); const head = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 16), matMetal); head.position.set(0, 1.9, 0); group.add(head); } else if (type === 'bathtub') { const tub = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.55, 0.75), matWhite); tub.position.y = 0.275; group.add(tub); } 
             else if (type === 'standing_lamp') { const base = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.05, 16), matMetal); base.position.y = 0.025; group.add(base); const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8), matMetal); pole.position.y = 0.8; group.add(pole); const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 0.3, 16), matWhite); shade.position.y = 1.6; group.add(shade); }
-            
-            else if (type === 'plant') { 
-                const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.1, 0.3, 16), matWhite); pot.position.y = 0.15; group.add(pot); 
-                if (variant === 1) { // Cactus
-                    const cactus = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 8), matGreen); cactus.position.y = 0.55; group.add(cactus);
-                    const arm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 8), matGreen); arm1.rotation.z = Math.PI/4; arm1.position.set(0.1, 0.5, 0); group.add(arm1);
-                } else { // Standard
-                    const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), matGreen); leaves.position.y = 0.5; group.add(leaves); 
-                }
-            }
-            
-            else if (type === 'tree') { 
-                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 1.0, 8), matWoodDark); trunk.position.y = 0.5; group.add(trunk); 
-                if (variant === 1) { // Pine
-                    const leaves1 = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.2, 16), matGreen); leaves1.position.y = 1.2; group.add(leaves1);
-                    const leaves2 = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.0, 16), matGreen); leaves2.position.y = 1.8; group.add(leaves2);
-                } else { // Leafy
-                    const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), matGreen); leaves.position.y = 1.2; group.add(leaves); 
-                }
-            }
-            
+            else if (type === 'plant') { const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.1, 0.3, 16), matWhite); pot.position.y = 0.15; group.add(pot); if (variant === 1) { const cactus = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 8), matGreen); cactus.position.y = 0.55; group.add(cactus); const arm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 8), matGreen); arm1.rotation.z = Math.PI/4; arm1.position.set(0.1, 0.5, 0); group.add(arm1); } else { const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), matGreen); leaves.position.y = 0.5; group.add(leaves); } }
+            else if (type === 'tree') { const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 1.0, 8), matWoodDark); trunk.position.y = 0.5; group.add(trunk); if (variant === 1) { const leaves1 = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.2, 16), matGreen); leaves1.position.y = 1.2; group.add(leaves1); const leaves2 = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.0, 16), matGreen); leaves2.position.y = 1.8; group.add(leaves2); } else { const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), matGreen); leaves.position.y = 1.2; group.add(leaves); } }
             return group;
         }
 
@@ -1399,23 +926,14 @@
             const heightWall = parseFloat(inputWallH.value); const thickWall = parseFloat(inputWallT.value); let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
             lines.forEach(l => { minX = Math.min(minX, l.start.x, l.end.x); maxX = Math.max(maxX, l.start.x, l.end.x); minY = Math.min(minY, l.start.y, l.end.y); maxY = Math.max(maxY, l.start.y, l.end.y); });
             freeObjects.forEach(o => { minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x); minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y); });
-            const center2DX = (minX === Infinity) ? 0 : (minX + maxX) / 2; const center2DY = (minY === Infinity) ? 0 : (minY + maxY) / 2;
+            
+            center2DX = (minX === Infinity) ? 0 : (minX + maxX) / 2; center2DY = (minY === Infinity) ? 0 : (minY + maxY) / 2;
             const matWall = new THREE.MeshLambertMaterial({ color: 0xefefef }); const matDoor = new THREE.MeshLambertMaterial({ color: 0x5c4033 }); const matWindow = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.5 }); const matFrame = new THREE.MeshLambertMaterial({ color: 0x3f3f46 }); const matFloor = new THREE.MeshLambertMaterial({ color: 0xd4d4d8, side: THREE.DoubleSide }); const matRoof = new THREE.MeshLambertMaterial({ color: 0xe4e4e7, side: THREE.DoubleSide });
+            
             if (minX !== Infinity) { 
-                const floorW = (maxX - minX) * scale3D + 1.0; 
-                const floorH = (maxY - minY) * scale3D + 1.0; 
-                
-                const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matFloor); 
-                floorMesh.rotation.x = -Math.PI / 2; 
-                floorMesh.position.set(0, 0.001, 0); 
-                modelGroup.add(floorMesh); 
-                
-                if (document.getElementById('chkShowRoof').checked) {
-                    const roofMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matRoof);
-                    roofMesh.rotation.x = -Math.PI / 2;
-                    roofMesh.position.set(0, heightWall, 0);
-                    modelGroup.add(roofMesh);
-                }
+                const floorW = (maxX - minX) * scale3D + 1.0; const floorH = (maxY - minY) * scale3D + 1.0; 
+                const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matFloor); floorMesh.rotation.x = -Math.PI / 2; floorMesh.position.set(0, 0.001, 0); modelGroup.add(floorMesh); 
+                if (document.getElementById('chkShowRoof').checked) { const roofMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matRoof); roofMesh.rotation.x = -Math.PI / 2; roofMesh.position.set(0, heightWall, 0); modelGroup.add(roofMesh); }
             }
 
             lines.forEach((line, index) => {
@@ -1424,57 +942,26 @@
                 let ops = openings.filter(o => o.lineIndex === index).sort((a,b) => a.ratio - b.ratio);
                 
                 ops.forEach(op => {
-                    let opW = op.width3D;
-                    if (opW > length) opW = length; // cegah lebar lebih dari tembok
-                    
-                    let opCenter = length * op.ratio;
-                    if (opCenter - opW/2 < 0) opCenter = opW/2; // cegah tembus kiri
-                    if (opCenter + opW/2 > length) opCenter = length - opW/2; // cegah tembus kanan
-                    
-                    const opStart = opCenter - opW/2; 
-                    const opEnd = opCenter + opW/2; 
-                    const hole = new THREE.Path();
-                    
+                    let opW = op.width3D; if (opW > length) opW = length;
+                    let opCenter = length * op.ratio; if (opCenter - opW/2 < 0) opCenter = opW/2; if (opCenter + opW/2 > length) opCenter = length - opW/2;
+                    const opStart = opCenter - opW/2; const opEnd = opCenter + opW/2; const hole = new THREE.Path();
                     let e = op.elevation; let h = op.height3D;
-                    
-                    if (op.type === 'window' && op.variant === 1) { // Kaca Full
-                        e = 0.1; h = heightWall - 0.2;
-                    }
+                    if (op.type === 'window' && op.variant === 1) { e = 0.1; h = heightWall - 0.2; }
+                    if (e < 0) e = 0; if (e > heightWall - 0.1) e = heightWall - 0.1; if (e + h > heightWall) h = heightWall - e;
 
-                    // CEGAH TEMBUS ATAS/BAWAH
-                    if (e < 0) e = 0;
-                    if (e > heightWall - 0.1) e = heightWall - 0.1; 
-                    if (e + h > heightWall) h = heightWall - e;
-
-                    // MEMBUAT LUBANG DI TEMBOK
-                    if (op.type === 'window' && op.variant === 3) { // Jendela Melengkung Atas
-                        let archR = opW / 2;
-                        let straightH = h - archR;
-                        if(straightH < 0) { straightH = 0; archR = h; } 
-                        
-                        hole.moveTo(opStart, e);
-                        hole.lineTo(opEnd, e);
-                        hole.lineTo(opEnd, e + straightH);
-                        if(straightH > 0) hole.absarc(opCenter, e + straightH, archR, 0, Math.PI, false);
-                        hole.lineTo(opStart, e);
-                    } else {
-                        hole.moveTo(opStart, e); hole.lineTo(opEnd, e); hole.lineTo(opEnd, e + h); hole.lineTo(opStart, e + h); hole.lineTo(opStart, e);
-                    }
+                    if (op.type === 'window' && op.variant === 3) {
+                        let archR = opW / 2; let straightH = h - archR; if(straightH < 0) { straightH = 0; archR = h; } 
+                        hole.moveTo(opStart, e); hole.lineTo(opEnd, e); hole.lineTo(opEnd, e + straightH); if(straightH > 0) hole.absarc(opCenter, e + straightH, archR, 0, Math.PI, false); hole.lineTo(opStart, e);
+                    } else { hole.moveTo(opStart, e); hole.lineTo(opEnd, e); hole.lineTo(opEnd, e + h); hole.lineTo(opStart, e + h); hole.lineTo(opStart, e); }
                     
                     if (op.type === 'door') { 
-                        if (op.variant === 1) { // Double Door
-                            const lW = opW / 2;
-                            const geom1 = new THREE.BoxGeometry(lW, h, 0.04); geom1.translate(lW/2, h/2, 0);
-                            const door1 = new THREE.Mesh(geom1, matDoor); door1.position.set(opStart - length/2, e, 0); door1.rotation.y = THREE.MathUtils.degToRad(op.swing);
-                            const geom2 = new THREE.BoxGeometry(lW, h, 0.04); geom2.translate(-lW/2, h/2, 0);
-                            const door2 = new THREE.Mesh(geom2, matDoor); door2.position.set(opEnd - length/2, e, 0); door2.rotation.y = THREE.MathUtils.degToRad(-op.swing);
+                        if (op.variant === 1) { 
+                            const lW = opW / 2; const geom1 = new THREE.BoxGeometry(lW, h, 0.04); geom1.translate(lW/2, h/2, 0); const door1 = new THREE.Mesh(geom1, matDoor); door1.position.set(opStart - length/2, e, 0); door1.rotation.y = THREE.MathUtils.degToRad(op.swing);
+                            const geom2 = new THREE.BoxGeometry(lW, h, 0.04); geom2.translate(-lW/2, h/2, 0); const door2 = new THREE.Mesh(geom2, matDoor); door2.position.set(opEnd - length/2, e, 0); door2.rotation.y = THREE.MathUtils.degToRad(-op.swing);
                             wallObj.add(door1); wallObj.add(door2);
-                        } else if (op.variant === 2) { // Sliding Door
-                            const geom1 = new THREE.BoxGeometry(opW/2, h, 0.04); geom1.translate(0, h/2, 0);
-                            const door1 = new THREE.Mesh(geom1, matDoor); door1.position.set(opCenter - length/2 - opW/4, e, -0.025); 
-                            const door2 = new THREE.Mesh(geom1, matDoor); door2.position.set(opCenter - length/2 + opW/4, e, 0.025); 
-                            wallObj.add(door1); wallObj.add(door2);
-                        } else { // Single Door
+                        } else if (op.variant === 2) { 
+                            const geom1 = new THREE.BoxGeometry(opW/2, h, 0.04); geom1.translate(0, h/2, 0); const door1 = new THREE.Mesh(geom1, matDoor); door1.position.set(opCenter - length/2 - opW/4, e, -0.025); const door2 = new THREE.Mesh(geom1, matDoor); door2.position.set(opCenter - length/2 + opW/4, e, 0.025); wallObj.add(door1); wallObj.add(door2);
+                        } else { 
                             const leafGeom = new THREE.BoxGeometry(opW, h, 0.04); 
                             if (op.flipHinge) { leafGeom.translate(-opW/2, h/2, 0); const doorMesh = new THREE.Mesh(leafGeom, matDoor); doorMesh.position.set((opEnd) - length/2, e, 0); doorMesh.rotation.y = THREE.MathUtils.degToRad(-op.swing); wallObj.add(doorMesh); } 
                             else { leafGeom.translate(opW/2, h/2, 0); const doorMesh = new THREE.Mesh(leafGeom, matDoor); doorMesh.position.set((opStart) - length/2, e, 0); doorMesh.rotation.y = THREE.MathUtils.degToRad(op.swing); wallObj.add(doorMesh); } 
@@ -1482,96 +969,68 @@
                     } 
                     else if (op.type === 'window') { 
                         if (op.variant === 3) {
-                            // MESH KHUSUS JENDELA MELENGKUNG (Arched Window)
-                            let archR = opW / 2;
-                            let straightH = h - archR;
-                            if(straightH < 0) { straightH = 0; archR = h; } 
-                            
-                            // 1. Kaca Melengkung
-                            const winShape = new THREE.Shape();
-                            winShape.moveTo(-opW/2, -h/2);
-                            winShape.lineTo(opW/2, -h/2);
-                            winShape.lineTo(opW/2, -h/2 + straightH);
-                            if(straightH > 0) winShape.absarc(0, -h/2 + straightH, archR, 0, Math.PI, false);
-                            winShape.lineTo(-opW/2, -h/2);
-                            
-                            const winMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(winShape, { depth: 0.02, bevelEnabled: false }), matWindow);
-                            winMesh.position.set(opCenter - length/2, e + h/2, -0.01);
-                            wallObj.add(winMesh);
-
-                            // 2. Bingkai Keliling
-                            const frameThickness = thickWall + 0.02;
-                            const baseF = new THREE.Mesh(new THREE.BoxGeometry(opW, 0.05, frameThickness), matFrame);
-                            baseF.position.set(opCenter - length/2, e + 0.025, 0);
-                            wallObj.add(baseF);
-                            
-                            if(straightH > 0) {
-                                const sideL = new THREE.Mesh(new THREE.BoxGeometry(0.05, straightH, frameThickness), matFrame);
-                                sideL.position.set(opCenter - length/2 - opW/2 + 0.025, e + straightH/2, 0);
-                                wallObj.add(sideL);
-                                
-                                const sideR = new THREE.Mesh(new THREE.BoxGeometry(0.05, straightH, frameThickness), matFrame);
-                                sideR.position.set(opCenter - length/2 + opW/2 - 0.025, e + straightH/2, 0);
-                                wallObj.add(sideR);
-                                
-                                const archShape = new THREE.Shape();
-                                archShape.absarc(0, 0, archR, 0, Math.PI, false);
-                                archShape.absarc(0, 0, archR - 0.05, Math.PI, 0, true);
-                                const archF = new THREE.Mesh(new THREE.ExtrudeGeometry(archShape, { depth: frameThickness, bevelEnabled: false }), matFrame);
-                                archF.position.set(opCenter - length/2, e + straightH, -frameThickness/2);
-                                wallObj.add(archF);
-                            }
+                            let archR = opW / 2; let straightH = h - archR; if(straightH < 0) { straightH = 0; archR = h; } 
+                            const winShape = new THREE.Shape(); winShape.moveTo(-opW/2, -h/2); winShape.lineTo(opW/2, -h/2); winShape.lineTo(opW/2, -h/2 + straightH); if(straightH > 0) winShape.absarc(0, -h/2 + straightH, archR, 0, Math.PI, false); winShape.lineTo(-opW/2, -h/2);
+                            const winMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(winShape, { depth: 0.02, bevelEnabled: false }), matWindow); winMesh.position.set(opCenter - length/2, e + h/2, -0.01); wallObj.add(winMesh);
+                            const frameThickness = thickWall + 0.02; const baseF = new THREE.Mesh(new THREE.BoxGeometry(opW, 0.05, frameThickness), matFrame); baseF.position.set(opCenter - length/2, e + 0.025, 0); wallObj.add(baseF);
+                            if(straightH > 0) { const sideL = new THREE.Mesh(new THREE.BoxGeometry(0.05, straightH, frameThickness), matFrame); sideL.position.set(opCenter - length/2 - opW/2 + 0.025, e + straightH/2, 0); wallObj.add(sideL); const sideR = new THREE.Mesh(new THREE.BoxGeometry(0.05, straightH, frameThickness), matFrame); sideR.position.set(opCenter - length/2 + opW/2 - 0.025, e + straightH/2, 0); wallObj.add(sideR); const archShape = new THREE.Shape(); archShape.absarc(0, 0, archR, 0, Math.PI, false); archShape.absarc(0, 0, archR - 0.05, Math.PI, 0, true); const archF = new THREE.Mesh(new THREE.ExtrudeGeometry(archShape, { depth: frameThickness, bevelEnabled: false }), matFrame); archF.position.set(opCenter - length/2, e + straightH, -frameThickness/2); wallObj.add(archF); }
                         } else {
-                            // JENDELA STANDAR / MULLIONS / KACA FULL
                             const winMesh = new THREE.Mesh(new THREE.BoxGeometry(opW, h, 0.02), matWindow); winMesh.position.set(opCenter - length/2, e + h/2, 0); wallObj.add(winMesh); 
-                            
-                            // TAMBAHAN FRAME KELILING (4 Sisi)
-                            const frameThickness = thickWall + 0.02;
-                            const frame1 = new THREE.Mesh(new THREE.BoxGeometry(opW, 0.05, frameThickness), matFrame); 
-                            frame1.position.set(opCenter - length/2, e + 0.025, 0); 
-                            const frame2 = frame1.clone(); 
-                            frame2.position.set(opCenter - length/2, e + h - 0.025, 0); 
-                            const frame3 = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, frameThickness), matFrame); 
-                            frame3.position.set(opCenter - length/2 - opW/2 + 0.025, e + h/2, 0);
-                            const frame4 = frame3.clone(); 
-                            frame4.position.set(opCenter - length/2 + opW/2 - 0.025, e + h/2, 0);
-                            
-                            wallObj.add(frame1); wallObj.add(frame2); wallObj.add(frame3); wallObj.add(frame4);
-                            
-                            if (op.variant === 2) { // Mullions 3D Dinamis
-                                const numV = Math.max(1, Math.floor(opW / 0.6));
-                                const spaceV = opW / (numV + 1);
-                                for(let i = 1; i <= numV; i++) {
-                                    const xOffset = -opW/2 + (i * spaceV);
-                                    const mulV = new THREE.Mesh(new THREE.BoxGeometry(0.04, h, 0.03), matFrame);
-                                    mulV.position.set(opCenter - length/2 + xOffset, e + h/2, 0);
-                                    wallObj.add(mulV);
-                                }
-                                const numH = Math.max(1, Math.floor(h / 0.6));
-                                const spaceH = h / (numH + 1);
-                                for(let i = 1; i <= numH; i++) {
-                                    const yOffset = i * spaceH;
-                                    const mulH = new THREE.Mesh(new THREE.BoxGeometry(opW, 0.04, 0.03), matFrame);
-                                    mulH.position.set(opCenter - length/2, e + yOffset, 0);
-                                    wallObj.add(mulH);
-                                }
-                            }
+                            const frameThickness = thickWall + 0.02; const frame1 = new THREE.Mesh(new THREE.BoxGeometry(opW, 0.05, frameThickness), matFrame); frame1.position.set(opCenter - length/2, e + 0.025, 0); const frame2 = frame1.clone(); frame2.position.set(opCenter - length/2, e + h - 0.025, 0); const frame3 = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, frameThickness), matFrame); frame3.position.set(opCenter - length/2 - opW/2 + 0.025, e + h/2, 0); const frame4 = frame3.clone(); frame4.position.set(opCenter - length/2 + opW/2 - 0.025, e + h/2, 0); wallObj.add(frame1); wallObj.add(frame2); wallObj.add(frame3); wallObj.add(frame4);
+                            if (op.variant === 2) { const numV = Math.max(1, Math.floor(opW / 0.6)); const spaceV = opW / (numV + 1); for(let i = 1; i <= numV; i++) { const mulV = new THREE.Mesh(new THREE.BoxGeometry(0.04, h, 0.03), matFrame); mulV.position.set(opCenter - length/2 + (-opW/2 + (i * spaceV)), e + h/2, 0); wallObj.add(mulV); } const numH = Math.max(1, Math.floor(h / 0.6)); const spaceH = h / (numH + 1); for(let i = 1; i <= numH; i++) { const mulH = new THREE.Mesh(new THREE.BoxGeometry(opW, 0.04, 0.03), matFrame); mulH.position.set(opCenter - length/2, e + (i * spaceH), 0); wallObj.add(mulH); } }
                         }
-                    } 
-                    wallShape.holes.push(hole);
+                    } wallShape.holes.push(hole);
                 });
-                
                 const wallMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(wallShape, { depth: thickWall, bevelEnabled: false }), matWall); wallMesh.position.set(-length/2, 0, -thickWall/2); wallObj.add(wallMesh); wallObj.position.set(posX, 0, posZ); wallObj.rotation.y = -angle; modelGroup.add(wallObj);
             });
+            
             const cornerGeom = new THREE.CylinderGeometry(thickWall/2, thickWall/2, heightWall, 16); let uniqueVertices = []; lines.forEach(l => { [l.start, l.end].forEach(pt => { if(!uniqueVertices.some(v => Math.hypot(v.x - pt.x, v.y - pt.y) < 1)) uniqueVertices.push(pt); }); });
             uniqueVertices.forEach(v => { const posX = (v.x - center2DX) * scale3D; const posZ = (v.y - center2DY) * scale3D; const cornerMesh = new THREE.Mesh(cornerGeom, matWall); cornerMesh.position.set(posX, heightWall / 2, posZ); modelGroup.add(cornerMesh); });
             
             freeObjects.forEach(obj => { 
-                const posX = (obj.x - center2DX) * scale3D; const posZ = (obj.y - center2DY) * scale3D; 
-                let meshGroup = (obj.type === 'stairs') ? createStairsMesh(obj.steps || 14, obj.width3D || 1.0, heightWall) : createFurnitureMesh(obj.type, obj.variant || 0); 
-                meshGroup.position.set(posX, 0, posZ); meshGroup.rotation.y = THREE.MathUtils.degToRad(obj.rotation || 0); 
-                const s = obj.scaleVal || 1.0; meshGroup.scale.set(s, s, s); modelGroup.add(meshGroup); 
+                const posX = (obj.x - center2DX) * scale3D; 
+                const posZ = (obj.y - center2DY) * scale3D; 
+                const elev = obj.elevation || 0;
+                
+                let innerMesh; // Simpan model di variabel sementara
+                if ((obj.type === 'custom_glb' || obj.type === 'custom_obj') && customModels[obj.modelId]) {
+                    innerMesh = customModels[obj.modelId].clone();
+                } else {
+                    innerMesh = (obj.type === 'stairs') ? createStairsMesh(obj.steps || 14, obj.width3D || 1.0, heightWall) : createFurnitureMesh(obj.type, obj.variant || 0); 
+                }
+                
+                // --- PERBAIKAN FLIP ---
+                // Bungkus innerMesh dengan meshGroup (Wrapper)
+                let meshGroup = new THREE.Group();
+                // Terapkan flip (skala negatif) HANYA pada innerMesh (mesh di dalam)
+                innerMesh.scale.set(obj.flipX ? -1 : 1, 1, obj.flipZ ? -1 : 1);
+                meshGroup.add(innerMesh);
+
+                // Terapkan Posisi dan Rotasi ke Wrapper Group
+                meshGroup.position.set(posX, elev, posZ); 
+                meshGroup.rotation.order = 'YXZ';
+                meshGroup.rotation.set(
+                    THREE.MathUtils.degToRad(obj.rotationX || 0),
+                    THREE.MathUtils.degToRad(-(obj.rotationY !== undefined ? obj.rotationY : (obj.rotation || 0))),
+                    THREE.MathUtils.degToRad(obj.rotationZ || 0)
+                );
+
+                // Terapkan Skala (Harus selalu absolut/positif) ke Wrapper Group
+                const sX = obj.scaleX !== undefined ? obj.scaleX : (obj.scaleVal || 1.0);
+                const sY = obj.scaleY !== undefined ? obj.scaleY : (obj.scaleVal || 1.0);
+                const sZ = obj.scaleZ !== undefined ? obj.scaleZ : (obj.scaleVal || 1.0);
+                meshGroup.scale.set(sX, sY, sZ); 
+
+                // Identitas untuk Raycaster & Seleksi Gizmo
+                meshGroup.userData.id = obj.id;
+                meshGroup.userData.isFreeObject = true;
+
+                modelGroup.add(meshGroup); 
             });
+
+            if (window.transformControl && selectedItem) {
+                updateTransformControlSelection(selectedItem);
+            }
         }
 
         const arModal = document.getElementById('ar-modal');
@@ -1579,92 +1038,176 @@
         document.getElementById('closeArBtn').addEventListener('click', () => arModal.style.display = 'none');
         document.getElementById('exportBtn').onclick = () => { new THREE.GLTFExporter().parse(modelGroup, (gltf) => { const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([gltf], { type: 'application/octet-stream' })); link.download = 'denah_3d_architect.glb'; link.click(); }, { binary: true }); };
 
-        // FITUR EXPORT OBJ
         document.getElementById('exportObjBtn').onclick = () => { 
-            if (lines.length === 0 && freeObjects.length === 0) {
-                alert(currentLang === 'id' ? "Denah masih kosong!" : "Floorplan is empty!");
-                return;
-            }
-            const exporter = new THREE.OBJExporter();
-            const result = exporter.parse(modelGroup);
-            
-            const blob = new Blob([result], { type: 'application/octet-stream' });
-            const link = document.createElement('a');
-            link.style.display = 'none';
-            link.href = URL.createObjectURL(blob);
-            link.download = 'denah_3d_architect.obj';
-            document.body.appendChild(link);
-            link.click();
-            
-            setTimeout(() => {
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-            }, 100);
+            if (lines.length === 0 && freeObjects.length === 0) { alert(currentLang === 'id' ? "Denah masih kosong!" : "Floorplan is empty!"); return; }
+            const exporter = new THREE.OBJExporter(); const result = exporter.parse(modelGroup); const blob = new Blob([result], { type: 'application/octet-stream' }); const link = document.createElement('a');
+            link.style.display = 'none'; link.href = URL.createObjectURL(blob); link.download = 'denah_3d_architect.obj'; document.body.appendChild(link); link.click(); setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(link.href); }, 100);
         };
 
-        // === SAVE & LOAD PROJECT (.JSON) ===
         document.getElementById('saveProjBtn').addEventListener('click', () => {
-            if (lines.length === 0 && freeObjects.length === 0) {
-                alert(currentLang === 'id' ? "Denah masih kosong!" : "Floorplan is empty!");
-                return;
-            }
-            
-            const projectData = {
-                lines: lines,
-                openings: openings,
-                freeObjects: freeObjects,
-                wallHeight: inputWallH.value,
-                wallThick: inputWallT.value
-            };
-            
-            // Ubah tipe data menjadi octet-stream agar Safari 'terpaksa' mengunduh filenya
-            const jsonString = JSON.stringify(projectData);
-            const blob = new Blob([jsonString], { type: "application/octet-stream" });
-            const url = URL.createObjectURL(blob);
-            
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.href = url;
-            downloadAnchorNode.download = "floorplan_project.json";
-            document.body.appendChild(downloadAnchorNode); 
-            downloadAnchorNode.click();
-            
-            setTimeout(() => {
-                document.body.removeChild(downloadAnchorNode);
-                URL.revokeObjectURL(url);
-            }, 100);
+            if (lines.length === 0 && freeObjects.length === 0) { alert(currentLang === 'id' ? "Denah masih kosong!" : "Floorplan is empty!"); return; }
+            const projectData = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value };
+            const jsonString = JSON.stringify(projectData); const blob = new Blob([jsonString], { type: "application/octet-stream" }); const url = URL.createObjectURL(blob);
+            const link = document.createElement('a'); link.href = url; link.download = "floorplan_project.json"; document.body.appendChild(link); link.click(); setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 100);
         });
 
         document.getElementById('loadProj').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = (event) => { try {
                     const loadedData = JSON.parse(event.target.result);
+                    lines = loadedData.lines || []; openings = loadedData.openings || []; freeObjects = loadedData.freeObjects || [];
+                    if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
+                    undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); draw2D(); update3D(); alert(currentLang === 'id' ? "Proyek berhasil dimuat!" : "Project loaded successfully!");
+                } catch (err) { alert(currentLang === 'id' ? "Gagal memuat file!" : "Failed to load project file."); }
+            }; reader.readAsText(file); e.target.value = "";
+        });
+
+        // === TRANSFORM CONTROLS LOGIC (3D EDITOR) ===
+        window.transformControl = new THREE.TransformControls(camera, renderer.domElement);
+        transformControl.size = 1.3; 
+        
+        // Default to local space for better rotation & move orientation intuitively
+        transformControl.setSpace('local');
+
+        scene.add(transformControl);
+
+        transformControl.addEventListener('dragging-changed', (event) => {
+            controls.enabled = !event.value;
+            if (event.value) { saveState(); }
+        });
+
+        transformControl.addEventListener('change', () => {
+            if (transformControl.object && transformControl.object.userData.isFreeObject) {
+                const mesh = transformControl.object;
+                const obj = freeObjects.find(o => o.id === mesh.userData.id);
+                if (obj) {
+                    obj.x = (mesh.position.x / scale3D) + center2DX;
+                    obj.y = (mesh.position.z / scale3D) + center2DY;
+                    obj.elevation = mesh.position.y;
                     
-                    lines = loadedData.lines || [];
-                    openings = loadedData.openings || [];
-                    freeObjects = loadedData.freeObjects || [];
+                    obj.rotationX = THREE.MathUtils.radToDeg(mesh.rotation.x);
                     
-                    if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight;
-                    if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
+                    let degY = -THREE.MathUtils.radToDeg(mesh.rotation.y);
+                    while (degY < 0) degY += 360;
+                    obj.rotationY = degY % 360;
                     
-                    undoStack = []; redoStack = [];
-                    stopDrawing(); 
-                    closeEditPanel(); 
+                    obj.rotationZ = THREE.MathUtils.radToDeg(mesh.rotation.z);
+                    
+                    // Maintain magnitudes independently from flip state
+                    obj.scaleX = Math.abs(mesh.scale.x);
+                    obj.scaleY = Math.abs(mesh.scale.y);
+                    obj.scaleZ = Math.abs(mesh.scale.z);
                     
                     draw2D(); 
-                    update3D();
                     
-                    alert(currentLang === 'id' ? "Proyek berhasil dimuat!" : "Project loaded successfully!");
-                } catch (err) {
-                    alert(currentLang === 'id' ? "Gagal memuat file! Pastikan itu adalah file .json dari aplikasi ini." : "Failed to load! Make sure it's a valid .json project file.");
+                    if(selectedItem === obj) {
+                        if(document.getElementById('editObjElev')) { document.getElementById('editObjElev').value = obj.elevation; document.getElementById('valObjElev').innerText = obj.elevation.toFixed(1); }
+                        if(document.getElementById('editRotY')) { document.getElementById('editRotY').value = Math.round(obj.rotationY); document.getElementById('valRotY').innerText = Math.round(obj.rotationY); }
+                        if(document.getElementById('editRotX')) { document.getElementById('editRotX').value = Math.round(obj.rotationX); document.getElementById('valRotX').innerText = Math.round(obj.rotationX); }
+                        if(document.getElementById('editRotZ')) { document.getElementById('editRotZ').value = Math.round(obj.rotationZ); document.getElementById('valRotZ').innerText = Math.round(obj.rotationZ); }
+                        
+                        if(document.getElementById('editScaleU')) { document.getElementById('editScaleU').value = obj.scaleX; document.getElementById('valScaleU').innerText = obj.scaleX.toFixed(1); }
+                        if(document.getElementById('editScaleX')) { document.getElementById('editScaleX').value = obj.scaleX; document.getElementById('valScaleX').innerText = obj.scaleX.toFixed(1); }
+                        if(document.getElementById('editScaleY')) { document.getElementById('editScaleY').value = obj.scaleY; document.getElementById('valScaleY').innerText = obj.scaleY.toFixed(1); }
+                        if(document.getElementById('editScaleZ')) { document.getElementById('editScaleZ').value = obj.scaleZ; document.getElementById('valScaleZ').innerText = obj.scaleZ.toFixed(1); }
+                    }
                 }
-            };
-            reader.readAsText(file);
-            e.target.value = ""; // Reset input file agar bisa memuat file yang sama lagi
+            }
         });
+
+        document.getElementById('transformUI').addEventListener('pointerdown', (e) => { e.stopPropagation(); });
+
+        const btnTrMv = document.getElementById('btnTrMv'); const btnTrRt = document.getElementById('btnTrRt'); const btnTrSc = document.getElementById('btnTrSc');
+        const btnTrSpace = document.getElementById('btnTrSpace');
+
+        btnTrSpace.onclick = () => {
+            const newSpace = transformControl.space === 'local' ? 'world' : 'local';
+            transformControl.setSpace(newSpace);
+            btnTrSpace.innerText = newSpace === 'local' ? 'Local' : 'World';
+            btnTrSpace.style.background = newSpace === 'local' ? '#059669' : '#ca8a04';
+        };
+
+        function setTransformMode(tMode, activeBtn) {
+            transformControl.setMode(tMode);
+            [btnTrMv, btnTrRt, btnTrSc].forEach(b => { b.style.background = '#3f3f46'; b.classList.remove('active'); });
+            activeBtn.style.background = '#2563eb'; activeBtn.classList.add('active');
+        }
+        btnTrMv.onclick = () => setTransformMode('translate', btnTrMv);
+        btnTrRt.onclick = () => setTransformMode('rotate', btnTrRt);
+        btnTrSc.onclick = () => setTransformMode('scale', btnTrSc);
+
+        // --- SISTEM RAYCASTER BARU (Bebas Flicker & Aman untuk Layar Sentuh) ---
+        const raycaster = new THREE.Raycaster(); 
+        const mouseVector = new THREE.Vector2();
+        
+        let isDragging3D = false;
+        let startPtrX = 0; let startPtrY = 0;
+
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            isDragging3D = false;
+            startPtrX = e.clientX;
+            startPtrY = e.clientY;
+        });
+
+        renderer.domElement.addEventListener('pointermove', (e) => {
+            // Jika kursor/jari bergeser lebih dari 4 pixel, dianggap Dragging (geser kamera)
+            if (Math.abs(e.clientX - startPtrX) > 4 || Math.abs(e.clientY - startPtrY) > 4) {
+                isDragging3D = true;
+            }
+        });
+
+        renderer.domElement.addEventListener('pointerup', (e) => {
+            // Jangan pilih objek jika sedang menggeser kamera, menggeser Gizmo, atau sedang menekan bagian Gizmo
+            if (isDragging3D || transformControl.dragging || transformControl.axis !== null) {
+                return;
+            }
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouseVector.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouseVector.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            raycaster.setFromCamera(mouseVector, camera);
+            
+            // HANYA intersect objek yang terlihat (mencegah salah pencet objek transparan/bounding box)
+            const intersects = raycaster.intersectObjects(modelGroup.children, true);
+            const validIntersects = intersects.filter(i => i.object.visible);
+            
+            if (validIntersects.length > 0) {
+                let object = validIntersects[0].object;
+                
+                while (object.parent && !object.userData.isFreeObject) {
+                    if (object === modelGroup) break;
+                    object = object.parent;
+                }
+                
+                if (object.userData.isFreeObject) {
+                    const item = freeObjects.find(o => o.id === object.userData.id);
+                    if (item) {
+                        setMode('select', document.getElementById('modeSelect'));
+                        selectedItem = item; 
+                        openEditPanel(item); 
+                        transformControl.attach(object);
+                        draw2D();
+                        return; // SELEKSI BERHASIL, BERHENTI DI SINI
+                    }
+                } 
+            } 
+            
+            // JIKA KLIK RUANG KOSONG, LEPAS GIZMO
+            transformControl.detach();
+            selectedItem = null;
+            closeEditPanel();
+            draw2D();
+        });
+
+        function updateTransformControlSelection(item) {
+            if (item && item.lineIndex === undefined && !item.isWall) {
+                const mesh = modelGroup.children.find(c => c.userData.id === item.id);
+                if (mesh) transformControl.attach(mesh);
+            } else {
+                transformControl.detach();
+            }
+        }
     </script>
 </body>
 </html>
