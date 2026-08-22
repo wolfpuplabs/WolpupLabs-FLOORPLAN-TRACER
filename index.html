@@ -490,7 +490,7 @@
         btnSnap.addEventListener('click', () => { isSnappingEnabled = !isSnappingEnabled; btnSnap.classList.toggle('active', isSnappingEnabled); btnSnap.style.opacity = isSnappingEnabled ? '1' : '0.55'; draw2D(); });
         
         [inputWallH, inputWallT].forEach(el => {
-            el.addEventListener('pointerdown', () => saveState());
+            el.addEventListener('pointerdown', () => beginUndoStep());
             el.addEventListener('change', () => { update3D(); draw2D(); });
         });
         chkShowRoof.addEventListener('change', () => { update3D(); });
@@ -523,10 +523,37 @@
         
         function applyTransform() { workspace.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; }
 
-        function saveState() {
-            undoStack.push({ lines: JSON.parse(JSON.stringify(lines)), openings: JSON.parse(JSON.stringify(openings)), freeObjects: JSON.parse(JSON.stringify(freeObjects)) });
+        function makeSnapshot() {
+            return JSON.stringify({ lines, openings, freeObjects });
+        }
+
+        function pushSnapshot(snap) {
+            const top = undoStack[undoStack.length - 1];
+            // Buang langkah yang isinya sama persis dengan puncak stack, supaya riwayat
+            // tidak terisi langkah kosong yang bikin undo terasa "tidak terjadi apa-apa".
+            if (top && top.snap === snap) return;
+            undoStack.push({ snap, ...JSON.parse(snap) });
+            if (undoStack.length > 100) undoStack.shift(); // batasi pemakaian memori
             redoStack = []; document.getElementById('undoBtn').disabled = false; document.getElementById('redoBtn').disabled = true;
         }
+
+        function saveState() { pushSnapshot(makeSnapshot()); }
+
+        // --- PEREKAMAN TERTUNDA ---
+        // Klik seleksi dan sentuhan slider memanggil ini di pointerdown, tapi state-nya
+        // BELUM didorong ke riwayat. Baru dicatat kalau benar-benar ada perubahan
+        // (slider digeser / objek diseret). Kalau cuma menyentuh lalu lepas, tidak ada
+        // langkah yang tercipta — jadi satu tekan undo = satu perubahan nyata.
+        let pendingUndo = null;
+        function beginUndoStep() { pendingUndo = makeSnapshot(); }
+        function commitUndoStep() {
+            if (pendingUndo === null) return;
+            const snap = pendingUndo; pendingUndo = null; pushSnapshot(snap);
+        }
+        // Fase capture berjalan sebelum handler milik elemennya sendiri, jadi state "sebelum"
+        // sudah tercatat tepat sebelum nilainya diubah.
+        document.addEventListener('input', commitUndoStep, true);
+        document.addEventListener('change', commitUndoStep, true);
 
         // Satu pintu untuk melepas gizmo + membersihkan sisa state interaksi.
         // Dipakai di undo/redo, reset, load, dan hapus objek, supaya tidak ada
@@ -546,7 +573,8 @@
             // ke mesh BARU setelah scene dibangun ulang. Undo seharusnya tidak membatalkan seleksi.
             const keepId = (selectedItem && !selectedItem.isWall && selectedItem.lineIndex === undefined)
                 ? selectedItem.id : null;
-            const current = { lines: JSON.parse(JSON.stringify(lines)), openings: JSON.parse(JSON.stringify(openings)), freeObjects: JSON.parse(JSON.stringify(freeObjects)) };
+            const snapNow = makeSnapshot();
+            const current = { snap: snapNow, ...JSON.parse(snapNow) };
             if (isUndo) { redoStack.push(current); const prev = undoStack.pop(); lines = prev.lines; openings = prev.openings; freeObjects = prev.freeObjects || []; } 
             else { undoStack.push(current); const next = redoStack.pop(); lines = next.lines; openings = next.openings; freeObjects = next.freeObjects || []; }
             document.getElementById('undoBtn').disabled = undoStack.length === 0; document.getElementById('redoBtn').disabled = redoStack.length === 0;
@@ -591,7 +619,7 @@
 
                 if (clickedItem) { 
                     selectedItem = clickedItem; 
-                    saveState(); 
+                    beginUndoStep(); 
                     openEditPanel(selectedItem); 
                     isDraggingObject = true;
                     if (selectedItem.isWall) { selectedItem.dragStartX = x; selectedItem.dragStartY = y; selectedItem.origStart = { ...lines[selectedItem.index].start }; selectedItem.origEnd = { ...lines[selectedItem.index].end }; }
@@ -605,7 +633,7 @@
             else if (mode === 'wall') {
                 let snap = getSnapped(x, y, isDrawing ? currentLine.start : null);
                 if (!isDrawing) { saveState(); isDrawing = true; currentLine = { start: snap, end: snap }; } 
-                else { const dist = Math.hypot(snap.x - currentLine.start.x, snap.y - currentLine.start.y); if (dist < 10 / scale) { stopDrawing(); } else { currentLine.end = snap; lines.push({...currentLine}); update3D(); currentLine = { start: snap, end: snap }; } } draw2D();
+                else { const dist = Math.hypot(snap.x - currentLine.start.x, snap.y - currentLine.start.y); if (dist < 10 / scale) { stopDrawing(); } else { currentLine.end = snap; saveState(); lines.push({...currentLine}); update3D(); currentLine = { start: snap, end: snap }; } } draw2D();
             } 
             else if (mode === 'door' || mode === 'window') {
                 let nearest = findNearestLine(x, y, 30 / scale);
@@ -625,6 +653,7 @@
                 let { x, y } = getTrueCoords(e.clientX, e.clientY);
                 if (isDrawing && mode === 'wall' && currentLine) { currentLine.end = getSnapped(x, y, currentLine.start); draw2D(); }
                 else if (isDraggingObject && selectedItem) { 
+                    commitUndoStep(); // seret = perubahan nyata, baru dicatat di sini
                     if (selectedItem.isWall) {
                         let dx = x - selectedItem.dragStartX; let dy = y - selectedItem.dragStartY;
                         if (isSnappingEnabled) { const gridSnap = 50; dx = Math.round(dx / gridSnap) * gridSnap; dy = Math.round(dy / gridSnap) * gridSnap; }
@@ -641,6 +670,7 @@
         window.addEventListener('pointerup', () => { 
             if (isDraggingCanvas) { isDraggingCanvas = false; workspaceContainer.style.cursor = 'crosshair'; }
             if (isDraggingObject) { isDraggingObject = false; } 
+            pendingUndo = null; // sentuhan tanpa perubahan -> tidak meninggalkan langkah 
             workspaceContainer.style.cursor = 'crosshair'; 
         });
 
@@ -708,9 +738,9 @@
         function closeEditPanel() { emptySelectionMsg.style.display = 'block'; editPanelContent.style.display = 'none'; selectedItem = null; }
 
         const uiSliders = [editPos, editWidth, editHeight, editElev, editSwing, editObjElev, editRotY, editRotX, editRotZ, editScaleU, editScaleX, editScaleY, editScaleZ, editSteps, editStairW];
-        uiSliders.forEach(slider => { if (slider) slider.addEventListener('pointerdown', () => saveState()); });
+        uiSliders.forEach(slider => { if (slider) slider.addEventListener('pointerdown', () => beginUndoStep()); });
 
-        editVariant.addEventListener('pointerdown', () => saveState());
+        editVariant.addEventListener('pointerdown', () => beginUndoStep());
         editVariant.addEventListener('change', (e) => { if (selectedItem) { selectedItem.variant = parseInt(e.target.value); if(selectedItem.type === 'door') document.getElementById('doorControls').style.display = (selectedItem.variant === 2) ? 'none' : 'block'; update3D(); draw2D(); } });
         
         editPos.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.ratio = parseFloat(e.target.value) / 100; document.getElementById('valPos').innerText = e.target.value; update3D(); draw2D(); } }); 
@@ -978,16 +1008,33 @@
         function update3D() {
             while(modelGroup.children.length > 0) modelGroup.remove(modelGroup.children[0]); if(lines.length === 0 && freeObjects.length === 0) return;
             const heightWall = parseFloat(inputWallH.value); const thickWall = parseFloat(inputWallT.value); let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            // --- TITIK ACUAN (ORIGIN) HARUS STABIL ---
+            // Sebelumnya center2D dihitung dari kotak pembatas tembok DAN objek. Akibatnya
+            // setiap kali objek digeser, titik acuannya ikut bergeser, lalu seluruh scene
+            // dihitung ulang relatif terhadap acuan baru. Kasus paling parah: satu objek
+            // tanpa tembok -> min = max = posisi objek itu sendiri -> center2D = posisi objek
+            // -> objek selalu dirender di titik (0,0), alias "balik ke tengah" terus.
+            // Maka acuan sekarang HANYA dari tembok; kalau belum ada tembok, dipakai titik
+            // tengah kanvas yang nilainya tetap.
+            let wMinX = Infinity, wMaxX = -Infinity, wMinY = Infinity, wMaxY = -Infinity;
+            lines.forEach(l => { wMinX = Math.min(wMinX, l.start.x, l.end.x); wMaxX = Math.max(wMaxX, l.start.x, l.end.x); wMinY = Math.min(wMinY, l.start.y, l.end.y); wMaxY = Math.max(wMaxY, l.start.y, l.end.y); });
+
+            // Kotak pembatas seluruh isi tetap dihitung, tapi cuma untuk menentukan ukuran lantai.
             lines.forEach(l => { minX = Math.min(minX, l.start.x, l.end.x); maxX = Math.max(maxX, l.start.x, l.end.x); minY = Math.min(minY, l.start.y, l.end.y); maxY = Math.max(maxY, l.start.y, l.end.y); });
             freeObjects.forEach(o => { minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x); minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y); });
-            
-            center2DX = (minX === Infinity) ? 0 : (minX + maxX) / 2; center2DY = (minY === Infinity) ? 0 : (minY + maxY) / 2;
+
+            if (wMinX !== Infinity) { center2DX = (wMinX + wMaxX) / 2; center2DY = (wMinY + wMaxY) / 2; }
+            else { center2DX = canvas.width / 2; center2DY = canvas.height / 2; }
             const matWall = new THREE.MeshLambertMaterial({ color: 0xefefef }); const matDoor = new THREE.MeshLambertMaterial({ color: 0x5c4033 }); const matWindow = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.5 }); const matFrame = new THREE.MeshLambertMaterial({ color: 0x3f3f46 }); const matFloor = new THREE.MeshLambertMaterial({ color: 0xd4d4d8, side: THREE.DoubleSide }); const matRoof = new THREE.MeshLambertMaterial({ color: 0xe4e4e7, side: THREE.DoubleSide });
             
             if (minX !== Infinity) { 
                 const floorW = (maxX - minX) * scale3D + 1.0; const floorH = (maxY - minY) * scale3D + 1.0; 
-                const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matFloor); floorMesh.rotation.x = -Math.PI / 2; floorMesh.position.set(0, 0.001, 0); modelGroup.add(floorMesh); 
-                if (document.getElementById('chkShowRoof').checked) { const roofMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matRoof); roofMesh.rotation.x = -Math.PI / 2; roofMesh.position.set(0, heightWall, 0); modelGroup.add(roofMesh); }
+                // Lantai mengikuti titik tengah isi, bukan dipaku di origin — karena origin
+                // sekarang mengacu ke tembok, bukan ke kotak pembatas seluruh isi.
+                const floorCX = (((minX + maxX) / 2) - center2DX) * scale3D;
+                const floorCZ = (((minY + maxY) / 2) - center2DY) * scale3D;
+                const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matFloor); floorMesh.rotation.x = -Math.PI / 2; floorMesh.position.set(floorCX, 0.001, floorCZ); modelGroup.add(floorMesh); 
+                if (document.getElementById('chkShowRoof').checked) { const roofMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matRoof); roofMesh.rotation.x = -Math.PI / 2; roofMesh.position.set(floorCX, heightWall, floorCZ); modelGroup.add(roofMesh); }
             }
 
             lines.forEach((line, index) => {
