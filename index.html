@@ -637,39 +637,8 @@
         }
         
         window.addEventListener('load', () => { 
-            // --- PENYELARASAN KE AREA TAMPAK ---
-            // Di iPadOS/iOS, kotak body bisa mulai DI ATAS area tampak (tersembunyi di balik
-            // bilah tab + bilah alamat Safari), sehingga bagian atas aplikasi — header sidebar
-            // dan toolbar transform — terpotong, lalu normal setelah reload.
-            // Daripada menebak penyebabnya, aplikasi MENGUKUR posisi kotaknya sendiri lalu
-            // menggesernya balik. Kalau tidak ada yang meleset, tidak ada yang diubah.
-            let shiftY = 0;
-            function fitAppToViewport() {
-                const vv = window.visualViewport;
-                const h = vv ? vv.height : window.innerHeight;
-                const w = vv ? vv.width : window.innerWidth;
-                document.body.style.height = h + 'px';
-                document.body.style.width = w + 'px';
-
-                // getBoundingClientRect diukur relatif terhadap area tampak.
-                // top negatif = kotaknya berada di atas layar -> geser turun sebanyak itu.
-                for (let i = 0; i < 3; i++) {
-                    const top = document.body.getBoundingClientRect().top;
-                    if (Math.abs(top) < 0.5) break;
-                    shiftY -= top;
-                    document.body.style.transform = 'translateY(' + shiftY + 'px)';
-                }
-                resizeViewports();
-            }
-
             fitAppToViewport();
             [0, 150, 400, 1000].forEach(t => setTimeout(fitAppToViewport, t));
-            window.addEventListener('resize', fitAppToViewport);
-            window.addEventListener('orientationchange', () => setTimeout(fitAppToViewport, 300));
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', fitAppToViewport);
-                window.visualViewport.addEventListener('scroll', fitAppToViewport);
-            }
 
             initDefaultCanvas(); 
             const saved = localStorage.getItem('floorplan_autosave');
@@ -689,6 +658,48 @@
             }
         });
         
+        // --- PENYELARASAN KE AREA TAMPAK ---
+        // Di iPadOS/iOS, tepi atas layout viewport bisa berada DI ATAS area tampak
+        // (tersembunyi di balik bilah tab + bilah alamat Safari), sehingga bagian atas
+        // aplikasi — header sidebar dan toolbar transform — terpotong.
+        //
+        // Catatan penting: getBoundingClientRect() TIDAK bisa mendeteksi ini, karena
+        // nilainya diukur terhadap layout viewport — untuk elemen position:fixed di top:0
+        // hasilnya selalu 0 walau secara visual tertutup chrome browser. Ukuran yang benar
+        // adalah visualViewport.offsetTop, yaitu jarak tepi atas area tampak dari tepi atas
+        // layout viewport.
+        function fitAppToViewport() {
+            const vv = window.visualViewport;
+            const h = vv ? vv.height : window.innerHeight;
+            const w = vv ? vv.width : window.innerWidth;
+            document.body.style.height = h + 'px';
+            document.body.style.width = w + 'px';
+
+            let dx = vv ? vv.offsetLeft : 0;
+            let dy = vv ? vv.offsetTop : 0;
+            document.body.style.transform = (dx || dy) ? 'translate(' + dx + 'px,' + dy + 'px)' : '';
+
+            // Pengukuran cadangan, kalau-kalau masih ada selisih setelah transform dipasang.
+            const top = document.body.getBoundingClientRect().top;
+            if (Math.abs(top) > 0.5) {
+                dy -= top;
+                document.body.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+            }
+            if (typeof resizeViewports === 'function') resizeViewports();
+        }
+
+        // Dihitung ulang dari nol tiap kali (tidak menumpuk), jadi aman dipanggil berkali-kali.
+        window.addEventListener('resize', fitAppToViewport);
+        window.addEventListener('orientationchange', () => setTimeout(fitAppToViewport, 300));
+        // 'pageshow' juga terpicu saat halaman dipulihkan dari cache / tab dibuka kembali,
+        // kondisi di mana 'load' tidak pernah terpicu lagi.
+        window.addEventListener('pageshow', () => { fitAppToViewport(); setTimeout(fitAppToViewport, 200); });
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(fitAppToViewport, 100); });
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', fitAppToViewport);
+            window.visualViewport.addEventListener('scroll', fitAppToViewport);
+        }
+
         function applyTransform() { workspace.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; }
 
         function makeSnapshot() {
