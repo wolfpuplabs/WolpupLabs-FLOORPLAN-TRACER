@@ -229,6 +229,11 @@
                     <span id="txtBtnSnap">Snap (Magnet)</span>
                 </button>
 
+                <button id="btnCharacter" style="margin-bottom: 12px; display: flex; justify-content: center; align-items: center; gap: 6px; transition: all 0.2s;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"></circle><path d="M12 8v6"></path><path d="M9 22l3-8 3 8"></path><path d="M7 11h10"></path></svg>
+                    <span id="txtBtnCharacter">Add Character</span>
+                </button>
+
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                     <label id="txtLblWallH" style="margin:0;">Wall Height (m)</label>
                     <input type="number" id="valWallH" value="3.0" step="0.1">
@@ -538,7 +543,7 @@
                 title: "Floorplan Tracer", sec1: "File & Sistem", sec2: "Alat Gambar", sec4: "Properti Objek", sec5: "Output",
                 lblUpload: "Upload Denah:", saveProj: "Simpan Proyek (.json)", loadProj: "Muat Proyek:", undo: "Undo", redo: "Redo", clear: "Reset Baru",
                 sel: "Pilih / Edit", wall: "Tembok", door: "Pintu", win: "Jendela", stairs: "Tangga",
-                optDef: "+ Tambah Mebel...", grp1: "Ruang Utama", grp2: "Dapur", grp3: "Kamar Mandi", grp4: "Dekorasi & Tanaman", snapBtn: "Snap (Magnet)",
+                optDef: "+ Tambah Mebel...", grp1: "Ruang Utama", grp2: "Dapur", grp3: "Kamar Mandi", grp4: "Dekorasi & Tanaman", snapBtn: "Snap (Magnet)", charBtn: "Tambah Karakter",
                 bed: "Kasur", sofa: "Sofa", table: "Meja", chair: "Kursi", tv: "TV", buffet: "Bufet", wardrobe: "Lemari",
                 kitchen: "Kitchen Set", stove: "Kompor", fridge: "Kulkas", toilet: "Kloset / Toilet", shower: "Shower", bathtub: "Bathtub",
                 lamp: "Lampu Lantai", carpet: "Karpet", curtain: "Tirai", plant: "Tanaman Dalam", tree: "Pohon",
@@ -555,7 +560,7 @@
                 title: "Floorplan Tracer", sec1: "File & System", sec2: "Draw Tools", sec4: "Properties", sec5: "Output",
                 lblUpload: "Upload Floorplan:", saveProj: "Save Project (.json)", loadProj: "Load Project:", undo: "Undo", redo: "Redo", clear: "Reset Plan",
                 sel: "Select/Edit", wall: "Wall", door: "Door", win: "Window", stairs: "Stairs",
-                optDef: "+ Add Furniture...", grp1: "Living Area", grp2: "Kitchen", grp3: "Bathroom", grp4: "Decor & Plants", snapBtn: "Snap (Magnet)",
+                optDef: "+ Add Furniture...", grp1: "Living Area", grp2: "Kitchen", grp3: "Bathroom", grp4: "Decor & Plants", snapBtn: "Snap (Magnet)", charBtn: "Add Character",
                 bed: "Bed", sofa: "Sofa", table: "Table", chair: "Chair", tv: "TV", buffet: "Sideboard", wardrobe: "Wardrobe",
                 kitchen: "Kitchen Set", stove: "Stove", fridge: "Fridge", toilet: "Toilet/WC", shower: "Shower", bathtub: "Bathtub",
                 lamp: "Standing Lamp", carpet: "Carpet", curtain: "Curtain", plant: "Indoor Plant", tree: "Tree",
@@ -582,7 +587,7 @@
             document.getElementById('txtModeDoor').innerText = t.door; document.getElementById('txtModeWindow').innerText = t.win; document.getElementById('txtModeStairs').innerText = t.stairs;
             document.getElementById('txtOptDefault').innerText = t.optDef; document.getElementById('optGrp1').label = t.grp1; document.getElementById('optGrp2').label = t.grp2; 
             document.getElementById('optGrp3').label = t.grp3; document.getElementById('optGrp4').label = t.grp4;
-            document.getElementById('txtBtnSnap').innerText = t.snapBtn; document.getElementById('txtLblWallLen').innerText = t.lblWallLen;
+            document.getElementById('txtBtnSnap').innerText = t.snapBtn; if (document.getElementById('txtBtnCharacter')) document.getElementById('txtBtnCharacter').innerText = t.charBtn; document.getElementById('txtLblWallLen').innerText = t.lblWallLen;
             document.getElementById('optBed').innerText = t.bed; document.getElementById('optSofa').innerText = t.sofa; document.getElementById('optTable').innerText = t.table; document.getElementById('optChair').innerText = t.chair;
             document.getElementById('optTv').innerText = t.tv; document.getElementById('optBuffet').innerText = t.buffet; document.getElementById('optWardrobe').innerText = t.wardrobe;
             document.getElementById('optKitchen').innerText = t.kitchen; document.getElementById('optStove').innerText = t.stove; document.getElementById('optFridge').innerText = t.fridge; document.getElementById('optToilet').innerText = t.toilet;
@@ -1213,6 +1218,10 @@
                 syncSpaceButton();
             }
             
+            // Karakter berjalan (kalau diaktifkan). Fungsinya terangkat, dan semua state
+            // yang disentuhnya memakai var, jadi aman dipanggil sejak frame pertama.
+            updateWalkers();
+
             renderer.render(scene, camera); 
         } 
         animate();
@@ -1387,9 +1396,256 @@
             if (window.transformControl) {
                 updateTransformControlSelection(selectedItem);
             }
+
+            // Denah berubah -> peta rintangan karakter ikut diperbarui, supaya tembok
+            // dan perabot yang baru langsung dihindari.
+            if (charactersOn) buildWalkGrid();
         }
 
-        const arModal = document.getElementById('ar-modal');
+        // ============================================================
+        //  KARAKTER BERJALAN (gaya The Sims)
+        //  Karakter tidak bergerak asal-asalan: denah diubah dulu menjadi peta kotak-kotak
+        //  berisi keterangan "bisa dilewati / terhalang", lalu jalurnya dicari dengan BFS.
+        //  Jadi ia berkeliling di dalam ruangan, memutari perabot, dan tidak menembus tembok.
+        // ============================================================
+        // Dideklarasikan dengan var: animate() sudah berjalan sebelum blok ini dieksekusi,
+        // dan const/let akan melempar ReferenceError (temporal dead zone) pada frame pertama
+        // — error itu akan menghentikan sisa skrip. var terangkat sebagai undefined, aman.
+        var characterGroup = new THREE.Group();
+        scene.add(characterGroup);            // di luar modelGroup, supaya tidak ikut ter-ekspor
+        var charactersOn = false;
+        var walkers = [];
+        var walkClock = null;
+
+        // --- Peta rintangan ---
+        var GRID = { cell: 0.28, minX: 0, minZ: 0, cols: 0, rows: 0, blocked: null };
+
+        function buildWalkGrid() {
+            GRID.blocked = null;
+            const heightWall = parseFloat(inputWallH.value) || 3;
+            const thickWall = parseFloat(inputWallT.value) || 0.15;
+
+            // Area jelajah diambil dari tembok; kalau belum ada tembok, dari sebaran objek.
+            let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+            const eat = (x, z) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); };
+            lines.forEach(l => {
+                eat((l.start.x - center2DX) * scale3D, (l.start.y - center2DY) * scale3D);
+                eat((l.end.x - center2DX) * scale3D, (l.end.y - center2DY) * scale3D);
+            });
+            if (minX === Infinity) {
+                freeObjects.forEach(o => eat((o.x - center2DX) * scale3D, (o.y - center2DY) * scale3D));
+                if (minX === Infinity) return false;
+                minX -= 3; maxX += 3; minZ -= 3; maxZ += 3;   // ruang gerak di sekitar objek
+            }
+            if (maxX - minX < 1 || maxZ - minZ < 1) return false;
+
+            const cell = GRID.cell;
+            GRID.minX = minX; GRID.minZ = minZ;
+            GRID.cols = Math.max(2, Math.ceil((maxX - minX) / cell));
+            GRID.rows = Math.max(2, Math.ceil((maxZ - minZ) / cell));
+            if (GRID.cols * GRID.rows > 250000) return false;   // jaga-jaga denah raksasa
+            const blocked = new Uint8Array(GRID.cols * GRID.rows);
+
+            const RADIUS = 0.22;   // "tubuh" karakter, dipakai sebagai jarak aman
+            const mark = (wx, wz, pad) => {
+                const r = pad + RADIUS;
+                const c0 = Math.floor((wx - r - minX) / cell), c1 = Math.floor((wx + r - minX) / cell);
+                const r0 = Math.floor((wz - r - minZ) / cell), r1 = Math.floor((wz + r - minZ) / cell);
+                for (let c = c0; c <= c1; c++) for (let rr = r0; rr <= r1; rr++)
+                    if (c >= 0 && rr >= 0 && c < GRID.cols && rr < GRID.rows) blocked[rr * GRID.cols + c] = 1;
+            };
+
+            // Tembok: disusuri sepanjang garis, kecuali bagian yang berlubang (pintu).
+            lines.forEach((l, idx) => {
+                const ax = (l.start.x - center2DX) * scale3D, az = (l.start.y - center2DY) * scale3D;
+                const bx = (l.end.x - center2DX) * scale3D, bz = (l.end.y - center2DY) * scale3D;
+                const len = Math.hypot(bx - ax, bz - az);
+                if (len === 0) return;
+                // Pintu (elevasi 0) menjadi celah yang boleh dilewati.
+                const gaps = openings.filter(o => o.lineIndex === idx && o.type === 'door' && (o.elevation || 0) < 0.05)
+                    .map(o => { const w = Math.min(o.width3D, len); let c = len * o.ratio; c = Math.max(w / 2, Math.min(len - w / 2, c)); return [c - w / 2, c + w / 2]; });
+                const steps = Math.ceil(len / (cell * 0.5));
+                for (let i = 0; i <= steps; i++) {
+                    const t = (i / steps) * len;
+                    if (gaps.some(g => t > g[0] && t < g[1])) continue;
+                    mark(ax + (bx - ax) * (t / len), az + (bz - az) * (t / len), thickWall / 2);
+                }
+            });
+
+            // Perabot & model: pakai kotak pembatas mesh yang sudah jadi, jadi ukurannya akurat.
+            const box = new THREE.Box3();
+            freeObjects.forEach(o => {
+                const mesh = modelGroup.children.find(c => c.userData.id === o.id);
+                if (!mesh) return;
+                box.setFromObject(mesh);
+                if (box.isEmpty()) return;
+                if (box.min.y > 1.7) return;   // benda tinggi (mis. lampu gantung) bisa dilewati
+                const c0 = Math.floor((box.min.x - RADIUS - minX) / cell), c1 = Math.floor((box.max.x + RADIUS - minX) / cell);
+                const r0 = Math.floor((box.min.z - RADIUS - minZ) / cell), r1 = Math.floor((box.max.z + RADIUS - minZ) / cell);
+                for (let c = c0; c <= c1; c++) for (let rr = r0; rr <= r1; rr++)
+                    if (c >= 0 && rr >= 0 && c < GRID.cols && rr < GRID.rows) blocked[rr * GRID.cols + c] = 1;
+            });
+
+            GRID.blocked = blocked;
+            return true;
+        }
+
+        const cellFree = (c, r) => c >= 0 && r >= 0 && c < GRID.cols && r < GRID.rows && !GRID.blocked[r * GRID.cols + c];
+        const cellToWorld = (c, r) => new THREE.Vector2(GRID.minX + (c + 0.5) * GRID.cell, GRID.minZ + (r + 0.5) * GRID.cell);
+        const worldToCell = (x, z) => ({ c: Math.floor((x - GRID.minX) / GRID.cell), r: Math.floor((z - GRID.minZ) / GRID.cell) });
+
+        // BFS: mencari jalur terpendek sekaligus memastikan tujuannya benar-benar bisa dicapai.
+        function findPath(from, to) {
+            const total = GRID.cols * GRID.rows;
+            const prev = new Int32Array(total).fill(-1);
+            const seen = new Uint8Array(total);
+            const start = from.r * GRID.cols + from.c, goal = to.r * GRID.cols + to.c;
+            if (!cellFree(from.c, from.r) || !cellFree(to.c, to.r)) return null;
+            const queue = [start]; seen[start] = 1;
+            for (let head = 0; head < queue.length; head++) {
+                const cur = queue[head];
+                if (cur === goal) {
+                    const path = []; let n = cur;
+                    while (n !== -1) { path.push(cellToWorld(n % GRID.cols, (n / GRID.cols) | 0)); n = prev[n]; }
+                    return path.reverse();
+                }
+                const c = cur % GRID.cols, r = (cur / GRID.cols) | 0;
+                for (const [dc, dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+                    const nc = c + dc, nr = r + dr, ni = nr * GRID.cols + nc;
+                    if (!cellFree(nc, nr) || seen[ni]) continue;
+                    seen[ni] = 1; prev[ni] = cur; queue.push(ni);
+                }
+            }
+            return null;
+        }
+
+        function randomFreeCell() {
+            for (let i = 0; i < 400; i++) {
+                const c = (Math.random() * GRID.cols) | 0, r = (Math.random() * GRID.rows) | 0;
+                if (cellFree(c, r)) return { c, r };
+            }
+            return null;
+        }
+
+        // --- Bentuk karakter ---
+        function createCharacterMesh(warna) {
+            const g = new THREE.Group();
+            const kulit = new THREE.MeshLambertMaterial({ color: 0xf1c27d });
+            const baju = new THREE.MeshLambertMaterial({ color: warna });
+            const celana = new THREE.MeshLambertMaterial({ color: 0x3f4756 });
+
+            const badan = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.52, 12), baju);
+            badan.position.y = 1.02; g.add(badan);
+            const kepala = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 12), kulit);
+            kepala.position.y = 1.42; g.add(kepala);
+
+            // Kaki & tangan dibungkus grup supaya bisa diayun dari pangkalnya.
+            const bikinAnggota = (x, y, tinggi, mat) => {
+                const pivot = new THREE.Group(); pivot.position.set(x, y, 0);
+                const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, tinggi, 0.11), mat);
+                m.position.y = -tinggi / 2; pivot.add(m); g.add(pivot); return pivot;
+            };
+            g.userData.kakiKiri = bikinAnggota(-0.08, 0.76, 0.76, celana);
+            g.userData.kakiKanan = bikinAnggota(0.08, 0.76, 0.76, celana);
+            g.userData.tanganKiri = bikinAnggota(-0.2, 1.24, 0.5, baju);
+            g.userData.tanganKanan = bikinAnggota(0.2, 1.24, 0.5, baju);
+            return g;
+        }
+
+        const WARNA_BAJU = [0x4f8ef7, 0xef476f, 0x06d6a0, 0xffd166, 0x9b5de5];
+
+        function spawnWalker() {
+            if (!GRID.blocked) return false;
+            const cell = randomFreeCell();
+            if (!cell) return false;
+            const mesh = createCharacterMesh(WARNA_BAJU[walkers.length % WARNA_BAJU.length]);
+            const p = cellToWorld(cell.c, cell.r);
+            mesh.position.set(p.x, 0, p.y);
+            characterGroup.add(mesh);
+            walkers.push({ mesh, pos: p.clone(), path: null, idx: 0, arah: 0, langkah: 0, jeda: Math.random() * 1.5 });
+            return true;
+        }
+
+        function clearWalkers() {
+            while (characterGroup.children.length) characterGroup.remove(characterGroup.children[0]);
+            walkers.length = 0;
+        }
+
+        // --- Gerak per frame ---
+        function updateWalkers() {
+            if (!charactersOn || !GRID || !GRID.blocked) return;
+            if (!walkClock) walkClock = new THREE.Clock();
+            const dt = Math.min(walkClock.getDelta(), 0.05);   // dibatasi agar tidak melompat setelah tab tidak aktif
+            const LAJU = 1.15;   // meter per detik
+
+            walkers.forEach(w => {
+                if (w.jeda > 0) {                       // berhenti sejenak, seperti sedang berpikir
+                    w.jeda -= dt;
+                    w.langkah *= 0.85;
+                } else if (!w.path || w.idx >= w.path.length) {
+                    const dari = worldToCell(w.pos.x, w.pos.y);
+                    if (!cellFree(dari.c, dari.r)) {    // tergencet karena denah berubah -> pindah ke petak bebas
+                        const lolos = randomFreeCell();
+                        if (lolos) { const p = cellToWorld(lolos.c, lolos.r); w.pos.copy(p); }
+                        w.path = null; return;
+                    }
+                    const tujuan = randomFreeCell();
+                    w.path = tujuan ? findPath(dari, tujuan) : null;
+                    w.idx = 1;
+                    if (!w.path || w.path.length < 2) { w.path = null; w.jeda = 0.5 + Math.random(); }
+                } else {
+                    const target = w.path[w.idx];
+                    const dx = target.x - w.pos.x, dz = target.y - w.pos.y;
+                    const jarak = Math.hypot(dx, dz);
+                    if (jarak < 0.06) {
+                        w.idx++;
+                        if (w.idx >= w.path.length) { w.path = null; w.jeda = 0.4 + Math.random() * 2.2; }
+                    } else {
+                        const maju = Math.min(LAJU * dt, jarak);
+                        w.pos.x += (dx / jarak) * maju;
+                        w.pos.y += (dz / jarak) * maju;
+                        w.langkah += maju * 7;
+                        // Badan berputar halus ke arah tujuan, tidak mematah.
+                        const arahTarget = Math.atan2(dx, dz);
+                        let beda = arahTarget - w.arah;
+                        while (beda > Math.PI) beda -= Math.PI * 2;
+                        while (beda < -Math.PI) beda += Math.PI * 2;
+                        w.arah += beda * Math.min(1, dt * 9);
+                    }
+                }
+
+                w.mesh.position.set(w.pos.x, 0, w.pos.y);
+                w.mesh.rotation.y = w.arah;
+                const ayun = Math.sin(w.langkah) * 0.55;
+                const d = w.mesh.userData;
+                d.kakiKiri.rotation.x = ayun;
+                d.kakiKanan.rotation.x = -ayun;
+                d.tanganKiri.rotation.x = -ayun * 0.8;
+                d.tanganKanan.rotation.x = ayun * 0.8;
+                w.mesh.position.y = Math.abs(Math.sin(w.langkah)) * 0.03;   // sedikit memantul saat melangkah
+            });
+        }
+
+        document.getElementById('btnCharacter').addEventListener('click', () => {
+            charactersOn = !charactersOn;
+            const btn = document.getElementById('btnCharacter');
+            btn.classList.toggle('active', charactersOn);
+            if (charactersOn) {
+                buildWalkGrid();
+                clearWalkers();
+                const jumlah = 2;
+                let berhasil = 0;
+                for (let i = 0; i < jumlah; i++) if (spawnWalker()) berhasil++;
+                if (!berhasil) {
+                    charactersOn = false; btn.classList.remove('active');
+                    alert(currentLang === 'id'
+                        ? "Belum ada ruang untuk berjalan. Gambar tembok ruangan dulu, lalu coba lagi."
+                        : "No walkable space yet. Draw some room walls first, then try again.");
+                }
+            } else clearWalkers();
+        });
+
+
         document.getElementById('arBtn').addEventListener('click', () => { if (lines.length === 0 && freeObjects.length === 0) return alert(currentLang==='id'?"Buat denah terlebih dahulu sebelum melihat dalam AR!":"Create a floorplan first before viewing in AR!"); new THREE.GLTFExporter().parse(modelGroup, (gltf) => { document.getElementById('arViewer').src = URL.createObjectURL(new Blob([gltf], { type: 'model/gltf-binary' })); arModal.style.display = 'flex'; }, { binary: true }); });
         document.getElementById('closeArBtn').addEventListener('click', () => arModal.style.display = 'none');
         document.getElementById('exportBtn').onclick = () => { new THREE.GLTFExporter().parse(modelGroup, (gltf) => { const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([gltf], { type: 'application/octet-stream' })); link.download = 'denah_3d_architect.glb'; link.click(); }, { binary: true }); };
