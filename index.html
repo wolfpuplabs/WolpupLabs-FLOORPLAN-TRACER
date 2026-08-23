@@ -389,6 +389,56 @@
         let isWorldSpaceMode = true; // status World/Local untuk gizmo transform (dipakai untuk auto-reset orientasi)
 
         const customModels = {};
+
+        // Byte mentah tiap model yang di-upload, supaya bisa ikut disimpan dan dibangun
+        // ulang. customModels hanya berisi objek Three.js hasil parse dan isinya HILANG
+        // begitu halaman dimuat ulang — itulah sebabnya model yang sudah di-upload lenyap
+        // dari tampilan 3D setelah reload, padahal penanda "GLB" di kanvas 2D masih ada.
+        const customModelSrc = {};
+
+        function bufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer); let bin = '';
+            const CHUNK = 0x8000; // dipotong supaya tidak melewati batas argumen fungsi
+            for (let i = 0; i < bytes.length; i += CHUNK) {
+                bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+            }
+            return btoa(bin);
+        }
+        function base64ToBuffer(b64) {
+            const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes.buffer;
+        }
+
+        // GLTFLoader.parse menerima ArrayBuffer untuk .glb maupun .gltf.
+        function parseModelBuffer(kind, buffer, onOk, onFail) {
+            try {
+                if (kind === 'obj') {
+                    const text = new TextDecoder().decode(new Uint8Array(buffer));
+                    const obj = objLoader.parse(text);
+                    obj.traverse(c => { if (c.isMesh) c.material = new THREE.MeshLambertMaterial({ color: 0xcccccc }); });
+                    onOk(normalizeModel(obj));
+                } else {
+                    gltfLoader.parse(buffer, '', (gltf) => onOk(normalizeModel(gltf.scene)), () => onFail());
+                }
+            } catch (err) { onFail(); }
+        }
+
+        // Bangun ulang semua model dari byte tersimpan, lalu gambar ulang scene.
+        function restoreCustomModels(srcMap, done) {
+            const ids = Object.keys(srcMap || {});
+            if (!ids.length) { if (done) done(); return; }
+            let left = ids.length;
+            const tick = () => { if (--left === 0) { update3D(); draw2D(); if (done) done(); } };
+            ids.forEach(id => {
+                const rec = srcMap[id];
+                customModelSrc[id] = rec;
+                if (customModels[id]) { tick(); return; }
+                parseModelBuffer(rec.kind, base64ToBuffer(rec.b64),
+                    (group) => { customModels[id] = group; tick(); },
+                    () => tick());
+            });
+        }
         const gltfLoader = new THREE.GLTFLoader();
         const objLoader = new THREE.OBJLoader();
 
@@ -396,8 +446,15 @@
         function triggerAutosave() {
             clearTimeout(autosaveTimeout);
             autosaveTimeout = setTimeout(() => {
-                const projectData = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value };
-                localStorage.setItem('floorplan_autosave', JSON.stringify(projectData));
+                const base = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value };
+                try {
+                    // Byte model ikut disimpan supaya GLB/OBJ tetap ada setelah reload.
+                    localStorage.setItem('floorplan_autosave', JSON.stringify({ ...base, customModelSrc }));
+                } catch (err) {
+                    // Model besar bisa melewati kuota localStorage (umumnya ~5 MB).
+                    // Denahnya tetap diselamatkan, hanya byte modelnya yang dilepas.
+                    try { localStorage.setItem('floorplan_autosave', JSON.stringify(base)); } catch (e2) {}
+                }
             }, 1500); 
         }
 
@@ -555,6 +612,7 @@
                         lines = loadedData.lines || []; openings = loadedData.openings || []; freeObjects = loadedData.freeObjects || [];
                         if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
                         update3D(); draw2D();
+                        restoreCustomModels(loadedData.customModelSrc); // bangun ulang GLB/OBJ
                     }
                 } catch (err) {}
             }
@@ -977,26 +1035,39 @@
         document.getElementById('upload3DModel').addEventListener('change', (e) => {
             const file = e.target.files[0]; if (!file) return; 
             const filename = file.name.toLowerCase();
-            const url = URL.createObjectURL(file);
-            
-            if (filename.endsWith('.glb') || filename.endsWith('.gltf')) {
-                gltfLoader.load(url, (gltf) => { 
-                    const modelId = 'glb_' + Date.now(); customModels[modelId] = normalizeModel(gltf.scene); 
-                    addCustomModelToScene('custom_glb', modelId); URL.revokeObjectURL(url); e.target.value = ""; 
-                }, undefined, (error) => { alert(currentLang === 'id' ? "Gagal memuat model GLB!" : "Failed to load GLB model!"); });
-            } 
-            else if (filename.endsWith('.obj')) {
-                objLoader.load(url, (obj) => { 
-                    const modelId = 'obj_' + Date.now(); 
-                    obj.traverse(function (child) { if (child.isMesh) child.material = new THREE.MeshLambertMaterial({ color: 0xcccccc }); }); 
-                    customModels[modelId] = normalizeModel(obj); 
-                    addCustomModelToScene('custom_obj', modelId); URL.revokeObjectURL(url); e.target.value = ""; 
-                }, undefined, (error) => { alert(currentLang === 'id' ? "Gagal memuat model OBJ!" : "Failed to load OBJ model!"); });
-            }
-            else {
+            const isGltf = filename.endsWith('.glb') || filename.endsWith('.gltf');
+            const isObj  = filename.endsWith('.obj');
+
+            if (!isGltf && !isObj) {
                 alert(currentLang === 'id' ? "Format file tidak didukung! Gunakan .glb, .gltf, atau .obj" : "Unsupported format! Use .glb, .gltf, or .obj");
-                e.target.value = "";
+                e.target.value = ""; return;
             }
+
+            // File dibaca sebagai ArrayBuffer (bukan lewat object URL) supaya BYTE MENTAHNYA
+            // bisa ikut disimpan. Tanpa ini, model hilang setiap kali halaman dimuat ulang.
+            const reader3D = new FileReader();
+            reader3D.onload = (ev) => {
+                const buffer = ev.target.result;
+                const kind = isGltf ? 'gltf' : 'obj';
+                const modelId = (isGltf ? 'glb_' : 'obj_') + Date.now();
+                try {
+                    customModelSrc[modelId] = { kind, b64: bufferToBase64(buffer), name: file.name };
+                } catch (err) { /* file terlalu besar untuk disimpan, model tetap tampil sesi ini */ }
+
+                parseModelBuffer(kind, buffer,
+                    (group) => {
+                        customModels[modelId] = group;
+                        addCustomModelToScene(isGltf ? 'custom_glb' : 'custom_obj', modelId);
+                        e.target.value = "";
+                    },
+                    () => {
+                        delete customModelSrc[modelId];
+                        alert(currentLang === 'id' ? "Gagal memuat model 3D!" : "Failed to load 3D model!");
+                        e.target.value = "";
+                    });
+            };
+            reader3D.onerror = () => { alert(currentLang === 'id' ? "Gagal membaca file!" : "Failed to read file!"); e.target.value = ""; };
+            reader3D.readAsArrayBuffer(file);
         });
 
         const scene = new THREE.Scene();
@@ -1171,6 +1242,20 @@
                 let innerMesh; // Simpan model di variabel sementara
                 if ((obj.type === 'custom_glb' || obj.type === 'custom_obj') && customModels[obj.modelId]) {
                     innerMesh = customModels[obj.modelId].clone();
+                } else if (obj.type === 'custom_glb' || obj.type === 'custom_obj') {
+                    // Data modelnya tidak tersedia (mis. byte-nya tidak muat di kuota simpan).
+                    // Tampilkan kotak penanda, JANGAN grup kosong — objek yang tak terlihat
+                    // bikin orang mengira upload-nya gagal padahal datanya cuma belum ada.
+                    innerMesh = new THREE.Group();
+                    const ph = new THREE.Mesh(
+                        new THREE.BoxGeometry(1, 1, 1),
+                        new THREE.MeshLambertMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.35 })
+                    );
+                    ph.position.y = 0.5; innerMesh.add(ph);
+                    innerMesh.add(new THREE.LineSegments(
+                        new THREE.EdgesGeometry(ph.geometry),
+                        new THREE.LineBasicMaterial({ color: 0x8b5cf6 })
+                    ).translateY(0.5));
                 } else {
                     innerMesh = (obj.type === 'stairs') ? createStairsMesh(obj.steps || 14, obj.width3D || 1.0, heightWall) : createFurnitureMesh(obj.type, obj.variant || 0); 
                 }
@@ -1226,7 +1311,7 @@
 
         document.getElementById('saveProjBtn').addEventListener('click', () => {
             if (lines.length === 0 && freeObjects.length === 0) { alert(currentLang === 'id' ? "Denah masih kosong!" : "Floorplan is empty!"); return; }
-            const projectData = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value };
+            const projectData = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value, customModelSrc };
             const jsonString = JSON.stringify(projectData); const blob = new Blob([jsonString], { type: "application/octet-stream" }); const url = URL.createObjectURL(blob);
             const link = document.createElement('a'); link.href = url; link.download = "floorplan_project.json"; document.body.appendChild(link); link.click(); setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 100);
         });
@@ -1237,7 +1322,9 @@
                     const loadedData = JSON.parse(event.target.result);
                     lines = loadedData.lines || []; openings = loadedData.openings || []; freeObjects = loadedData.freeObjects || [];
                     if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
-                    undoStack = []; redoStack = []; releaseGizmo(); stopDrawing(); closeEditPanel(); draw2D(); update3D(); alert(currentLang === 'id' ? "Proyek berhasil dimuat!" : "Project loaded successfully!");
+                    undoStack = []; redoStack = []; releaseGizmo(); stopDrawing(); closeEditPanel(); draw2D(); update3D();
+                    restoreCustomModels(loadedData.customModelSrc); // bangun ulang GLB/OBJ
+                    alert(currentLang === 'id' ? "Proyek berhasil dimuat!" : "Project loaded successfully!");
                 } catch (err) { alert(currentLang === 'id' ? "Gagal memuat file!" : "Failed to load project file."); }
             }; reader.readAsText(file); e.target.value = "";
         });
