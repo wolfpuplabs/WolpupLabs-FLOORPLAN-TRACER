@@ -355,7 +355,6 @@
                 <button id="btnTrSc" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Scale</button>
                 <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
                 <button id="btnTrSpace" style="width:auto; padding:6px 12px; background:#ca8a04; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Toggle Local/World Space">World</button>
-                <span id="buildBadge" style="align-self:center; padding:0 4px 0 8px; font-size:10px; font-weight:700; color:#a1a1aa; letter-spacing:0.5px;">B8</span>
             </div>
         </div>
     </div>
@@ -395,6 +394,7 @@
         // begitu halaman dimuat ulang — itulah sebabnya model yang sudah di-upload lenyap
         // dari tampilan 3D setelah reload, padahal penanda "GLB" di kanvas 2D masih ada.
         const customModelSrc = {};
+        const abortedModels = new Set(); // model yang gagal di-parse, jangan dihidupkan lagi oleh promise kompresi
 
         function bufferToBase64(buffer) {
             const bytes = new Uint8Array(buffer); let bin = '';
@@ -408,6 +408,32 @@
             const bin = atob(b64); const bytes = new Uint8Array(bin.length);
             for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
             return bytes.buffer;
+        }
+
+        // --- KOMPRESI BYTE MODEL ---
+        // base64 sendiri MENAMBAH ukuran ~33%, jadi byte model di-gzip dulu sebelum
+        // dijadikan base64. Pada GLB uji 2,06 MB hasilnya turun dari 2,75 MB menjadi
+        // 1,74 MB (hemat ~37%), sehingga lebih jarang menabrak kuota localStorage.
+        // CompressionStream ada di Safari 16.4+; kalau tidak tersedia, otomatis
+        // kembali ke penyimpanan tanpa kompresi supaya tetap jalan.
+        const canCompress = (typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined');
+
+        async function packModel(buffer) {
+            if (!canCompress) return { enc: 'raw', b64: bufferToBase64(buffer) };
+            try {
+                const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream('gzip'));
+                const packed = await new Response(stream).arrayBuffer();
+                // kalau hasil gzip malah lebih besar (mis. model sudah terkompresi), pakai yang mentah
+                if (packed.byteLength >= buffer.byteLength) return { enc: 'raw', b64: bufferToBase64(buffer) };
+                return { enc: 'gzip', b64: bufferToBase64(packed) };
+            } catch (err) { return { enc: 'raw', b64: bufferToBase64(buffer) }; }
+        }
+
+        async function unpackModel(rec) {
+            const buf = base64ToBuffer(rec.b64);
+            if (rec.enc !== 'gzip') return buf;              // termasuk proyek lama tanpa penanda enc
+            const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+            return await new Response(stream).arrayBuffer();
         }
 
         // GLTFLoader.parse menerima ArrayBuffer untuk .glb maupun .gltf.
@@ -434,9 +460,11 @@
                 const rec = srcMap[id];
                 customModelSrc[id] = rec;
                 if (customModels[id]) { tick(); return; }
-                parseModelBuffer(rec.kind, base64ToBuffer(rec.b64),
-                    (group) => { customModels[id] = group; tick(); },
-                    () => tick());
+                unpackModel(rec).then(buffer => {
+                    parseModelBuffer(rec.kind, buffer,
+                        (group) => { customModels[id] = group; tick(); },
+                        () => tick());
+                }).catch(() => tick());
             });
         }
         const gltfLoader = new THREE.GLTFLoader();
@@ -1050,9 +1078,17 @@
                 const buffer = ev.target.result;
                 const kind = isGltf ? 'gltf' : 'obj';
                 const modelId = (isGltf ? 'glb_' : 'obj_') + Date.now();
-                try {
-                    customModelSrc[modelId] = { kind, b64: bufferToBase64(buffer), name: file.name };
-                } catch (err) { /* file terlalu besar untuk disimpan, model tetap tampil sesi ini */ }
+                // Byte dikompresi dulu sebelum disimpan. Prosesnya asinkron dan berjalan
+                // paralel dengan parse di bawah, jadi tidak menahan tampilan model.
+                packModel(buffer)
+                    .then(rec => {
+                        // Parse bisa gagal lebih dulu dan sudah membatalkan model ini.
+                        // Tanpa penjagaan ini, hasil kompresi yang datang belakangan akan
+                        // menghidupkan kembali entri yang seharusnya dibuang.
+                        if (abortedModels.has(modelId)) return;
+                        customModelSrc[modelId] = { kind, name: file.name, ...rec };
+                    })
+                    .catch(() => { /* gagal disimpan, model tetap tampil di sesi ini */ });
 
                 parseModelBuffer(kind, buffer,
                     (group) => {
@@ -1061,6 +1097,7 @@
                         e.target.value = "";
                     },
                     () => {
+                        abortedModels.add(modelId);
                         delete customModelSrc[modelId];
                         alert(currentLang === 'id' ? "Gagal memuat model 3D!" : "Failed to load 3D model!");
                         e.target.value = "";
