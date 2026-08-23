@@ -217,6 +217,10 @@
                         <option value="shower" id="optShower">Shower</option>
                         <option value="bathtub" id="optBathtub">Bathtub</option>
                     </optgroup>
+                    <optgroup label="Lighting" id="optGrp5">
+                        <option value="spot_light" id="optSpot">Spotlight</option>
+                        <option value="area_light" id="optArea">Area Panel</option>
+                    </optgroup>
                     <optgroup label="Decor & Plants" id="optGrp4">
                         <option value="standing_lamp" id="optLamp">Standing Lamp</option>
                         <option value="carpet" id="optCarpet">Carpet</option>
@@ -246,6 +250,24 @@
                         <span id="txtLblRoof">Show Roof</span>
                     </label>
                 </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h4 id="txtSecLight">Lighting</h4>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
+                    <input type="checkbox" id="chkShadow" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
+                    <span id="txtLblShadow">Enable Shadows</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
+                    <input type="checkbox" id="chkSun" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
+                    <span id="txtLblSun">Sun</span>
+                </label>
+                <label><span id="txtLblSunInt">Sun Intensity:</span> <span id="valSunInt">1.15</span></label>
+                <input type="range" id="sunInt" min="0" max="3" step="0.05" value="1.15">
+                <label><span id="txtLblSunAzim">Sun Direction:</span> <span id="valSunAzim">45</span>&deg;</label>
+                <input type="range" id="sunAzim" min="0" max="360" step="5" value="45">
+                <label><span id="txtLblSunElev">Sun Height:</span> <span id="valSunElev">55</span>&deg;</label>
+                <input type="range" id="sunElev" min="5" max="90" step="1" value="55">
             </div>
 
             <div class="sidebar-section">
@@ -540,7 +562,9 @@
             curtain: { id: ["Terbuka", "Tertutup"], en: ["Open", "Closed"] },
             wardrobe: { id: ["Pintu Ayun 2", "Pintu Geser 3", "Sudut (L)"], en: ["2 Swing Doors", "3 Sliding Doors", "Corner (L)"] },
             bookshelf: { id: ["Rak Terbuka", "Partisi Ruang", "Rak Rendah"], en: ["Open Shelf", "Room Partition", "Low Shelf"] },
-            head_cabinet: { id: ["Nakas Kecil", "Dua Laci", "Gantung"], en: ["Small Nightstand", "Two Drawers", "Wall-mounted"] }
+            head_cabinet: { id: ["Nakas Kecil", "Dua Laci", "Gantung"], en: ["Small Nightstand", "Two Drawers", "Wall-mounted"] },
+            spot_light: { id: ["Redup", "Sedang", "Terang"], en: ["Dim", "Medium", "Bright"] },
+            area_light: { id: ["Redup", "Sedang", "Terang"], en: ["Dim", "Medium", "Bright"] }
         };
 
         const texts = {
@@ -551,7 +575,7 @@
                 optDef: "+ Tambah Mebel...", grp1: "Ruang Utama", grp2: "Dapur", grp3: "Kamar Mandi", grp4: "Dekorasi & Tanaman", snapBtn: "Snap (Magnet)", charBtn: "Tambah Karakter",
                 bed: "Kasur", sofa: "Sofa", table: "Meja", chair: "Kursi", tv: "TV", buffet: "Bufet", wardrobe: "Lemari", bookshelf: "Rak Buku / Partisi", headCab: "Head Cabinet",
                 kitchen: "Kitchen Set", stove: "Kompor", fridge: "Kulkas", toilet: "Kloset / Toilet", shower: "Shower", bathtub: "Bathtub",
-                lamp: "Lampu Lantai", carpet: "Karpet", curtain: "Tirai", plant: "Tanaman Dalam", tree: "Pohon",
+                lamp: "Lampu Lantai", grp5: "Pencahayaan", spot: "Lampu Sorot", area: "Panel Area", secLight: "Pencahayaan", lblShadow: "Aktifkan Bayangan", lblSun: "Matahari", lblSunInt: "Kekuatan Matahari:", lblSunAzim: "Arah Matahari:", lblSunElev: "Ketinggian Matahari:", carpet: "Karpet", curtain: "Tirai", plant: "Tanaman Dalam", tree: "Pohon",
                 lblWallH: "Tinggi Tembok (m)", lblWallT: "Tebal Tembok (m)", lblRoof: "Tampilkan Atap", emptyMsg: "Pilih objek di kanvas.",
                 lblVariant: "Tipe / Varian:", lblPos: "Geser Posisi:", lblWidth: "Lebar:", lblHeight: "Tinggi:", lblElev: "Elevasi (Tinggi dr Lantai):",
                 lblSwing: "Rotasi Pintu:", flipBtn: "Balik Engsel", lblSteps: "Anak Tangga:", lblStairW: "Lebar Tangga:", lblWallLen: "Panjang Tembok:",
@@ -568,7 +592,7 @@
                 optDef: "+ Add Furniture...", grp1: "Living Area", grp2: "Kitchen", grp3: "Bathroom", grp4: "Decor & Plants", snapBtn: "Snap (Magnet)", charBtn: "Add Character",
                 bed: "Bed", sofa: "Sofa", table: "Table", chair: "Chair", tv: "TV", buffet: "Sideboard", wardrobe: "Wardrobe", bookshelf: "Bookshelf / Partition", headCab: "Head Cabinet",
                 kitchen: "Kitchen Set", stove: "Stove", fridge: "Fridge", toilet: "Toilet/WC", shower: "Shower", bathtub: "Bathtub",
-                lamp: "Standing Lamp", carpet: "Carpet", curtain: "Curtain", plant: "Indoor Plant", tree: "Tree",
+                lamp: "Standing Lamp", grp5: "Lighting", spot: "Spotlight", area: "Area Panel", secLight: "Lighting", lblShadow: "Enable Shadows", lblSun: "Sun", lblSunInt: "Sun Intensity:", lblSunAzim: "Sun Direction:", lblSunElev: "Sun Height:", carpet: "Carpet", curtain: "Curtain", plant: "Indoor Plant", tree: "Tree",
                 lblWallH: "Wall Height (m)", lblWallT: "Wall Thick (m)", lblRoof: "Show Roof", emptyMsg: "Select object on canvas.",
                 lblVariant: "Style / Variant:", lblPos: "Slide Pos:", lblWidth: "Width:", lblHeight: "Height:", lblElev: "Elevation (from floor):",
                 lblSwing: "Door Swing:", flipBtn: "Flip Hinge", lblSteps: "Steps:", lblStairW: "Stairs W:", lblWallLen: "Wall Length:",
@@ -592,6 +616,17 @@
             document.getElementById('txtModeDoor').innerText = t.door; document.getElementById('txtModeWindow').innerText = t.win; document.getElementById('txtModeStairs').innerText = t.stairs;
             document.getElementById('txtOptDefault').innerText = t.optDef; document.getElementById('optGrp1').label = t.grp1; document.getElementById('optGrp2').label = t.grp2; 
             document.getElementById('optGrp3').label = t.grp3; document.getElementById('optGrp4').label = t.grp4;
+            if (document.getElementById('optGrp5')) {
+                document.getElementById('optGrp5').label = t.grp5;
+                document.getElementById('optSpot').innerText = t.spot;
+                document.getElementById('optArea').innerText = t.area;
+                document.getElementById('txtSecLight').innerText = t.secLight;
+                document.getElementById('txtLblShadow').innerText = t.lblShadow;
+                document.getElementById('txtLblSun').innerText = t.lblSun;
+                document.getElementById('txtLblSunInt').innerText = t.lblSunInt;
+                document.getElementById('txtLblSunAzim').innerText = t.lblSunAzim;
+                document.getElementById('txtLblSunElev').innerText = t.lblSunElev;
+            }
             document.getElementById('txtBtnSnap').innerText = t.snapBtn; if (document.getElementById('txtBtnCharacter')) document.getElementById('txtBtnCharacter').innerText = t.charBtn; document.getElementById('txtLblWallLen').innerText = t.lblWallLen;
             document.getElementById('optBed').innerText = t.bed; document.getElementById('optSofa').innerText = t.sofa; document.getElementById('optTable').innerText = t.table; document.getElementById('optChair').innerText = t.chair;
             document.getElementById('optTv').innerText = t.tv; document.getElementById('optBuffet').innerText = t.buffet; document.getElementById('optWardrobe').innerText = t.wardrobe;
@@ -637,6 +672,17 @@
         });
         chkShowRoof.addEventListener('change', () => { update3D(); });
 
+        // --- kontrol pencahayaan ---
+        ['sunInt', 'sunAzim', 'sunElev'].forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                const map = { sunInt: 'valSunInt', sunAzim: 'valSunAzim', sunElev: 'valSunElev' };
+                document.getElementById(map[id]).innerText = e.target.value;
+                updateSun();
+            });
+        });
+        document.getElementById('chkSun').addEventListener('change', updateSun);
+        document.getElementById('chkShadow').addEventListener('change', terapkanBayangan);
+
         let scale = 1; let panX = 0, panY = 0; let startPanX = 0, startPanY = 0;
 
         function initDefaultCanvas() {
@@ -652,6 +698,7 @@
             fitAppToViewport();
             [0, 150, 400, 1000].forEach(t => setTimeout(fitAppToViewport, t));
 
+            updateSun(); terapkanBayangan();
             initDefaultCanvas(); 
             const saved = localStorage.getItem('floorplan_autosave');
             if (saved) {
@@ -1039,7 +1086,7 @@
                     let color = '#06b6d4';
                     if (['bed','sofa','table','chair','tv','buffet','wardrobe','bookshelf','head_cabinet'].includes(obj.type)) color = '#f59e0b';
                     else if (['kitchen_set','stove','fridge'].includes(obj.type)) color = '#ec4899';
-                    else if (['standing_lamp'].includes(obj.type)) color = '#eab308';
+                    else if (['standing_lamp','spot_light','area_light'].includes(obj.type)) color = '#eab308';
                     else if (['plant','tree'].includes(obj.type)) color = '#22c55e';
                     else if (['carpet','curtain'].includes(obj.type)) color = '#a855f7';
                     else if (obj.type === 'custom_glb') color = '#8b5cf6';
@@ -1052,7 +1099,7 @@
                     
                     ctx.scale(obj.flipX ? -1 : 1, obj.flipZ ? -1 : 1);
                     ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(10, Math.min(sizeX,sizeZ)*0.35)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
-                    const labels = { bed:'BED', sofa:'SOFA', table:'TBL', chair:'CHR', tv:'TV', buffet:'BUF', wardrobe:'WRD', bookshelf:'BKS', head_cabinet:'NKS', kitchen_set:'KIT', stove:'STV', fridge:'FRG', toilet:'WC', shower:'SHW', bathtub:'BAT', standing_lamp:'LMP', carpet:'CRP', curtain:'CUR', plant:'PLT', tree:'TRE', custom_glb:'GLB', custom_obj:'OBJ' }; ctx.fillText(labels[obj.type] || 'OBJ', 0, 0); 
+                    const labels = { bed:'BED', sofa:'SOFA', table:'TBL', chair:'CHR', tv:'TV', buffet:'BUF', wardrobe:'WRD', bookshelf:'BKS', head_cabinet:'NKS', kitchen_set:'KIT', stove:'STV', fridge:'FRG', toilet:'WC', shower:'SHW', bathtub:'BAT', standing_lamp:'LMP', spot_light:'SPT', area_light:'PNL', carpet:'CRP', curtain:'CUR', plant:'PLT', tree:'TRE', custom_glb:'GLB', custom_obj:'OBJ' }; ctx.fillText(labels[obj.type] || 'OBJ', 0, 0); 
                 } ctx.restore();
             }); triggerAutosave();
         }
@@ -1176,8 +1223,70 @@
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, renderContainer.clientWidth / renderContainer.clientHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(renderContainer.clientWidth, renderContainer.clientHeight); renderer.setClearColor(0x27272a); renderContainer.appendChild(renderer.domElement);
-        const controls = new THREE.OrbitControls(camera, renderer.domElement); scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6); dirLight.position.set(20, 40, 20); scene.add(dirLight); scene.add(new THREE.GridHelper(50, 50, 0x555555, 0x333333));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;   // tepi bayangan lebih lembut
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        // --- PENCAHAYAAN ---
+        // Ambient sengaja rendah; kalau terlalu terang, bayangan jadi nyaris tak terlihat.
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.34);
+        scene.add(ambientLight);
+        const langitLight = new THREE.HemisphereLight(0xbfd4ff, 0x8a7f6f, 0.28); // cahaya langit & pantulan lantai
+        scene.add(langitLight);
+
+        // MATAHARI: satu untuk seluruh denah, arahnya diatur lewat azimut & ketinggian.
+        const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.15);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.set(2048, 2048);
+        sunLight.shadow.bias = -0.0008;          // menahan garis-garis palsu pada permukaan datar
+        sunLight.shadow.normalBias = 0.02;
+        scene.add(sunLight);
+        scene.add(sunLight.target);
+
+        scene.add(new THREE.GridHelper(50, 50, 0x555555, 0x333333));
+
+        // Arah matahari dihitung dari sudut kompas + ketinggian, seperti posisi matahari asli.
+        function updateSun() {
+            const on = document.getElementById('chkSun').checked;
+            const azim = THREE.MathUtils.degToRad(parseFloat(document.getElementById('sunAzim').value));
+            const elev = THREE.MathUtils.degToRad(parseFloat(document.getElementById('sunElev').value));
+            const kuat = parseFloat(document.getElementById('sunInt').value);
+            sunLight.visible = on;
+            sunLight.intensity = kuat;
+            const jarak = 40;
+            sunLight.position.set(
+                Math.cos(elev) * Math.sin(azim) * jarak,
+                Math.max(2, Math.sin(elev) * jarak),
+                Math.cos(elev) * Math.cos(azim) * jarak
+            );
+            sunLight.target.position.set(0, 0, 0);
+            sunLight.target.updateMatrixWorld();
+            // Kotak bayangan dipaskan ke ukuran denah supaya resolusinya tidak terbuang.
+            const box = new THREE.Box3().setFromObject(modelGroup);
+            const r = box.isEmpty() ? 12 : Math.max(6, box.getSize(new THREE.Vector3()).length() * 0.6);
+            const c = sunLight.shadow.camera;
+            c.left = -r; c.right = r; c.top = r; c.bottom = -r; c.near = 0.5; c.far = jarak * 2.2;
+            c.updateProjectionMatrix();
+        }
+
+        // Bayangan dinyalakan/dimatikan menyeluruh — di perangkat lemah bisa dimatikan.
+        function terapkanBayangan() {
+            const aktif = document.getElementById('chkShadow').checked;
+            renderer.shadowMap.enabled = aktif;
+            modelGroup.traverse(o => {
+                if (!o.isMesh) return;
+                // Lantai & atap hanya menerima bayangan; benda lain menerima sekaligus menjatuhkan.
+                const datar = o.geometry && o.geometry.type === 'PlaneGeometry';
+                // Kaca jendela transparan: kalau ikut menjatuhkan bayangan, hasilnya
+                // kotak hitam pekat seolah temboknya masif.
+                const tembusPandang = o.material && o.material.transparent;
+                o.castShadow = aktif && !datar && !tembusPandang;
+                o.receiveShadow = aktif;
+            });
+            if (characterGroup) characterGroup.traverse(o => { if (o.isMesh) { o.castShadow = aktif; o.receiveShadow = aktif; } });
+            scene.traverse(o => { if (o.isLight && o.shadow) o.castShadow = aktif && o.userData.mauBayangan !== false; });
+            renderer.shadowMap.needsUpdate = true;
+        }
         const modelGroup = new THREE.Group(); scene.add(modelGroup); camera.position.set(0, 15, 20); 
 
         // --- SISTEM HIGHLIGHT BOX ---
@@ -1376,6 +1485,56 @@
                         daun.position.set(x, H / 2, D / 2 + 0.02); group.add(daun);
                     }
                     for (const x of [-0.04, 0.04]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.22, 8), matMetal); p.position.set(x, H / 2, D / 2 + 0.06); group.add(p); }
+                }
+            }
+            else if (type === 'spot_light' || type === 'area_light') {
+                // Lampu dibuat sebagai objek biasa, jadi otomatis dapat gizmo, undo,
+                // penyimpanan, dan penghapusan lewat jalur yang sudah ada.
+                const warna = 0xfff1d0;
+                const kuat = [1.6, 2.6, 3.6][variant] || 1.6;   // varian = tingkat terang
+
+                if (type === 'spot_light') {
+                    // Rumah lampu sorot: silinder + cincin, menggantung dari langit-langit.
+                    const batang = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 8), matMetal);
+                    batang.position.y = 2.62; group.add(batang);
+                    const rumah = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.14, 0.2, 16), matMetal);
+                    rumah.position.y = 2.35; group.add(rumah);
+                    const kaca = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 16),
+                        new THREE.MeshBasicMaterial({ color: warna }));
+                    kaca.position.y = 2.25; group.add(kaca);
+
+                    const lampu = new THREE.SpotLight(warna, kuat, 22, Math.PI / 7, 0.45, 1.4);
+                    lampu.position.set(0, 2.3, 0);
+                    lampu.castShadow = true;
+                    lampu.shadow.mapSize.set(1024, 1024);
+                    lampu.shadow.bias = -0.0015;
+                    lampu.shadow.normalBias = 0.02;
+                    lampu.shadow.camera.near = 0.3; lampu.shadow.camera.far = 24;
+                    const arah = new THREE.Object3D(); arah.position.set(0, 0, 0);
+                    group.add(arah); lampu.target = arah;
+                    group.add(lampu);
+                } else {
+                    // Panel area: bidang persegi yang menyala rata di langit-langit.
+                    const W = 1.2, D = 0.6;
+                    const bingkai = new THREE.Mesh(new THREE.BoxGeometry(W + 0.06, 0.06, D + 0.06), matMetal);
+                    bingkai.position.y = 2.72; group.add(bingkai);
+                    const bidang = new THREE.Mesh(new THREE.BoxGeometry(W, 0.03, D),
+                        new THREE.MeshBasicMaterial({ color: warna }));
+                    bidang.position.y = 2.68; group.add(bidang);
+
+                    // Catatan: RectAreaLight di three.js TIDAK bisa menjatuhkan bayangan.
+                    // Supaya panel ini tetap berbayang, dipakai sorot bersudut sangat lebar
+                    // dengan penumbra penuh — hasilnya cahaya rata bertepi lembut khas panel.
+                    const lampu = new THREE.SpotLight(warna, kuat, 20, Math.PI / 2.4, 1.0, 1.2);
+                    lampu.position.set(0, 2.66, 0);
+                    lampu.castShadow = true;
+                    lampu.shadow.mapSize.set(1024, 1024);
+                    lampu.shadow.bias = -0.002;
+                    lampu.shadow.normalBias = 0.03;
+                    lampu.shadow.camera.near = 0.3; lampu.shadow.camera.far = 22;
+                    const arah = new THREE.Object3D(); arah.position.set(0, 0, 0);
+                    group.add(arah); lampu.target = arah;
+                    group.add(lampu);
                 }
             }
             else if (type === 'bookshelf') {
@@ -1583,6 +1742,11 @@
             // Denah berubah -> peta rintangan karakter ikut diperbarui, supaya tembok
             // dan perabot yang baru langsung dihindari.
             if (charactersOn) buildWalkGrid();
+
+            // Mesh baru harus didaftarkan ulang sebagai penjatuh/penerima bayangan,
+            // dan kotak bayangan matahari dipaskan ke ukuran denah yang baru.
+            updateSun();
+            terapkanBayangan();
         }
 
         // ============================================================
@@ -1662,6 +1826,7 @@
                 if (!mesh) return;
                 box.setFromObject(mesh);
                 if (box.isEmpty()) return;
+                if (o.type === 'spot_light' || o.type === 'area_light') return;  // lampu menggantung, bukan penghalang
                 if (box.min.y > 1.7) return;    // benda tinggi (mis. lampu gantung) bisa dilewati
                 if (box.max.y < 0.25) return;   // benda pipih (karpet, keset) memang untuk diinjak
                 const c0 = Math.floor((box.min.x - RADIUS - minX) / cell), c1 = Math.floor((box.max.x + RADIUS - minX) / cell);
