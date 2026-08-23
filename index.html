@@ -396,6 +396,42 @@
         const customModelSrc = {};
         const abortedModels = new Set(); // model yang gagal di-parse, jangan dihidupkan lagi oleh promise kompresi
 
+        // --- PENYIMPANAN BYTE MODEL: INDEXEDDB, BUKAN LOCALSTORAGE ---
+        // localStorage dibatasi ~5 MB per situs dan hanya menerima teks, sehingga byte model
+        // harus lewat base64 yang justru MENAMBAH ~33%. Dua GLB berukuran sedang saja sudah
+        // menembus batas itu; kode lalu diam-diam menyimpan denahnya saja tanpa model, dan
+        // setelah reload yang muncul cuma kotak penanda.
+        // IndexedDB menyimpan ArrayBuffer apa adanya (tanpa base64) dengan kuota jauh lebih
+        // besar, jadi model tetap utuh setelah reload.
+        const MODEL_DB = 'floorplan_models', MODEL_STORE = 'models';
+        function openModelDB() {
+            return new Promise((resolve, reject) => {
+                if (!window.indexedDB) { reject(new Error('IndexedDB tidak tersedia')); return; }
+                const req = indexedDB.open(MODEL_DB, 1);
+                req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(MODEL_STORE)) db.createObjectStore(MODEL_STORE); };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+        function idbRun(mode, fn) {
+            return openModelDB().then(db => new Promise((resolve, reject) => {
+                const tx = db.transaction(MODEL_STORE, mode);
+                const store = tx.objectStore(MODEL_STORE);
+                let result;
+                fn(store, v => { result = v; });
+                tx.oncomplete = () => resolve(result);
+                tx.onerror = () => reject(tx.error);
+                tx.onabort = () => reject(tx.error);
+            }));
+        }
+        const idbPutModel = (id, rec) => idbRun('readwrite', store => store.put(rec, id));
+        const idbDeleteModel = (id) => idbRun('readwrite', store => store.delete(id));
+        const idbClearModels = () => idbRun('readwrite', store => store.clear());
+        const idbGetAllModels = () => idbRun('readonly', (store, set) => {
+            const out = {}; const cur = store.openCursor();
+            cur.onsuccess = e => { const c = e.target.result; if (c) { out[c.key] = c.value; c.continue(); } else set(out); };
+        });
+
         function bufferToBase64(buffer) {
             const bytes = new Uint8Array(buffer); let bin = '';
             const CHUNK = 0x8000; // dipotong supaya tidak melewati batas argumen fungsi
@@ -460,7 +496,10 @@
                 const rec = srcMap[id];
                 customModelSrc[id] = rec;
                 if (customModels[id]) { tick(); return; }
-                unpackModel(rec).then(buffer => {
+                // rec.buf = dari IndexedDB (ArrayBuffer apa adanya)
+                // rec.b64 = dari file proyek .json (base64, mungkin ter-gzip)
+                const source = rec.buf ? Promise.resolve(rec.buf) : unpackModel(rec);
+                source.then(buffer => {
                     parseModelBuffer(rec.kind, buffer,
                         (group) => { customModels[id] = group; tick(); },
                         () => tick());
@@ -474,15 +513,10 @@
         function triggerAutosave() {
             clearTimeout(autosaveTimeout);
             autosaveTimeout = setTimeout(() => {
+                // Byte model TIDAK ikut ke localStorage — sudah tersimpan di IndexedDB.
+                // Jadi isinya tetap kecil dan tidak pernah menabrak kuota.
                 const base = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value };
-                try {
-                    // Byte model ikut disimpan supaya GLB/OBJ tetap ada setelah reload.
-                    localStorage.setItem('floorplan_autosave', JSON.stringify({ ...base, customModelSrc }));
-                } catch (err) {
-                    // Model besar bisa melewati kuota localStorage (umumnya ~5 MB).
-                    // Denahnya tetap diselamatkan, hanya byte modelnya yang dilepas.
-                    try { localStorage.setItem('floorplan_autosave', JSON.stringify(base)); } catch (e2) {}
-                }
+                try { localStorage.setItem('floorplan_autosave', JSON.stringify(base)); } catch (err) {}
             }, 1500); 
         }
 
@@ -640,7 +674,10 @@
                         lines = loadedData.lines || []; openings = loadedData.openings || []; freeObjects = loadedData.freeObjects || [];
                         if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
                         update3D(); draw2D();
-                        restoreCustomModels(loadedData.customModelSrc); // bangun ulang GLB/OBJ
+                        // Model diambil dari IndexedDB (bukan dari isi localStorage).
+                        idbGetAllModels()
+                            .then(models => restoreCustomModels(models))
+                            .catch(() => restoreCustomModels(loadedData.customModelSrc)); // proyek lama
                     }
                 } catch (err) {}
             }
@@ -1005,7 +1042,7 @@
         });
         
         document.getElementById('clearBtn').onclick = () => { 
-            if (confirm(currentLang === 'id' ? "Yakin ingin menghapus semua denah dan reset dari awal?" : "Are you sure you want to clear all floorplan and reset?")) { releaseGizmo(); initDefaultCanvas(); lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); update3D(); draw2D(); localStorage.removeItem('floorplan_autosave'); }
+            if (confirm(currentLang === 'id' ? "Yakin ingin menghapus semua denah dan reset dari awal?" : "Are you sure you want to clear all floorplan and reset?")) { releaseGizmo(); initDefaultCanvas(); lines = []; openings = []; freeObjects = []; undoStack = []; redoStack = []; stopDrawing(); closeEditPanel(); update3D(); draw2D(); localStorage.removeItem('floorplan_autosave'); Object.keys(customModelSrc).forEach(k => delete customModelSrc[k]); idbClearModels().catch(() => {}); }
         };
 
         function normalizeModel(model) {
@@ -1080,15 +1117,14 @@
                 const modelId = (isGltf ? 'glb_' : 'obj_') + Date.now();
                 // Byte dikompresi dulu sebelum disimpan. Prosesnya asinkron dan berjalan
                 // paralel dengan parse di bawah, jadi tidak menahan tampilan model.
-                packModel(buffer)
-                    .then(rec => {
-                        // Parse bisa gagal lebih dulu dan sudah membatalkan model ini.
-                        // Tanpa penjagaan ini, hasil kompresi yang datang belakangan akan
-                        // menghidupkan kembali entri yang seharusnya dibuang.
-                        if (abortedModels.has(modelId)) return;
-                        customModelSrc[modelId] = { kind, name: file.name, ...rec };
-                    })
-                    .catch(() => { /* gagal disimpan, model tetap tampil di sesi ini */ });
+                const rec = { kind, name: file.name, buf: buffer };
+                customModelSrc[modelId] = rec;
+                idbPutModel(modelId, rec).catch(err => {
+                    console.warn('Model gagal disimpan permanen:', err);
+                    alert(currentLang === 'id'
+                        ? "Model tampil, tapi gagal disimpan permanen. Pakai Save Project (.json) agar tidak hilang."
+                        : "Model is shown but could not be stored permanently. Use Save Project (.json) so it is not lost.");
+                });
 
                 parseModelBuffer(kind, buffer,
                     (group) => {
@@ -1099,6 +1135,7 @@
                     () => {
                         abortedModels.add(modelId);
                         delete customModelSrc[modelId];
+                        idbDeleteModel(modelId).catch(() => {});
                         alert(currentLang === 'id' ? "Gagal memuat model 3D!" : "Failed to load 3D model!");
                         e.target.value = "";
                     });
@@ -1346,11 +1383,27 @@
             link.style.display = 'none'; link.href = URL.createObjectURL(blob); link.download = 'denah_3d_architect.obj'; document.body.appendChild(link); link.click(); setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(link.href); }, 100);
         };
 
-        document.getElementById('saveProjBtn').addEventListener('click', () => {
+        document.getElementById('saveProjBtn').addEventListener('click', async () => {
             if (lines.length === 0 && freeObjects.length === 0) { alert(currentLang === 'id' ? "Denah masih kosong!" : "Floorplan is empty!"); return; }
-            const projectData = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value, customModelSrc };
-            const jsonString = JSON.stringify(projectData); const blob = new Blob([jsonString], { type: "application/octet-stream" }); const url = URL.createObjectURL(blob);
-            const link = document.createElement('a'); link.href = url; link.download = "floorplan_project.json"; document.body.appendChild(link); link.click(); setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 100);
+            const btn = document.getElementById('saveProjBtn');
+            const labelAsli = btn.innerText;
+            btn.disabled = true; btn.innerText = currentLang === 'id' ? 'Menyiapkan...' : 'Preparing...';
+            try {
+                // File .json diunduh, jadi tidak terkena kuota penyimpanan browser.
+                // Byte model tetap di-gzip supaya ukuran filenya wajar.
+                const packed = {};
+                for (const [id, rec] of Object.entries(customModelSrc)) {
+                    if (!rec || !rec.buf) continue;
+                    packed[id] = { kind: rec.kind, name: rec.name, ...(await packModel(rec.buf)) };
+                }
+                const projectData = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value, customModelSrc: packed };
+                const blob = new Blob([JSON.stringify(projectData)], { type: "application/octet-stream" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a'); link.href = url; link.download = "floorplan_project.json"; document.body.appendChild(link); link.click();
+                setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 100);
+            } catch (err) {
+                alert(currentLang === 'id' ? "Gagal menyiapkan file proyek." : "Failed to prepare the project file.");
+            } finally { btn.disabled = false; btn.innerText = labelAsli; }
         });
 
         document.getElementById('loadProj').addEventListener('change', (e) => {
@@ -1361,6 +1414,13 @@
                     if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
                     undoStack = []; redoStack = []; releaseGizmo(); stopDrawing(); closeEditPanel(); draw2D(); update3D();
                     restoreCustomModels(loadedData.customModelSrc); // bangun ulang GLB/OBJ
+                    // Model dari file proyek juga DISIMPAN ke IndexedDB supaya ikut
+                    // bertahan pada reload berikutnya, bukan cuma hidup di sesi ini.
+                    Object.entries(loadedData.customModelSrc || {}).forEach(([id, rec]) => {
+                        unpackModel(rec)
+                            .then(buf => { customModelSrc[id] = { kind: rec.kind, name: rec.name, buf }; return idbPutModel(id, customModelSrc[id]); })
+                            .catch(() => {});
+                    });
                     alert(currentLang === 'id' ? "Proyek berhasil dimuat!" : "Project loaded successfully!");
                 } catch (err) { alert(currentLang === 'id' ? "Gagal memuat file!" : "Failed to load project file."); }
             }; reader.readAsText(file); e.target.value = "";
