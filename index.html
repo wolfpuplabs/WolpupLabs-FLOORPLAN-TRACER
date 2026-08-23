@@ -1895,8 +1895,32 @@
                 wallObj.add(wallMesh); wallObj.position.set(posX, 0, posZ); wallObj.rotation.y = -angle; modelGroup.add(wallObj);
             });
             
-            const cornerGeom = new THREE.CylinderGeometry(thickWall/2, thickWall/2, heightWall, 16); let uniqueVertices = []; lines.forEach(l => { [l.start, l.end].forEach(pt => { if(!uniqueVertices.some(v => Math.hypot(v.x - pt.x, v.y - pt.y) < 1)) uniqueVertices.push(pt); }); });
-            uniqueVertices.forEach(v => { const posX = (v.x - center2DX) * scale3D; const posZ = (v.y - center2DY) * scale3D; const cornerMesh = new THREE.Mesh(cornerGeom, matWall); cornerMesh.position.set(posX, heightWall / 2, posZ); modelGroup.add(cornerMesh); });
+            // SILINDER SUDUT: penambal pertemuan antar tembok.
+            // Tiap sudut diingat asal-usulnya (tembok ke berapa, ujung yang mana) supaya
+            // warnanya bisa dititipkan ke data tembok itu — dengan begitu ikut undo,
+            // autosave, dan Save Project tanpa struktur data tambahan.
+            const cornerGeom = new THREE.CylinderGeometry(thickWall / 2, thickWall / 2, heightWall, 16);
+            const uniqueVertices = [];
+            lines.forEach((l, li) => {
+                [['start', l.start], ['end', l.end]].forEach(([ujung, pt]) => {
+                    if (!uniqueVertices.some(v => Math.hypot(v.pt.x - pt.x, v.pt.y - pt.y) < 1)) {
+                        uniqueVertices.push({ pt, li, ujung });
+                    }
+                });
+            });
+            uniqueVertices.forEach(v => {
+                const kunci = v.ujung === 'start' ? 'warnaSudutStart' : 'warnaSudutEnd';
+                const warnaSudut = lines[v.li] && lines[v.li][kunci];
+                const matSudut = warnaSudut
+                    ? new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaSudut) })
+                    : matWall;
+                const posX = (v.pt.x - center2DX) * scale3D;
+                const posZ = (v.pt.y - center2DY) * scale3D;
+                const cornerMesh = new THREE.Mesh(cornerGeom, matSudut);
+                cornerMesh.position.set(posX, heightWall / 2, posZ);
+                cornerMesh.userData.sudut = { li: v.li, kunci: kunci };
+                modelGroup.add(cornerMesh);
+            });
             
             freeObjects.forEach(obj => { 
                 const posX = (obj.x - center2DX) * scale3D; 
@@ -2426,13 +2450,39 @@
             const warna = document.getElementById('paintColor').value;
             let obj = hit.object;
 
+            // Silinder penambal di pertemuan tembok
+            if (obj.userData && obj.userData.sudut) {
+                const { li, kunci } = obj.userData.sudut;
+                if (!lines[li]) return false;
+                saveState();
+                lines[li][kunci] = warna;
+                update3D();
+                return true;
+            }
+
             // Bidang tembok
             if (obj.userData && obj.userData.wallIndex !== undefined) {
-                const garis = lines[obj.userData.wallIndex];
+                const idx = obj.userData.wallIndex;
+                const garis = lines[idx];
                 if (!garis) return false;
                 const sisi = hit.face ? hit.face.materialIndex : 0;
                 saveState();
                 garis[sisi === 0 ? 'warnaA' : sisi === 1 ? 'warnaB' : 'warnaTepi'] = warna;
+
+                // Sudut di kedua ujung tembok ikut tercat SELAMA belum pernah dicat sendiri.
+                // Tanpa ini, tiap pertemuan tembok tertinggal sebagai belang putih dan harus
+                // diketuk satu per satu. Sudut yang sudah punya warna sendiri tidak diganggu.
+                const ujung = [
+                    { x: garis.start.x, y: garis.start.y },
+                    { x: garis.end.x, y: garis.end.y }
+                ];
+                lines.forEach(l => {
+                    [['start', l.start, 'warnaSudutStart'], ['end', l.end, 'warnaSudutEnd']].forEach(([, pt, k]) => {
+                        if (l[k]) return;                                  // sudah dicat manual, biarkan
+                        if (ujung.some(u => Math.hypot(u.x - pt.x, u.y - pt.y) < 1)) l[k] = warna;
+                    });
+                });
+
                 update3D();
                 return true;
             }
