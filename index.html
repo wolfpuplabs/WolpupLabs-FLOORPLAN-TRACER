@@ -1280,8 +1280,13 @@
                 // Kaca jendela transparan: kalau ikut menjatuhkan bayangan, hasilnya
                 // kotak hitam pekat seolah temboknya masif.
                 const tembusPandang = o.material && o.material.transparent;
-                o.castShadow = aktif && !datar && !tembusPandang;
+                // Atap: satu-satunya bidang datar yang WAJIB menjatuhkan bayangan, supaya
+                // cahaya matahari tidak menembusnya saat Show Roof aktif. Lantai tetap
+                // tidak menjatuhkan — tidak ada gunanya dan malah memicu bercak bayangan.
+                const atap = o.userData && o.userData.atap;
+                o.castShadow = aktif && !tembusPandang && (atap || !datar);
                 o.receiveShadow = aktif;
+                if (atap) o.material.shadowSide = THREE.DoubleSide;   // bidang setipis ini perlu dipaksa dua sisi
             });
             if (characterGroup) characterGroup.traverse(o => { if (o.isMesh) { o.castShadow = aktif; o.receiveShadow = aktif; } });
             scene.traverse(o => { if (o.isLight && o.shadow) o.castShadow = aktif && o.userData.mauBayangan !== false; });
@@ -1622,7 +1627,7 @@
                 const floorCX = (((minX + maxX) / 2) - center2DX) * scale3D;
                 const floorCZ = (((minY + maxY) / 2) - center2DY) * scale3D;
                 const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matFloor); floorMesh.rotation.x = -Math.PI / 2; floorMesh.position.set(floorCX, 0.001, floorCZ); modelGroup.add(floorMesh); 
-                if (document.getElementById('chkShowRoof').checked) { const roofMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matRoof); roofMesh.rotation.x = -Math.PI / 2; roofMesh.position.set(floorCX, heightWall, floorCZ); modelGroup.add(roofMesh); }
+                if (document.getElementById('chkShowRoof').checked) { const roofMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matRoof); roofMesh.rotation.x = -Math.PI / 2; roofMesh.position.set(floorCX, heightWall, floorCZ); roofMesh.userData.atap = true; modelGroup.add(roofMesh); }
             }
 
             lines.forEach((line, index) => {
