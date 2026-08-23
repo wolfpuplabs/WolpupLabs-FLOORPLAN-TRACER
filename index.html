@@ -637,33 +637,39 @@
         }
         
         window.addEventListener('load', () => { 
-            // Pengaman kedua: kalau browser sempat memulihkan posisi scroll, kembalikan ke atas
-            // supaya header sidebar dan toolbar transform tidak terpotong.
-            const pinToTop = () => window.scrollTo(0, 0);
-            pinToTop();
-            setTimeout(pinToTop, 0);
-            setTimeout(() => { pinToTop(); resizeViewports(); }, 300); // setelah bar alamat Safari settle
-            window.addEventListener('orientationchange', () => setTimeout(() => { pinToTop(); resizeViewports(); }, 300));
-            window.addEventListener('scroll', pinToTop, { passive: true });
+            // --- PENYELARASAN KE AREA TAMPAK ---
+            // Di iPadOS/iOS, kotak body bisa mulai DI ATAS area tampak (tersembunyi di balik
+            // bilah tab + bilah alamat Safari), sehingga bagian atas aplikasi — header sidebar
+            // dan toolbar transform — terpotong, lalu normal setelah reload.
+            // Daripada menebak penyebabnya, aplikasi MENGUKUR posisi kotaknya sendiri lalu
+            // menggesernya balik. Kalau tidak ada yang meleset, tidak ada yang diubah.
+            let shiftY = 0;
+            function fitAppToViewport() {
+                const vv = window.visualViewport;
+                const h = vv ? vv.height : window.innerHeight;
+                const w = vv ? vv.width : window.innerWidth;
+                document.body.style.height = h + 'px';
+                document.body.style.width = w + 'px';
 
-            // Pemeriksaan mandiri: pastikan toolbar transform benar-benar berada di dalam
-            // layar setelah layout selesai. Kalau posisinya di luar viewport (halaman sempat
-            // ter-scroll) atau ukurannya nol (belum ter-komposit), paksa perbaiki.
-            function ensureToolbarVisible() {
-                const ui = document.getElementById('transformUI');
-                if (!ui) return;
-                const r = ui.getBoundingClientRect();
-                const offscreen = r.bottom <= 0 || r.top >= window.innerHeight || r.width === 0 || r.height === 0;
-                if (offscreen) {
-                    pinToTop();
-                    // paksa repaint supaya Safari meng-komposit ulang lapisan di atas canvas WebGL
-                    ui.style.display = 'none';
-                    void ui.offsetHeight;
-                    ui.style.display = 'flex';
-                    resizeViewports();
+                // getBoundingClientRect diukur relatif terhadap area tampak.
+                // top negatif = kotaknya berada di atas layar -> geser turun sebanyak itu.
+                for (let i = 0; i < 3; i++) {
+                    const top = document.body.getBoundingClientRect().top;
+                    if (Math.abs(top) < 0.5) break;
+                    shiftY -= top;
+                    document.body.style.transform = 'translateY(' + shiftY + 'px)';
                 }
+                resizeViewports();
             }
-            [100, 500, 1200].forEach(t => setTimeout(ensureToolbarVisible, t));
+
+            fitAppToViewport();
+            [0, 150, 400, 1000].forEach(t => setTimeout(fitAppToViewport, t));
+            window.addEventListener('resize', fitAppToViewport);
+            window.addEventListener('orientationchange', () => setTimeout(fitAppToViewport, 300));
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', fitAppToViewport);
+                window.visualViewport.addEventListener('scroll', fitAppToViewport);
+            }
 
             initDefaultCanvas(); 
             const saved = localStorage.getItem('floorplan_autosave');
