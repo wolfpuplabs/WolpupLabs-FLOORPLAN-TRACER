@@ -410,6 +410,9 @@
                 <button id="btnTrRt" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Rotate</button>
                 <button id="btnTrSc" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Scale</button>
                 <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
+                <input type="color" id="paintColor" value="#d9c7a7" title="Warna cat" style="width:34px; height:30px; padding:2px; border:none; border-radius:4px; cursor:pointer; background:#3f3f46;">
+                <button id="btnPaint" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Ketuk permukaan di tampilan 3D untuk mengecat">Paint</button>
+                <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
                 <button id="btnTrSpace" style="width:auto; padding:6px 12px; background:#ca8a04; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Toggle Local/World Space">World</button>
             </div>
         </div>
@@ -1011,9 +1014,10 @@
                 editScaleY.value = item.scaleY !== undefined ? item.scaleY : (item.scaleVal || 1.0); document.getElementById('valScaleY').innerText = editScaleY.value;
                 editScaleZ.value = item.scaleZ !== undefined ? item.scaleZ : (item.scaleVal || 1.0); document.getElementById('valScaleZ').innerText = editScaleZ.value;
 
-                if (item.type === 'carpet') {
+                if (MATERIAL_UTAMA[item.type]) {
+                    const bawaanWarna = { kain: '#34495e', kayu: '#8b5a2b', karpet: '#9b59b6', logam: '#7f8c8d', putih: '#ecf0f1', hijau: '#2e8b57', hitam: '#111111' };
                     document.getElementById('objColorControls').style.display = 'block';
-                    document.getElementById('editObjColor').value = item.warna || '#9b59b6';
+                    document.getElementById('editObjColor').value = item.warna || bawaanWarna[MATERIAL_UTAMA[item.type]];
                 }
                 const iniLampu = (item.type === 'spot_light' || item.type === 'area_light' || item.type === 'standing_lamp');
                 document.getElementById('lightControls').style.display = iniLampu ? 'block' : 'none';
@@ -1553,31 +1557,56 @@
         const matTeks = (jenis, warna, ulang, extra) =>
             new THREE.MeshLambertMaterial(Object.assign({ map: bikinTekstur(jenis, warna, ulang) }, extra || {}));
 
+        // Jenis perabot -> material mana yang dianggap "warna utamanya".
+        const MATERIAL_UTAMA = {
+            sofa: 'kain', curtain: 'kain',
+            bed: 'kayu', table: 'kayu', chair: 'kayu', buffet: 'kayu', wardrobe: 'kayu',
+            bookshelf: 'kayu', head_cabinet: 'kayu', kitchen_set: 'kayu',
+            carpet: 'karpet',
+            fridge: 'logam', stove: 'logam', standing_lamp: 'logam',
+            toilet: 'putih', bathtub: 'putih', shower: 'putih',
+            plant: 'hijau', tree: 'hijau',
+            tv: 'hitam'
+        };
+
         function createFurnitureMesh(type, variant = 0, obj = null) {
             const group = new THREE.Group(); 
             // Warna dibakar langsung ke dalam tekstur, jadi materialnya tidak perlu 'color' lagi.
-            const matWood = matTeks('kayu', 0x8b5a2b, 2);
-            const matWoodDark = matTeks('kayu', 0x5c4033, 2);
-            const matFabric = matTeks('kain', 0x34495e, 3);
-            const matCarpet = matTeks('karpet', 0x9b59b6, 4);
-            const matCurtain = matTeks('kain', 0xf5f5dc, 4);
-            const matWhite = matTeks('marmer', 0xecf0f1, 1);
-            const matMetal = matTeks('logam', 0x7f8c8d, 1);
-            const matBlack = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            let matWood = matTeks('kayu', 0x8b5a2b, 2);
+            let matWoodDark = matTeks('kayu', 0x5c4033, 2);
+            let matFabric = matTeks('kain', 0x34495e, 3);
+            let matCarpet = matTeks('karpet', 0x9b59b6, 4);
+            let matCurtain = matTeks('kain', 0xf5f5dc, 4);
+            let matWhite = matTeks('marmer', 0xecf0f1, 1);
+            let matMetal = matTeks('logam', 0x7f8c8d, 1);
+            let matBlack = new THREE.MeshLambertMaterial({ color: 0x111111 });
             const matGlass = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.4 });
-            const matGreen = matTeks('daun', 0x2e8b57, 2);
+            let matGreen = matTeks('daun', 0x2e8b57, 2);
+
+            // Warna pilihan pengguna menimpa material UTAMA tiap jenis perabot.
+            // Bagian pendukung (kaki logam, laci gelap, kaca) sengaja dibiarkan supaya
+            // bentuknya tetap terbaca dan tidak berubah jadi satu blok warna polos.
+            if (obj && obj.warna && MATERIAL_UTAMA[type]) {
+                const hx = new THREE.Color(obj.warna).getHex();
+                switch (MATERIAL_UTAMA[type]) {
+                    case 'kayu':   matWood = matTeks('kayu', hx, 2); break;
+                    case 'kain':   matFabric = matTeks('kain', hx, 3); matCurtain = matTeks('kain', hx, 4); break;
+                    case 'karpet': matCarpet = matTeks('karpet', hx, 4); break;
+                    case 'logam':  matMetal = matTeks('logam', hx, 1); break;
+                    case 'putih':  matWhite = matTeks('marmer', hx, 1); break;
+                    case 'hijau':  matGreen = matTeks('daun', hx, 2); break;
+                    case 'hitam':  matBlack = new THREE.MeshLambertMaterial({ color: hx }); break;
+                }
+            }
 
             if (type === 'bed') { const frame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.3, 2.0), matWood); frame.position.y = 0.15; group.add(frame); const mattress = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.25, 1.9), matWhite); mattress.position.set(0, 0.4, 0); group.add(mattress); const pillow = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.4), matFabric); pillow.position.set(0, 0.55, -0.7); group.add(pillow); } 
             else if (type === 'sofa') { const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, 0.8), matFabric); base.position.y = 0.25; group.add(base); const back = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 0.2), matFabric); back.position.set(0, 0.6, -0.3); group.add(back); if (variant === 1) { const lBase = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 1.2), matFabric); lBase.position.set(-0.5, 0.25, 1.0); group.add(lBase); } } 
             else if (type === 'table') { if (variant === 1) { const top = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.05, 32), matWood); top.position.y = 0.75; group.add(top); const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.72, 16), matWood); leg.position.y = 0.36; group.add(leg); const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 32), matWood); foot.position.y = 0.025; group.add(foot); } else { const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.8), matWood); top.position.y = 0.75; group.add(top); for(let x of [-0.5, 0.5]) { for(let z of [-0.3, 0.3]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.72, 0.06), matWood); leg.position.set(x, 0.36, z); group.add(leg); } } } } 
             else if (type === 'chair') { if (variant === 1) { const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16), matWood); seat.position.y = 0.75; group.add(seat); const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.7, 8), matMetal); leg.position.y = 0.35; group.add(leg); } else if (variant === 2) { const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.6), matFabric); seat.position.y = 0.3; group.add(seat); const back = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.15), matFabric); back.position.set(0, 0.65, -0.225); group.add(back); for(let x of [-0.25, 0.25]){ const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.6), matFabric); arm.position.set(x, 0.5, 0); group.add(arm); } } else { const seat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.04, 0.45), matWood); seat.position.y = 0.45; group.add(seat); const back = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.04), matWood); back.position.set(0, 0.68, -0.2); group.add(back); } } 
             else if (type === 'carpet') {
-                // Warna karpet dibakar ulang ke dalam teksturnya, jadi motif bulunya tetap ada.
-                const warnaKarpet = (obj && obj.warna) ? new THREE.Color(obj.warna).getHex() : 0x9b59b6;
-                const mat = matTeks('karpet', warnaKarpet, 4);
                 const carpet = variant === 1
-                    ? new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.02, 32), mat)
-                    : new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.02, 1.5), mat);
+                    ? new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.02, 32), matCarpet)
+                    : new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.02, 1.5), matCarpet);
                 carpet.position.y = 0.01; group.add(carpet);
             }
             else if (type === 'curtain') { const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.2, 8), matMetal); rail.rotation.z = Math.PI/2; rail.position.y = 2.4; group.add(rail); if (variant === 1) { const fabric = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.3, 0.05), matCurtain); fabric.position.y = 1.25; group.add(fabric); } else { for (let x of [-0.8, 0.8]) { const fabric = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.3, 0.05), matCurtain); fabric.position.set(x, 1.25, 0); group.add(fabric); } } }
@@ -1856,11 +1885,14 @@
                     } wallShape.holes.push(hole);
                 });
                 // Tiap sisi tembok bisa punya warnanya sendiri; tepi & atas ikut warna dasar.
-                const warnaA = line.warnaA || '#efefef', warnaB = line.warnaB || '#efefef';
+                const warnaA = line.warnaA || '#efefef', warnaB = line.warnaB || '#efefef', warnaTepi = line.warnaTepi || '#efefef';
                 const matSisiA = new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaA) });
                 const matSisiB = new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaB) });
+                const matTepi = new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaTepi) });
                 const geoTembok = pisahSisiTembok(new THREE.ExtrudeGeometry(wallShape, { depth: thickWall, bevelEnabled: false }));
-                const wallMesh = new THREE.Mesh(geoTembok, [matSisiA, matSisiB, matWall]); wallMesh.position.set(-length/2, 0, -thickWall/2); wallObj.add(wallMesh); wallObj.position.set(posX, 0, posZ); wallObj.rotation.y = -angle; modelGroup.add(wallObj);
+                const wallMesh = new THREE.Mesh(geoTembok, [matSisiA, matSisiB, matTepi]); wallMesh.position.set(-length/2, 0, -thickWall/2);
+                wallMesh.userData.wallIndex = index;   // penanda untuk mode Paint
+                wallObj.add(wallMesh); wallObj.position.set(posX, 0, posZ); wallObj.rotation.y = -angle; modelGroup.add(wallObj);
             });
             
             const cornerGeom = new THREE.CylinderGeometry(thickWall/2, thickWall/2, heightWall, 16); let uniqueVertices = []; lines.forEach(l => { [l.start, l.end].forEach(pt => { if(!uniqueVertices.some(v => Math.hypot(v.x - pt.x, v.y - pt.y) < 1)) uniqueVertices.push(pt); }); });
@@ -2377,6 +2409,50 @@
                 : 'Toggle Local / World Space  (shortcut: X)';
         }
 
+        // --- MODE CAT ---
+        // Mengecat langsung dengan mengetuk permukaannya di tampilan 3D. Raycaster
+        // melaporkan grup material mana yang kena (0 = sisi A, 1 = sisi B, 2 = tepi),
+        // jadi tiap bidang tembok bisa dicat sendiri-sendiri.
+        var paintMode = false;
+        const btnPaint = document.getElementById('btnPaint');
+        btnPaint.onclick = () => {
+            paintMode = !paintMode;
+            btnPaint.style.background = paintMode ? '#ec4899' : '#3f3f46';
+            renderer.domElement.style.cursor = paintMode ? 'crosshair' : '';
+            if (paintMode && window.transformControl) transformControl.detach();   // gizmo mengganggu saat mengecat
+        };
+
+        function catPermukaan(hit) {
+            const warna = document.getElementById('paintColor').value;
+            let obj = hit.object;
+
+            // Bidang tembok
+            if (obj.userData && obj.userData.wallIndex !== undefined) {
+                const garis = lines[obj.userData.wallIndex];
+                if (!garis) return false;
+                const sisi = hit.face ? hit.face.materialIndex : 0;
+                saveState();
+                garis[sisi === 0 ? 'warnaA' : sisi === 1 ? 'warnaB' : 'warnaTepi'] = warna;
+                update3D();
+                return true;
+            }
+
+            // Perabot: naik ke grup objeknya, lalu warnai material utamanya
+            let node = obj;
+            while (node && !node.userData.isFreeObject && node !== modelGroup) node = node.parent;
+            if (node && node.userData.isFreeObject) {
+                const item = freeObjects.find(o => o.id === node.userData.id);
+                if (item && MATERIAL_UTAMA[item.type]) {
+                    saveState();
+                    item.warna = warna;
+                    update3D();
+                    if (selectedItem === item) openEditPanel(item);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         btnTrSpace.onclick = () => {
             // Di mode Scale, toggle tidak berlaku — beri tahu, jangan diam-diam mengabaikan.
             if (transformControl.getMode() === 'scale') {
@@ -2451,6 +2527,12 @@
             // HANYA intersect objek yang terlihat (mencegah salah pencet objek transparan/bounding box)
             const intersects = raycaster.intersectObjects(modelGroup.children, true);
             const validIntersects = intersects.filter(i => i.object.visible);
+
+            // Mode cat: ketukan mengecat, bukan memilih.
+            if (paintMode) {
+                if (validIntersects.length) catPermukaan(validIntersects[0]);
+                return;
+            }
             
             if (validIntersects.length > 0) {
                 let object = validIntersects[0].object;
