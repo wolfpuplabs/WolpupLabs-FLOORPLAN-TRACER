@@ -25,12 +25,6 @@
     <style>
         * { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         input[type="number"], input[type="text"], select { -webkit-user-select: text; user-select: text; }
-        /* Halaman dikunci total dari scroll. Di iOS/iPadOS, bar alamat Safari membuat
-           tinggi dokumen sesaat lebih besar dari area tampak, sehingga halaman bisa
-           ter-scroll turun sedikit saat pertama dibuka. Akibatnya bagian ATAS aplikasi
-           (header sidebar + toolbar transform yang posisinya top:10px) terdorong keluar
-           layar dan terlihat seperti "tidak muncul", lalu normal setelah reload.
-           position:fixed pada body membuat halaman tidak punya ruang scroll sama sekali. */
         html { height: 100%; overflow: hidden; }
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Helvetica, sans-serif; background: #d4d4d8; display: flex; flex-direction: row; height: 100dvh; width: 100vw; touch-action: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overscroll-behavior: none; }
 
@@ -158,7 +152,6 @@
                 <label id="txtLblLoadProj" style="margin-top: 4px;">Load Project:</label>
                 <input type="file" id="loadProj" accept=".json" style="margin-bottom: 8px;">
 
-                <!-- FITUR UPLOAD 3D GABUNGAN -->
                 <label id="txtLblLoad3D" style="margin-top: 8px; color: #8b5cf6;">Upload 3D (.glb, .gltf, .obj):</label>
                 <input type="file" id="upload3DModel" accept=".glb,.gltf,.obj" style="margin-bottom: 12px;">
 
@@ -305,7 +298,6 @@
                         </div>
                     </div>
 
-                    <!-- ADVANCED OBJECT EDITOR -->
                     <div id="freeObjectControls" style="display: none; background: #f4f4f5; padding: 10px; border-radius: 6px; border: 1px solid #d4d4d8; margin-bottom: 10px;">
                         <h5 style="margin: 0 0 8px 0; font-size: 11px; color: #2563eb;">3D OBJECT EDITOR</h5>
                         
@@ -323,7 +315,6 @@
                         <label><span>Rotasi Z (Miring):</span> <span id="valRotZ">0</span>°</label>
                         <input type="range" id="editRotZ" min="-180" max="180" step="5" value="0">
                     
-                        <!-- SLIDER SKALA UNIFORM -->
                         <label><span>Skala Global (Uniform):</span> <span id="valScaleU">1.0</span>x</label>
                         <input type="range" id="editScaleU" min="0.1" max="5.0" step="0.1" value="1.0">
                         <hr style="border: 0; border-top: 1px dashed #d4d4d8; margin: 8px 0;">
@@ -404,7 +395,6 @@
         </div>
         
         <div id="render-container">
-            <!-- Pindah ke kanan (right: 10px) agar tidak terhalang sidebar -->
             <div id="transformUI" style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 6px; background: rgba(24, 24, 27, 0.92); padding: 8px; border-radius: 8px; transform: translateZ(0); will-change: transform; isolation: isolate;">
                 <button id="btnTrMv" class="active" style="width:auto; padding:6px 12px; background:#2563eb; color:#fff; border:none; font-weight:bold; border-radius:4px;">Move</button>
                 <button id="btnTrRt" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Rotate</button>
@@ -433,7 +423,6 @@
     </div>
 
     <script>
-        // Cegah browser memulihkan posisi scroll dari sesi sebelumnya.
         if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
         let lines = []; let openings = []; let freeObjects = [];
@@ -444,24 +433,12 @@
 
         let selectedItem = null; let isDraggingObject = false; let isDraggingCanvas = false; let isPinchZooming = false;
         let undoStack = []; let redoStack = [];
-        let isWorldSpaceMode = true; // status World/Local untuk gizmo transform (dipakai untuk auto-reset orientasi)
+        let isWorldSpaceMode = true;
 
         const customModels = {};
-
-        // Byte mentah tiap model yang di-upload, supaya bisa ikut disimpan dan dibangun
-        // ulang. customModels hanya berisi objek Three.js hasil parse dan isinya HILANG
-        // begitu halaman dimuat ulang — itulah sebabnya model yang sudah di-upload lenyap
-        // dari tampilan 3D setelah reload, padahal penanda "GLB" di kanvas 2D masih ada.
         const customModelSrc = {};
-        const abortedModels = new Set(); // model yang gagal di-parse, jangan dihidupkan lagi oleh promise kompresi
+        const abortedModels = new Set();
 
-        // --- PENYIMPANAN BYTE MODEL: INDEXEDDB, BUKAN LOCALSTORAGE ---
-        // localStorage dibatasi ~5 MB per situs dan hanya menerima teks, sehingga byte model
-        // harus lewat base64 yang justru MENAMBAH ~33%. Dua GLB berukuran sedang saja sudah
-        // menembus batas itu; kode lalu diam-diam menyimpan denahnya saja tanpa model, dan
-        // setelah reload yang muncul cuma kotak penanda.
-        // IndexedDB menyimpan ArrayBuffer apa adanya (tanpa base64) dengan kuota jauh lebih
-        // besar, jadi model tetap utuh setelah reload.
         const MODEL_DB = 'floorplan_models', MODEL_STORE = 'models';
         function openModelDB() {
             return new Promise((resolve, reject) => {
@@ -493,7 +470,7 @@
 
         function bufferToBase64(buffer) {
             const bytes = new Uint8Array(buffer); let bin = '';
-            const CHUNK = 0x8000; // dipotong supaya tidak melewati batas argumen fungsi
+            const CHUNK = 0x8000;
             for (let i = 0; i < bytes.length; i += CHUNK) {
                 bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
             }
@@ -505,12 +482,6 @@
             return bytes.buffer;
         }
 
-        // --- KOMPRESI BYTE MODEL ---
-        // base64 sendiri MENAMBAH ukuran ~33%, jadi byte model di-gzip dulu sebelum
-        // dijadikan base64. Pada GLB uji 2,06 MB hasilnya turun dari 2,75 MB menjadi
-        // 1,74 MB (hemat ~37%), sehingga lebih jarang menabrak kuota localStorage.
-        // CompressionStream ada di Safari 16.4+; kalau tidak tersedia, otomatis
-        // kembali ke penyimpanan tanpa kompresi supaya tetap jalan.
         const canCompress = (typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined');
 
         async function packModel(buffer) {
@@ -518,7 +489,6 @@
             try {
                 const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream('gzip'));
                 const packed = await new Response(stream).arrayBuffer();
-                // kalau hasil gzip malah lebih besar (mis. model sudah terkompresi), pakai yang mentah
                 if (packed.byteLength >= buffer.byteLength) return { enc: 'raw', b64: bufferToBase64(buffer) };
                 return { enc: 'gzip', b64: bufferToBase64(packed) };
             } catch (err) { return { enc: 'raw', b64: bufferToBase64(buffer) }; }
@@ -526,12 +496,11 @@
 
         async function unpackModel(rec) {
             const buf = base64ToBuffer(rec.b64);
-            if (rec.enc !== 'gzip') return buf;              // termasuk proyek lama tanpa penanda enc
+            if (rec.enc !== 'gzip') return buf;
             const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
             return await new Response(stream).arrayBuffer();
         }
 
-        // GLTFLoader.parse menerima ArrayBuffer untuk .glb maupun .gltf.
         function parseModelBuffer(kind, buffer, onOk, onFail) {
             try {
                 if (kind === 'obj') {
@@ -545,7 +514,6 @@
             } catch (err) { onFail(); }
         }
 
-        // Bangun ulang semua model dari byte tersimpan, lalu gambar ulang scene.
         function restoreCustomModels(srcMap, done) {
             const ids = Object.keys(srcMap || {});
             if (!ids.length) { if (done) done(); return; }
@@ -555,8 +523,6 @@
                 const rec = srcMap[id];
                 customModelSrc[id] = rec;
                 if (customModels[id]) { tick(); return; }
-                // rec.buf = dari IndexedDB (ArrayBuffer apa adanya)
-                // rec.b64 = dari file proyek .json (base64, mungkin ter-gzip)
                 const source = rec.buf ? Promise.resolve(rec.buf) : unpackModel(rec);
                 source.then(buffer => {
                     parseModelBuffer(rec.kind, buffer,
@@ -572,8 +538,6 @@
         function triggerAutosave() {
             clearTimeout(autosaveTimeout);
             autosaveTimeout = setTimeout(() => {
-                // Byte model TIDAK ikut ke localStorage — sudah tersimpan di IndexedDB.
-                // Jadi isinya tetap kecil dan tidak pernah menabrak kuota.
                 const base = { lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value };
                 try { localStorage.setItem('floorplan_autosave', JSON.stringify(base)); } catch (err) {}
             }, 1500); 
@@ -709,7 +673,6 @@
         });
         chkShowRoof.addEventListener('change', () => { update3D(); });
 
-        // --- kontrol pencahayaan ---
         ['sunInt', 'sunAzim', 'sunElev'].forEach(id => {
             document.getElementById(id).addEventListener('input', (e) => {
                 const map = { sunInt: 'valSunInt', sunAzim: 'valSunAzim', sunElev: 'valSunElev' };
@@ -745,25 +708,14 @@
                         lines = loadedData.lines || []; openings = loadedData.openings || []; freeObjects = loadedData.freeObjects || [];
                         if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
                         update3D(); draw2D();
-                        // Model diambil dari IndexedDB (bukan dari isi localStorage).
                         idbGetAllModels()
                             .then(models => restoreCustomModels(models))
-                            .catch(() => restoreCustomModels(loadedData.customModelSrc)); // proyek lama
+                            .catch(() => restoreCustomModels(loadedData.customModelSrc));
                     }
                 } catch (err) {}
             }
         });
         
-        // --- PENYELARASAN KE AREA TAMPAK ---
-        // Di iPadOS/iOS, tepi atas layout viewport bisa berada DI ATAS area tampak
-        // (tersembunyi di balik bilah tab + bilah alamat Safari), sehingga bagian atas
-        // aplikasi — header sidebar dan toolbar transform — terpotong.
-        //
-        // Catatan penting: getBoundingClientRect() TIDAK bisa mendeteksi ini, karena
-        // nilainya diukur terhadap layout viewport — untuk elemen position:fixed di top:0
-        // hasilnya selalu 0 walau secara visual tertutup chrome browser. Ukuran yang benar
-        // adalah visualViewport.offsetTop, yaitu jarak tepi atas area tampak dari tepi atas
-        // layout viewport.
         function fitAppToViewport() {
             const vv = window.visualViewport;
             const h = vv ? vv.height : window.innerHeight;
@@ -775,7 +727,6 @@
             let dy = vv ? vv.offsetTop : 0;
             document.body.style.transform = (dx || dy) ? 'translate(' + dx + 'px,' + dy + 'px)' : '';
 
-            // Pengukuran cadangan, kalau-kalau masih ada selisih setelah transform dipasang.
             const top = document.body.getBoundingClientRect().top;
             if (Math.abs(top) > 0.5) {
                 dy -= top;
@@ -784,11 +735,8 @@
             if (typeof resizeViewports === 'function') resizeViewports();
         }
 
-        // Dihitung ulang dari nol tiap kali (tidak menumpuk), jadi aman dipanggil berkali-kali.
         window.addEventListener('resize', fitAppToViewport);
         window.addEventListener('orientationchange', () => setTimeout(fitAppToViewport, 300));
-        // 'pageshow' juga terpicu saat halaman dipulihkan dari cache / tab dibuka kembali,
-        // kondisi di mana 'load' tidak pernah terpicu lagi.
         window.addEventListener('pageshow', () => { fitAppToViewport(); setTimeout(fitAppToViewport, 200); });
         document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(fitAppToViewport, 100); });
         if (window.visualViewport) {
@@ -804,48 +752,34 @@
 
         function pushSnapshot(snap) {
             const top = undoStack[undoStack.length - 1];
-            // Buang langkah yang isinya sama persis dengan puncak stack, supaya riwayat
-            // tidak terisi langkah kosong yang bikin undo terasa "tidak terjadi apa-apa".
             if (top && top.snap === snap) return;
             undoStack.push({ snap, ...JSON.parse(snap) });
-            if (undoStack.length > 100) undoStack.shift(); // batasi pemakaian memori
+            if (undoStack.length > 100) undoStack.shift();
             redoStack = []; document.getElementById('undoBtn').disabled = false; document.getElementById('redoBtn').disabled = true;
         }
 
         function saveState() { pushSnapshot(makeSnapshot()); }
 
-        // --- PEREKAMAN TERTUNDA ---
-        // Klik seleksi dan sentuhan slider memanggil ini di pointerdown, tapi state-nya
-        // BELUM didorong ke riwayat. Baru dicatat kalau benar-benar ada perubahan
-        // (slider digeser / objek diseret). Kalau cuma menyentuh lalu lepas, tidak ada
-        // langkah yang tercipta — jadi satu tekan undo = satu perubahan nyata.
         let pendingUndo = null;
         function beginUndoStep() { pendingUndo = makeSnapshot(); }
         function commitUndoStep() {
             if (pendingUndo === null) return;
             const snap = pendingUndo; pendingUndo = null; pushSnapshot(snap);
         }
-        // Fase capture berjalan sebelum handler milik elemennya sendiri, jadi state "sebelum"
-        // sudah tercatat tepat sebelum nilainya diubah.
         document.addEventListener('input', commitUndoStep, true);
         document.addEventListener('change', commitUndoStep, true);
 
-        // Satu pintu untuk melepas gizmo + membersihkan sisa state interaksi.
-        // Dipakai di undo/redo, reset, load, dan hapus objek, supaya tidak ada
-        // "gizmo hantu" yang menempel ke mesh yang sudah dibuang dari scene.
         function releaseGizmo() {
             if (!window.transformControl) return;
             transformControl.detach();
-            transformControl.axis = null;      // buang sisa axis yang bisa memblokir tap
-            transformControl.dragging = false; // buang sisa status drag yang tidak selesai
-            isDragging3D = false;              // buang sisa status geser kamera
+            transformControl.axis = null;
+            transformControl.dragging = false;
+            isDragging3D = false;
             if (typeof controls !== 'undefined' && controls) controls.enabled = true;
         }
 
         function restoreState(isUndo) {
             stopDrawing();
-            // Ingat objek yang sedang dipilih supaya seleksi + gizmo bisa dipasang ulang
-            // ke mesh BARU setelah scene dibangun ulang. Undo seharusnya tidak membatalkan seleksi.
             const keepId = (selectedItem && !selectedItem.isWall && selectedItem.lineIndex === undefined)
                 ? selectedItem.id : null;
             const snapNow = makeSnapshot();
@@ -853,14 +787,9 @@
             if (isUndo) { redoStack.push(current); const prev = undoStack.pop(); lines = prev.lines; openings = prev.openings; freeObjects = prev.freeObjects || []; } 
             else { undoStack.push(current); const next = redoStack.pop(); lines = next.lines; openings = next.openings; freeObjects = next.freeObjects || []; }
             document.getElementById('undoBtn').disabled = undoStack.length === 0; document.getElementById('redoBtn').disabled = redoStack.length === 0;
-            // Objek lama dibuang total oleh update3D(), jadi gizmo WAJIB dilepas dulu.
-            // Kalau tidak, gizmo tetap menempel ke mesh yang sudah tidak ada ("gizmo hantu")
-            // dan panel picker-nya yang tak terlihat akan memblokir semua tap di viewport.
             releaseGizmo();
             selectedItem = null; closeEditPanel(); draw2D(); update3D();
 
-            // Pasang ulang seleksi ke mesh yang baru dibuat (kalau objeknya masih ada).
-            // Kalau objeknya justru yang dihapus oleh undo, gizmo tetap lepas dengan bersih.
             if (keepId !== null) {
                 const again = freeObjects.find(o => o.id === keepId);
                 if (again) {
@@ -928,7 +857,7 @@
                 let { x, y } = getTrueCoords(e.clientX, e.clientY);
                 if (isDrawing && mode === 'wall' && currentLine) { currentLine.end = getSnapped(x, y, currentLine.start); draw2D(); }
                 else if (isDraggingObject && selectedItem) { 
-                    commitUndoStep(); // seret = perubahan nyata, baru dicatat di sini
+                    commitUndoStep();
                     if (selectedItem.isWall) {
                         let dx = x - selectedItem.dragStartX; let dy = y - selectedItem.dragStartY;
                         if (isSnappingEnabled) { const gridSnap = 50; dx = Math.round(dx / gridSnap) * gridSnap; dy = Math.round(dy / gridSnap) * gridSnap; }
@@ -945,7 +874,7 @@
         window.addEventListener('pointerup', () => { 
             if (isDraggingCanvas) { isDraggingCanvas = false; workspaceContainer.style.cursor = 'crosshair'; }
             if (isDraggingObject) { isDraggingObject = false; } 
-            pendingUndo = null; // sentuhan tanpa perubahan -> tidak meninggalkan langkah 
+            pendingUndo = null;
             workspaceContainer.style.cursor = 'crosshair'; 
         });
 
@@ -982,7 +911,6 @@
 
         function openEditPanel(item) {
             emptySelectionMsg.style.display = 'none'; editPanelContent.style.display = 'block';
-            // Disembunyikan lebih dulu; hanya dinyalakan lagi kalau yang dipilih memang lampu.
             document.getElementById('lightControls').style.display = 'none';
             document.getElementById('colorControls').style.display = 'none';
             document.getElementById('objColorControls').style.display = 'none';
@@ -1076,13 +1004,10 @@
         editSteps.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.steps = parseInt(e.target.value); document.getElementById('valSteps').innerText = selectedItem.steps; update3D(); draw2D(); } }); 
         editStairW.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.width3D = parseFloat(e.target.value); document.getElementById('valStairW').innerText = selectedItem.width3D; update3D(); draw2D(); } }); 
 
-        // --- kontrol warna ---
         ['editColorA', 'editColorB'].forEach(id => {
             const el = document.getElementById(id);
             el.addEventListener('pointerdown', () => beginUndoStep());
             el.addEventListener('input', (e) => {
-                // Warna harus ditulis ke lines[], bukan ke selectedItem — objek tembok
-                // yang terpilih hanya salinan, jadi perubahannya tidak akan tersimpan.
                 if (!selectedItem || !selectedItem.isWall) return;
                 const garis = lines[selectedItem.index]; if (!garis) return;
                 garis[id === 'editColorA' ? 'warnaA' : 'warnaB'] = e.target.value;
@@ -1095,7 +1020,6 @@
             selectedItem.warna = e.target.value; update3D();
         });
 
-        // --- kontrol lampu per objek ---
         document.getElementById('chkLightOn').addEventListener('change', (e) => {
             if (!selectedItem) return;
             saveState(); selectedItem.lightOn = e.target.checked; update3D();
@@ -1109,7 +1033,6 @@
             if (!selectedItem) return;
             selectedItem.lightIntensity = parseFloat(e.target.value);
             document.getElementById('valLightInt').innerText = selectedItem.lightIntensity;
-            // Lampu dinyalakan kembali kalau terangnya dinaikkan dari nol.
             if (selectedItem.lightIntensity > 0 && selectedItem.lightOn === false) {
                 selectedItem.lightOn = true; document.getElementById('chkLightOn').checked = true;
             }
@@ -1235,10 +1158,6 @@
 
         function normalizeModel(model) {
             const wrapper = new THREE.Group();
-
-            // Matriks anak-anaknya harus diperbarui DULU. Box3.setFromObject membaca
-            // matrixWorld tiap node; kalau belum diperbarui, kotak pembatasnya bisa salah,
-            // sehingga penengahan dan penskalaan ikut meleset.
             model.updateMatrixWorld(true);
 
             const box = new THREE.Box3().setFromObject(model);
@@ -1249,16 +1168,11 @@
             model.position.set(-center.x, -box.min.y, -center.z);
             wrapper.add(model);
 
-            // Model dari berbagai sumber datang dengan satuan berbeda-beda (meter, sentimeter,
-            // inci, atau satuan bebas). Dulu hanya model KEBESARAN yang dikecilkan, sedangkan
-            // model KEKECILAN dibiarkan apa adanya — hasilnya sebesar beberapa sentimeter di
-            // ruangan 6 m, jadi terlihat seperti "tidak muncul". Sekarang keduanya dinormalkan
-            // ke ukuran yang wajar supaya selalu terlihat, dan tetap bisa diatur lewat slider skala.
             const maxDim = Math.max(size.x, size.y, size.z);
             if (maxDim > 0 && isFinite(maxDim)) {
-                const TARGET = 2.0;   // meter, kira-kira sebesar perabot
-                const MAX_OK = 5.0;   // kebesaran -> kecilkan
-                const MIN_OK = 0.5;   // kekecilan -> besarkan
+                const TARGET = 2.0;
+                const MAX_OK = 5.0;
+                const MIN_OK = 0.5;
                 if (maxDim > MAX_OK || maxDim < MIN_OK) {
                     const f = TARGET / maxDim;
                     wrapper.scale.set(f, f, f);
@@ -1269,7 +1183,6 @@
 
         function addCustomModelToScene(type, modelId) {
             saveState(); 
-            // Upload baru langsung di tengah layar (Viewport Center)
             const wsRect = document.getElementById('workspace-container').getBoundingClientRect();
             let { x, y } = getTrueCoords(wsRect.left + (wsRect.width / 2), wsRect.top + (wsRect.height / 2));
             
@@ -1277,8 +1190,6 @@
             freeObjects.push(newObj);
             setMode('select', document.getElementById('modeSelect')); update3D(); draw2D();
 
-            // Langsung dipilih supaya gizmo + kotak sorot menunjukkan di mana objeknya berada.
-            // Tanpa ini, model yang kecil atau tertutup tembok terasa seperti "tidak muncul".
             selectedItem = newObj;
             openEditPanel(newObj);
             updateTransformControlSelection(newObj);
@@ -1296,15 +1207,11 @@
                 e.target.value = ""; return;
             }
 
-            // File dibaca sebagai ArrayBuffer (bukan lewat object URL) supaya BYTE MENTAHNYA
-            // bisa ikut disimpan. Tanpa ini, model hilang setiap kali halaman dimuat ulang.
             const reader3D = new FileReader();
             reader3D.onload = (ev) => {
                 const buffer = ev.target.result;
                 const kind = isGltf ? 'gltf' : 'obj';
                 const modelId = (isGltf ? 'glb_' : 'obj_') + Date.now();
-                // Byte dikompresi dulu sebelum disimpan. Prosesnya asinkron dan berjalan
-                // paralel dengan parse di bawah, jadi tidak menahan tampilan model.
                 const rec = { kind, name: file.name, buf: buffer };
                 customModelSrc[modelId] = rec;
                 idbPutModel(modelId, rec).catch(err => {
@@ -1336,28 +1243,24 @@
         const camera = new THREE.PerspectiveCamera(45, renderContainer.clientWidth / renderContainer.clientHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(renderContainer.clientWidth, renderContainer.clientHeight); renderer.setClearColor(0x27272a); renderContainer.appendChild(renderer.domElement);
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;   // tepi bayangan lebih lembut
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-        // --- PENCAHAYAAN ---
-        // Ambient sengaja rendah; kalau terlalu terang, bayangan jadi nyaris tak terlihat.
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.34);
         scene.add(ambientLight);
-        const langitLight = new THREE.HemisphereLight(0xbfd4ff, 0x8a7f6f, 0.28); // cahaya langit & pantulan lantai
+        const langitLight = new THREE.HemisphereLight(0xbfd4ff, 0x8a7f6f, 0.28);
         scene.add(langitLight);
 
-        // MATAHARI: satu untuk seluruh denah, arahnya diatur lewat azimut & ketinggian.
         const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.15);
         sunLight.castShadow = true;
         sunLight.shadow.mapSize.set(2048, 2048);
-        sunLight.shadow.bias = -0.0008;          // menahan garis-garis palsu pada permukaan datar
+        sunLight.shadow.bias = -0.0008;
         sunLight.shadow.normalBias = 0.02;
         scene.add(sunLight);
         scene.add(sunLight.target);
 
         scene.add(new THREE.GridHelper(50, 50, 0x555555, 0x333333));
 
-        // Arah matahari dihitung dari sudut kompas + ketinggian, seperti posisi matahari asli.
         function updateSun() {
             const on = document.getElementById('chkSun').checked;
             const azim = THREE.MathUtils.degToRad(parseFloat(document.getElementById('sunAzim').value));
@@ -1373,7 +1276,6 @@
             );
             sunLight.target.position.set(0, 0, 0);
             sunLight.target.updateMatrixWorld();
-            // Kotak bayangan dipaskan ke ukuran denah supaya resolusinya tidak terbuang.
             const box = new THREE.Box3().setFromObject(modelGroup);
             const r = box.isEmpty() ? 12 : Math.max(6, box.getSize(new THREE.Vector3()).length() * 0.6);
             const c = sunLight.shadow.camera;
@@ -1381,24 +1283,17 @@
             c.updateProjectionMatrix();
         }
 
-        // Bayangan dinyalakan/dimatikan menyeluruh — di perangkat lemah bisa dimatikan.
         function terapkanBayangan() {
             const aktif = document.getElementById('chkShadow').checked;
             renderer.shadowMap.enabled = aktif;
             modelGroup.traverse(o => {
                 if (!o.isMesh) return;
-                // Lantai & atap hanya menerima bayangan; benda lain menerima sekaligus menjatuhkan.
                 const datar = o.geometry && o.geometry.type === 'PlaneGeometry';
-                // Kaca jendela transparan: kalau ikut menjatuhkan bayangan, hasilnya
-                // kotak hitam pekat seolah temboknya masif.
                 const tembusPandang = o.material && o.material.transparent;
-                // Atap: satu-satunya bidang datar yang WAJIB menjatuhkan bayangan, supaya
-                // cahaya matahari tidak menembusnya saat Show Roof aktif. Lantai tetap
-                // tidak menjatuhkan — tidak ada gunanya dan malah memicu bercak bayangan.
                 const atap = o.userData && o.userData.atap;
                 o.castShadow = aktif && !tembusPandang && (atap || !datar);
                 o.receiveShadow = aktif;
-                if (atap) o.material.shadowSide = THREE.DoubleSide;   // bidang setipis ini perlu dipaksa dua sisi
+                if (atap) o.material.shadowSide = THREE.DoubleSide;
             });
             if (characterGroup) characterGroup.traverse(o => { if (o.isMesh) { o.castShadow = aktif; o.receiveShadow = aktif; } });
             scene.traverse(o => { if (o.isLight && o.shadow) o.castShadow = aktif && o.userData.mauBayangan !== false; });
@@ -1406,7 +1301,6 @@
         }
         const modelGroup = new THREE.Group(); scene.add(modelGroup); camera.position.set(0, 15, 20); 
 
-        // --- SISTEM HIGHLIGHT BOX ---
         const selectionBox = new THREE.BoxHelper(undefined, 0x3b82f6); 
         selectionBox.visible = false;
         scene.add(selectionBox);
@@ -1418,7 +1312,6 @@
             requestAnimationFrame(animate); 
             controls.update(); 
             
-            // Kotak highlight akan menempel dan bergeser secara real-time
             if (selectedItem && selectedItem.lineIndex === undefined && !selectedItem.isWall) {
                 const mesh = modelGroup.children.find(c => c.userData.id === selectedItem.id);
                 if (mesh) {
@@ -1431,28 +1324,16 @@
                 selectionBox.visible = false;
             }
 
-            // --- ORIENTASI GIZMO: dikunci ke kaidah standar 3D editor ---
-            // Disinkronkan tiap frame supaya label tombol & orientasi gizmo TIDAK PERNAH
-            // desync (dulu bisa nyangkut di Local walau tombol tertulis World, terutama
-            // di layar sentuh saat event drag-end gagal ter-trigger).
-            // Penting: orientasi TIDAK diubah di tengah drag — gizmo yang berputar sendiri
-            // saat sedang ditarik itu justru yang bikin bingung dan tidak ada di editor mana pun.
             if (window.transformControl && !transformControl.dragging) {
-                // Jaring pengaman: kalau objek yang dipegang gizmo sudah tidak ada di scene
-                // (kena undo/redo/reset/load), lepas gizmo saat itu juga.
                 const held = transformControl.object;
                 if (held && held.parent !== modelGroup) {
                     transformControl.detach();
                 }
 
-                // Ditulis paksa tiap frame supaya panah gizmo SELALU kembali ke sumbu dunia
-                // begitu drag selesai — inilah 'auto reset' arah panah yang diminta.
                 forceGizmoSpace(getEffectiveSpace());
                 syncSpaceButton();
             }
             
-            // Karakter berjalan (kalau diaktifkan). Fungsinya terangkat, dan semua state
-            // yang disentuhnya memakai var, jadi aman dipanggil sejak frame pertama.
             updateWalkers();
 
             renderer.render(scene, camera); 
@@ -1464,12 +1345,6 @@
             for (let i = 0; i < stepsCount; i++) { const mesh = new THREE.Mesh(new THREE.BoxGeometry(stairWidth, stepHeight, stepDepth * (stepsCount - i)), matStairs); mesh.position.set(0, (i * stepHeight) + (stepHeight / 2), (i * stepDepth) / 2); stairsGroup.add(mesh); } return stairsGroup;
         }
 
-        // ============================================================
-        //  TEKSTUR PROSEDURAL
-        //  Digambar sendiri di canvas, bukan diunduh — jadi tidak ada file eksternal,
-        //  tidak menambah waktu muat, dan tetap ikut terbawa saat Export GLB.
-        //  Hasilnya di-cache supaya tiap jenis hanya digambar sekali.
-        // ============================================================
         const _texCache = {};
         function bikinTekstur(jenis, warnaDasar, ulang = 1) {
             const kunci = jenis + '_' + warnaDasar;
@@ -1481,7 +1356,6 @@
                 g.fillStyle = hex; g.fillRect(0, 0, S, S);
 
                 if (jenis === 'kayu') {
-                    // Serat kayu: garis melengkung dengan lebar dan gelap yang berubah-ubah.
                     for (let i = 0; i < 70; i++) {
                         const y = Math.random() * S;
                         g.strokeStyle = 'rgba(0,0,0,' + (0.03 + Math.random() * 0.09) + ')';
@@ -1493,7 +1367,7 @@
                         }
                         g.stroke();
                     }
-                    for (let i = 0; i < 3; i++) {   // mata kayu
+                    for (let i = 0; i < 3; i++) {
                         const cx = Math.random() * S, cy = Math.random() * S;
                         for (let r = 2; r < 14; r += 3) {
                             g.strokeStyle = 'rgba(0,0,0,0.06)'; g.lineWidth = 1.5;
@@ -1501,7 +1375,6 @@
                         }
                     }
                 } else if (jenis === 'kain') {
-                    // Anyaman kain: benang vertikal + horizontal berselang-seling.
                     for (let i = 0; i < S; i += 3) {
                         g.fillStyle = 'rgba(255,255,255,0.05)'; g.fillRect(i, 0, 1.5, S);
                         g.fillStyle = 'rgba(0,0,0,0.05)'; g.fillRect(0, i, S, 1.5);
@@ -1511,21 +1384,18 @@
                         g.fillRect(Math.random() * S, Math.random() * S, 2, 2);
                     }
                 } else if (jenis === 'karpet') {
-                    // Bulu karpet: titik-titik rapat dengan gelap-terang acak.
                     for (let i = 0; i < 14000; i++) {
                         const t = Math.random() < 0.5 ? 255 : 0;
                         g.fillStyle = 'rgba(' + t + ',' + t + ',' + t + ',' + Math.random() * 0.14 + ')';
                         g.fillRect(Math.random() * S, Math.random() * S, 2, 3);
                     }
                 } else if (jenis === 'logam') {
-                    // Logam gosok: goresan halus searah.
                     for (let i = 0; i < 900; i++) {
                         const t = Math.random() < 0.5 ? 255 : 0;
                         g.fillStyle = 'rgba(' + t + ',' + t + ',' + t + ',' + Math.random() * 0.09 + ')';
                         g.fillRect(0, Math.random() * S, S, 1);
                     }
                 } else if (jenis === 'marmer') {
-                    // Urat marmer: garis tipis berkelok.
                     for (let i = 0; i < 16; i++) {
                         g.strokeStyle = 'rgba(0,0,0,' + (0.04 + Math.random() * 0.06) + ')';
                         g.lineWidth = 0.5 + Math.random() * 2;
@@ -1536,7 +1406,6 @@
                         g.stroke();
                     }
                 } else if (jenis === 'daun') {
-                    // Dedaunan: bercak hijau gelap-terang.
                     for (let i = 0; i < 1800; i++) {
                         const t = Math.random() < 0.5 ? 255 : 0;
                         g.fillStyle = 'rgba(' + t + ',' + t + ',' + t + ',' + Math.random() * 0.12 + ')';
@@ -1547,7 +1416,6 @@
                 t.wrapS = t.wrapT = THREE.RepeatWrapping;
                 _texCache[kunci] = t;
             }
-            // Tiap pemakaian dapat salinan sendiri agar pengulangannya bisa beda-beda.
             const tex = _texCache[kunci].clone();
             tex.needsUpdate = true;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -1557,7 +1425,6 @@
         const matTeks = (jenis, warna, ulang, extra) =>
             new THREE.MeshLambertMaterial(Object.assign({ map: bikinTekstur(jenis, warna, ulang) }, extra || {}));
 
-        // Jenis perabot -> material mana yang dianggap "warna utamanya".
         const MATERIAL_UTAMA = {
             sofa: 'kain', curtain: 'kain',
             bed: 'kayu', table: 'kayu', chair: 'kayu', buffet: 'kayu', wardrobe: 'kayu',
@@ -1571,7 +1438,6 @@
 
         function createFurnitureMesh(type, variant = 0, obj = null) {
             const group = new THREE.Group(); 
-            // Warna dibakar langsung ke dalam tekstur, jadi materialnya tidak perlu 'color' lagi.
             let matWood = matTeks('kayu', 0x8b5a2b, 2);
             let matWoodDark = matTeks('kayu', 0x5c4033, 2);
             let matFabric = matTeks('kain', 0x34495e, 3);
@@ -1583,9 +1449,6 @@
             const matGlass = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.4 });
             let matGreen = matTeks('daun', 0x2e8b57, 2);
 
-            // Warna pilihan pengguna menimpa material UTAMA tiap jenis perabot.
-            // Bagian pendukung (kaki logam, laci gelap, kaca) sengaja dibiarkan supaya
-            // bentuknya tetap terbaca dan tidak berubah jadi satu blok warna polos.
             if (obj && obj.warna && MATERIAL_UTAMA[type]) {
                 const hx = new THREE.Color(obj.warna).getHex();
                 switch (MATERIAL_UTAMA[type]) {
@@ -1615,7 +1478,6 @@
                 const W = variant === 2 ? 1.6 : (variant === 1 ? 1.8 : 1.0), H = 2.0, D = 0.6;
                 const body = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), matWood); body.position.y = H / 2; group.add(body);
                 if (variant === 1) {
-                    // Pintu geser 3 daun: panel tipis bertumpuk dengan rel atas & bawah.
                     for (let i = 0; i < 3; i++) {
                         const daun = new THREE.Mesh(new THREE.BoxGeometry(W / 3 - 0.02, H - 0.12, 0.03), matWoodDark);
                         daun.position.set(-W / 2 + W / 6 + i * (W / 3), H / 2, D / 2 + (i % 2 ? 0.02 : 0.05)); group.add(daun);
@@ -1624,12 +1486,10 @@
                     }
                     for (const y of [H - 0.04, 0.04]) { const rel = new THREE.Mesh(new THREE.BoxGeometry(W, 0.04, 0.08), matMetal); rel.position.set(0, y, D / 2 + 0.04); group.add(rel); }
                 } else if (variant === 2) {
-                    // Lemari sudut bentuk L: badan utama + sayap menyamping.
                     const sayap = new THREE.Mesh(new THREE.BoxGeometry(0.6, H, 1.1), matWood);
                     sayap.position.set(-W / 2 - 0.3, H / 2, -0.25); group.add(sayap);
                     for (const x of [-W / 2 - 0.3, W / 4]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.55, 0.04), matMetal); p.position.set(x, H / 2, D / 2 + 0.32); group.add(p); }
                 } else {
-                    // Dua pintu ayun dengan gagang.
                     for (const x of [-W / 4, W / 4]) {
                         const daun = new THREE.Mesh(new THREE.BoxGeometry(W / 2 - 0.03, H - 0.1, 0.04), matWoodDark);
                         daun.position.set(x, H / 2, D / 2 + 0.02); group.add(daun);
@@ -1638,22 +1498,16 @@
                 }
             }
             else if (type === 'spot_light' || type === 'area_light') {
-                // Lampu dibuat sebagai objek biasa, jadi otomatis dapat gizmo, undo,
-                // penyimpanan, dan penghapusan lewat jalur yang sudah ada.
                 const warna = 0xfff1d0;
-                // Nilai bawaan dari varian, tapi bisa ditimpa lewat panel Properties.
                 const bawaan = [1.6, 2.6, 3.6][variant] || 1.6;
                 const nyala = !obj || obj.lightOn !== false;
                 const mauBayangan = !obj || obj.lightShadow !== false;
                 const kuat = nyala ? (obj && obj.lightIntensity !== undefined ? obj.lightIntensity : bawaan) : 0;
                 const jangkauan = (obj && obj.lightRange !== undefined) ? obj.lightRange : 20;
-                // Terang 0 sama saja dengan mati, jadi tampilannya disamakan supaya
-                // kaca tidak terlihat menyala padahal tidak memancarkan apa-apa.
                 const efektifNyala = nyala && kuat > 0;
                 const warnaKaca = efektifNyala ? warna : 0x555555;
 
                 if (type === 'spot_light') {
-                    // Rumah lampu sorot: silinder + cincin, menggantung dari langit-langit.
                     const batang = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 8), matMetal);
                     batang.position.y = 2.62; group.add(batang);
                     const rumah = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.14, 0.2, 16), matMetal);
@@ -1666,7 +1520,7 @@
                     lampu.position.set(0, 2.3, 0);
                     lampu.visible = efektifNyala;
                     lampu.castShadow = mauBayangan;
-                    lampu.userData.mauBayangan = mauBayangan;   // dibaca ulang oleh terapkanBayangan()
+                    lampu.userData.mauBayangan = mauBayangan;
                     lampu.shadow.mapSize.set(1024, 1024);
                     lampu.shadow.bias = -0.0015;
                     lampu.shadow.normalBias = 0.02;
@@ -1675,7 +1529,6 @@
                     group.add(arah); lampu.target = arah;
                     group.add(lampu);
                 } else {
-                    // Panel area: bidang persegi yang menyala rata di langit-langit.
                     const W = 1.2, D = 0.6;
                     const bingkai = new THREE.Mesh(new THREE.BoxGeometry(W + 0.06, 0.06, D + 0.06), matMetal);
                     bingkai.position.y = 2.72; group.add(bingkai);
@@ -1683,9 +1536,6 @@
                         new THREE.MeshBasicMaterial({ color: warnaKaca }));
                     bidang.position.y = 2.68; group.add(bidang);
 
-                    // Catatan: RectAreaLight di three.js TIDAK bisa menjatuhkan bayangan.
-                    // Supaya panel ini tetap berbayang, dipakai sorot bersudut sangat lebar
-                    // dengan penumbra penuh — hasilnya cahaya rata bertepi lembut khas panel.
                     const lampu = new THREE.SpotLight(warna, kuat, jangkauan, Math.PI / 2.4, 1.0, 1.2);
                     lampu.position.set(0, 2.66, 0);
                     lampu.visible = efektifNyala;
@@ -1701,7 +1551,6 @@
                 }
             }
             else if (type === 'bookshelf') {
-                // 0 = rak terbuka, 1 = partisi ruang (tembus pandang), 2 = rak rendah
                 const W = variant === 2 ? 1.4 : 0.9, H = variant === 2 ? 0.85 : (variant === 1 ? 1.8 : 2.0), D = variant === 1 ? 0.32 : 0.3;
                 const tebal = 0.04;
                 for (const x of [-W / 2 + tebal / 2, W / 2 - tebal / 2]) { const sisi = new THREE.Mesh(new THREE.BoxGeometry(tebal, H, D), matWood); sisi.position.set(x, H / 2, 0); group.add(sisi); }
@@ -1711,7 +1560,6 @@
                     papan.position.set(0, (H / jml) * i, 0); group.add(papan);
                 }
                 if (variant !== 1) { const belakang = new THREE.Mesh(new THREE.BoxGeometry(W, H, 0.015), matWoodDark); belakang.position.set(0, H / 2, -D / 2); group.add(belakang); }
-                // Deretan buku dengan tinggi & warna acak-tapi-tetap.
                 const warnaBuku = [0xc0392b, 0x2980b9, 0x27ae60, 0xf39c12, 0x8e44ad, 0x16a085];
                 for (let r = 0; r < jml; r++) {
                     const yRak = (H / jml) * r + tebal / 2;
@@ -1728,9 +1576,8 @@
                 }
             }
             else if (type === 'head_cabinet') {
-                // 0 = nakas kecil, 1 = berlaci dua, 2 = gantung (melayang)
                 const W = 0.5, D = 0.4, H = variant === 2 ? 0.32 : 0.55;
-                const dasar = variant === 2 ? 0.5 : 0;   // versi gantung diangkat dari lantai
+                const dasar = variant === 2 ? 0.5 : 0;
                 const body = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), matWood);
                 body.position.y = dasar + H / 2; group.add(body);
                 const jmlLaci = variant === 1 ? 2 : 1;
@@ -1757,7 +1604,6 @@
                 const kuatL = nyalaL ? (obj && obj.lightIntensity !== undefined ? obj.lightIntensity : 1.8) : 0;
                 const bayanganL = !obj || obj.lightShadow !== false;
                 const hidup = nyalaL && kuatL > 0;
-                // Kap lampu ikut menyala sendiri saat hidup, supaya terlihat jelas dari jauh.
                 const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 0.3, 16),
                     hidup ? new THREE.MeshBasicMaterial({ color: 0xfff0c8 }) : matWhite);
                 shade.position.y = 1.6; group.add(shade);
@@ -1766,7 +1612,7 @@
                 bohlam.visible = hidup;
                 bohlam.castShadow = bayanganL;
                 bohlam.userData.mauBayangan = bayanganL;
-                bohlam.shadow.mapSize.set(512, 512);   // bayangan titik memakai 6 sisi, jadi dibuat hemat
+                bohlam.shadow.mapSize.set(512, 512);
                 bohlam.shadow.bias = -0.004;
                 bohlam.shadow.camera.near = 0.15; bohlam.shadow.camera.far = 20;
                 group.add(bohlam);
@@ -1776,9 +1622,6 @@
             return group;
         }
 
-        // ExtrudeGeometry menyatukan sisi depan DAN belakang ke dalam satu grup material,
-        // jadi keduanya tidak bisa diberi warna berbeda apa adanya. Segitiganya disortir
-        // ulang berdasarkan arah hadap menjadi tiga grup: sisi A, sisi B, dan tepi/atas.
         function pisahSisiTembok(geo) {
             const pos = geo.attributes.position, nor = geo.attributes.normal, uv = geo.attributes.uv;
             const total = pos.count;
@@ -1810,18 +1653,9 @@
         function update3D() {
             while(modelGroup.children.length > 0) modelGroup.remove(modelGroup.children[0]); if(lines.length === 0 && freeObjects.length === 0) return;
             const heightWall = parseFloat(inputWallH.value); const thickWall = parseFloat(inputWallT.value); let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            // --- TITIK ACUAN (ORIGIN) HARUS STABIL ---
-            // Sebelumnya center2D dihitung dari kotak pembatas tembok DAN objek. Akibatnya
-            // setiap kali objek digeser, titik acuannya ikut bergeser, lalu seluruh scene
-            // dihitung ulang relatif terhadap acuan baru. Kasus paling parah: satu objek
-            // tanpa tembok -> min = max = posisi objek itu sendiri -> center2D = posisi objek
-            // -> objek selalu dirender di titik (0,0), alias "balik ke tengah" terus.
-            // Maka acuan sekarang HANYA dari tembok; kalau belum ada tembok, dipakai titik
-            // tengah kanvas yang nilainya tetap.
             let wMinX = Infinity, wMaxX = -Infinity, wMinY = Infinity, wMaxY = -Infinity;
             lines.forEach(l => { wMinX = Math.min(wMinX, l.start.x, l.end.x); wMaxX = Math.max(wMaxX, l.start.x, l.end.x); wMinY = Math.min(wMinY, l.start.y, l.end.y); wMaxY = Math.max(wMaxY, l.start.y, l.end.y); });
 
-            // Kotak pembatas seluruh isi tetap dihitung, tapi cuma untuk menentukan ukuran lantai.
             lines.forEach(l => { minX = Math.min(minX, l.start.x, l.end.x); maxX = Math.max(maxX, l.start.x, l.end.x); minY = Math.min(minY, l.start.y, l.end.y); maxY = Math.max(maxY, l.start.y, l.end.y); });
             freeObjects.forEach(o => { minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x); minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y); });
 
@@ -1831,8 +1665,6 @@
             
             if (minX !== Infinity) { 
                 const floorW = (maxX - minX) * scale3D + 1.0; const floorH = (maxY - minY) * scale3D + 1.0; 
-                // Lantai mengikuti titik tengah isi, bukan dipaku di origin — karena origin
-                // sekarang mengacu ke tembok, bukan ke kotak pembatas seluruh isi.
                 const floorCX = (((minX + maxX) / 2) - center2DX) * scale3D;
                 const floorCZ = (((minY + maxY) / 2) - center2DY) * scale3D;
                 const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matFloor); floorMesh.rotation.x = -Math.PI / 2; floorMesh.position.set(floorCX, 0.001, floorCZ); modelGroup.add(floorMesh); 
@@ -1884,21 +1716,16 @@
                         }
                     } wallShape.holes.push(hole);
                 });
-                // Tiap sisi tembok bisa punya warnanya sendiri; tepi & atas ikut warna dasar.
                 const warnaA = line.warnaA || '#efefef', warnaB = line.warnaB || '#efefef', warnaTepi = line.warnaTepi || '#efefef';
                 const matSisiA = new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaA) });
                 const matSisiB = new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaB) });
                 const matTepi = new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaTepi) });
                 const geoTembok = pisahSisiTembok(new THREE.ExtrudeGeometry(wallShape, { depth: thickWall, bevelEnabled: false }));
                 const wallMesh = new THREE.Mesh(geoTembok, [matSisiA, matSisiB, matTepi]); wallMesh.position.set(-length/2, 0, -thickWall/2);
-                wallMesh.userData.wallIndex = index;   // penanda untuk mode Paint
+                wallMesh.userData.wallIndex = index;
                 wallObj.add(wallMesh); wallObj.position.set(posX, 0, posZ); wallObj.rotation.y = -angle; modelGroup.add(wallObj);
             });
             
-            // SILINDER SUDUT: penambal pertemuan antar tembok.
-            // Tiap sudut diingat asal-usulnya (tembok ke berapa, ujung yang mana) supaya
-            // warnanya bisa dititipkan ke data tembok itu — dengan begitu ikut undo,
-            // autosave, dan Save Project tanpa struktur data tambahan.
             const cornerGeom = new THREE.CylinderGeometry(thickWall / 2, thickWall / 2, heightWall, 16);
             const uniqueVertices = [];
             lines.forEach((l, li) => {
@@ -1927,13 +1754,10 @@
                 const posZ = (obj.y - center2DY) * scale3D; 
                 const elev = obj.elevation || 0;
                 
-                let innerMesh; // Simpan model di variabel sementara
+                let innerMesh;
                 if ((obj.type === 'custom_glb' || obj.type === 'custom_obj') && customModels[obj.modelId]) {
                     innerMesh = customModels[obj.modelId].clone();
                 } else if (obj.type === 'custom_glb' || obj.type === 'custom_obj') {
-                    // Data modelnya tidak tersedia (mis. byte-nya tidak muat di kuota simpan).
-                    // Tampilkan kotak penanda, JANGAN grup kosong — objek yang tak terlihat
-                    // bikin orang mengira upload-nya gagal padahal datanya cuma belum ada.
                     innerMesh = new THREE.Group();
                     const ph = new THREE.Mesh(
                         new THREE.BoxGeometry(1, 1, 1),
@@ -1948,14 +1772,10 @@
                     innerMesh = (obj.type === 'stairs') ? createStairsMesh(obj.steps || 14, obj.width3D || 1.0, heightWall) : createFurnitureMesh(obj.type, obj.variant || 0, obj); 
                 }
                 
-                // --- PERBAIKAN FLIP ---
-                // Bungkus innerMesh dengan meshGroup (Wrapper)
                 let meshGroup = new THREE.Group();
-                // Terapkan flip (skala negatif) HANYA pada innerMesh (mesh di dalam)
                 innerMesh.scale.set(obj.flipX ? -1 : 1, 1, obj.flipZ ? -1 : 1);
                 meshGroup.add(innerMesh);
 
-                // Terapkan Posisi dan Rotasi ke Wrapper Group
                 meshGroup.position.set(posX, elev, posZ); 
                 meshGroup.rotation.order = 'YXZ';
                 meshGroup.rotation.set(
@@ -1964,53 +1784,33 @@
                     THREE.MathUtils.degToRad(obj.rotationZ || 0)
                 );
 
-                // Terapkan Skala (Harus selalu absolut/positif) ke Wrapper Group
                 const sX = obj.scaleX !== undefined ? obj.scaleX : (obj.scaleVal || 1.0);
                 const sY = obj.scaleY !== undefined ? obj.scaleY : (obj.scaleVal || 1.0);
                 const sZ = obj.scaleZ !== undefined ? obj.scaleZ : (obj.scaleVal || 1.0);
                 meshGroup.scale.set(sX, sY, sZ); 
 
-                // Identitas untuk Raycaster & Seleksi Gizmo
                 meshGroup.userData.id = obj.id;
                 meshGroup.userData.isFreeObject = true;
 
                 modelGroup.add(meshGroup); 
             });
 
-            // Selalu sinkronkan gizmo setelah scene dibangun ulang: kalau ada seleksi,
-            // pasang ke mesh yang BARU; kalau tidak ada, lepas. Sebelumnya blok ini hanya
-            // jalan saat selectedItem terisi, sehingga gizmo bisa tertinggal menempel
-            // ke mesh lama yang sudah dibuang.
             if (window.transformControl) {
                 updateTransformControlSelection(selectedItem);
             }
 
-            // Denah berubah -> peta rintangan karakter ikut diperbarui, supaya tembok
-            // dan perabot yang baru langsung dihindari.
             if (charactersOn) buildWalkGrid();
 
-            // Mesh baru harus didaftarkan ulang sebagai penjatuh/penerima bayangan,
-            // dan kotak bayangan matahari dipaskan ke ukuran denah yang baru.
             updateSun();
             terapkanBayangan();
         }
 
-        // ============================================================
-        //  KARAKTER BERJALAN (gaya The Sims)
-        //  Karakter tidak bergerak asal-asalan: denah diubah dulu menjadi peta kotak-kotak
-        //  berisi keterangan "bisa dilewati / terhalang", lalu jalurnya dicari dengan BFS.
-        //  Jadi ia berkeliling di dalam ruangan, memutari perabot, dan tidak menembus tembok.
-        // ============================================================
-        // Dideklarasikan dengan var: animate() sudah berjalan sebelum blok ini dieksekusi,
-        // dan const/let akan melempar ReferenceError (temporal dead zone) pada frame pertama
-        // — error itu akan menghentikan sisa skrip. var terangkat sebagai undefined, aman.
         var characterGroup = new THREE.Group();
-        scene.add(characterGroup);            // di luar modelGroup, supaya tidak ikut ter-ekspor
+        scene.add(characterGroup);
         var charactersOn = false;
         var walkers = [];
         var walkClock = null;
 
-        // --- Peta rintangan ---
         var GRID = { cell: 0.28, minX: 0, minZ: 0, cols: 0, rows: 0, blocked: null };
 
         function buildWalkGrid() {
@@ -2018,7 +1818,6 @@
             const heightWall = parseFloat(inputWallH.value) || 3;
             const thickWall = parseFloat(inputWallT.value) || 0.15;
 
-            // Area jelajah diambil dari tembok; kalau belum ada tembok, dari sebaran objek.
             let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
             const eat = (x, z) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); };
             lines.forEach(l => {
@@ -2028,7 +1827,7 @@
             if (minX === Infinity) {
                 freeObjects.forEach(o => eat((o.x - center2DX) * scale3D, (o.y - center2DY) * scale3D));
                 if (minX === Infinity) return false;
-                minX -= 3; maxX += 3; minZ -= 3; maxZ += 3;   // ruang gerak di sekitar objek
+                minX -= 3; maxX += 3; minZ -= 3; maxZ += 3;
             }
             if (maxX - minX < 1 || maxZ - minZ < 1) return false;
 
@@ -2036,10 +1835,10 @@
             GRID.minX = minX; GRID.minZ = minZ;
             GRID.cols = Math.max(2, Math.ceil((maxX - minX) / cell));
             GRID.rows = Math.max(2, Math.ceil((maxZ - minZ) / cell));
-            if (GRID.cols * GRID.rows > 250000) return false;   // jaga-jaga denah raksasa
+            if (GRID.cols * GRID.rows > 250000) return false;
             const blocked = new Uint8Array(GRID.cols * GRID.rows);
 
-            const RADIUS = 0.22;   // "tubuh" karakter, dipakai sebagai jarak aman
+            const RADIUS = 0.22;
             const mark = (wx, wz, pad) => {
                 const r = pad + RADIUS;
                 const c0 = Math.floor((wx - r - minX) / cell), c1 = Math.floor((wx + r - minX) / cell);
@@ -2048,13 +1847,11 @@
                     if (c >= 0 && rr >= 0 && c < GRID.cols && rr < GRID.rows) blocked[rr * GRID.cols + c] = 1;
             };
 
-            // Tembok: disusuri sepanjang garis, kecuali bagian yang berlubang (pintu).
             lines.forEach((l, idx) => {
                 const ax = (l.start.x - center2DX) * scale3D, az = (l.start.y - center2DY) * scale3D;
                 const bx = (l.end.x - center2DX) * scale3D, bz = (l.end.y - center2DY) * scale3D;
                 const len = Math.hypot(bx - ax, bz - az);
                 if (len === 0) return;
-                // Pintu (elevasi 0) menjadi celah yang boleh dilewati.
                 const gaps = openings.filter(o => o.lineIndex === idx && o.type === 'door' && (o.elevation || 0) < 0.05)
                     .map(o => { const w = Math.min(o.width3D, len); let c = len * o.ratio; c = Math.max(w / 2, Math.min(len - w / 2, c)); return [c - w / 2, c + w / 2]; });
                 const steps = Math.ceil(len / (cell * 0.5));
@@ -2065,16 +1862,15 @@
                 }
             });
 
-            // Perabot & model: pakai kotak pembatas mesh yang sudah jadi, jadi ukurannya akurat.
             const box = new THREE.Box3();
             freeObjects.forEach(o => {
                 const mesh = modelGroup.children.find(c => c.userData.id === o.id);
                 if (!mesh) return;
                 box.setFromObject(mesh);
                 if (box.isEmpty()) return;
-                if (o.type === 'spot_light' || o.type === 'area_light') return;  // lampu menggantung, bukan penghalang
-                if (box.min.y > 1.7) return;    // benda tinggi (mis. lampu gantung) bisa dilewati
-                if (box.max.y < 0.25) return;   // benda pipih (karpet, keset) memang untuk diinjak
+                if (o.type === 'spot_light' || o.type === 'area_light') return;
+                if (box.min.y > 1.7) return;
+                if (box.max.y < 0.25) return;
                 const c0 = Math.floor((box.min.x - RADIUS - minX) / cell), c1 = Math.floor((box.max.x + RADIUS - minX) / cell);
                 const r0 = Math.floor((box.min.z - RADIUS - minZ) / cell), r1 = Math.floor((box.max.z + RADIUS - minZ) / cell);
                 for (let c = c0; c <= c1; c++) for (let rr = r0; rr <= r1; rr++)
@@ -2089,7 +1885,6 @@
         const cellToWorld = (c, r) => new THREE.Vector2(GRID.minX + (c + 0.5) * GRID.cell, GRID.minZ + (r + 0.5) * GRID.cell);
         const worldToCell = (x, z) => ({ c: Math.floor((x - GRID.minX) / GRID.cell), r: Math.floor((z - GRID.minZ) / GRID.cell) });
 
-        // BFS: mencari jalur terpendek sekaligus memastikan tujuannya benar-benar bisa dicapai.
         function findPath(from, to) {
             const total = GRID.cols * GRID.rows;
             const prev = new Int32Array(total).fill(-1);
@@ -2122,7 +1917,6 @@
             return null;
         }
 
-        // --- Bentuk karakter ---
         function createCharacterMesh(warna) {
             const g = new THREE.Group();
             const kulit = new THREE.MeshLambertMaterial({ color: 0xf1c27d });
@@ -2134,7 +1928,6 @@
             const kepala = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 12), kulit);
             kepala.position.y = 1.42; g.add(kepala);
 
-            // Kaki & tangan dibungkus grup supaya bisa diayun dari pangkalnya.
             const bikinAnggota = (x, y, tinggi, mat) => {
                 const pivot = new THREE.Group(); pivot.position.set(x, y, 0);
                 const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, tinggi, 0.11), mat);
@@ -2166,20 +1959,19 @@
             walkers.length = 0;
         }
 
-        // --- Gerak per frame ---
         function updateWalkers() {
             if (!charactersOn || !GRID || !GRID.blocked) return;
             if (!walkClock) walkClock = new THREE.Clock();
-            const dt = Math.min(walkClock.getDelta(), 0.05);   // dibatasi agar tidak melompat setelah tab tidak aktif
-            const LAJU = 1.15;   // meter per detik
+            const dt = Math.min(walkClock.getDelta(), 0.05);
+            const LAJU = 1.15;
 
             walkers.forEach(w => {
-                if (w.jeda > 0) {                       // berhenti sejenak, seperti sedang berpikir
+                if (w.jeda > 0) {
                     w.jeda -= dt;
                     w.langkah *= 0.85;
                 } else if (!w.path || w.idx >= w.path.length) {
                     const dari = worldToCell(w.pos.x, w.pos.y);
-                    if (!cellFree(dari.c, dari.r)) {    // tergencet karena denah berubah -> pindah ke petak bebas
+                    if (!cellFree(dari.c, dari.r)) {
                         const lolos = randomFreeCell();
                         if (lolos) { const p = cellToWorld(lolos.c, lolos.r); w.pos.copy(p); }
                         w.path = null; return;
@@ -2200,7 +1992,6 @@
                         w.pos.x += (dx / jarak) * maju;
                         w.pos.y += (dz / jarak) * maju;
                         w.langkah += maju * 7;
-                        // Badan berputar halus ke arah tujuan, tidak mematah.
                         const arahTarget = Math.atan2(dx, dz);
                         let beda = arahTarget - w.arah;
                         while (beda > Math.PI) beda -= Math.PI * 2;
@@ -2217,7 +2008,7 @@
                 d.kakiKanan.rotation.x = -ayun;
                 d.tanganKiri.rotation.x = -ayun * 0.8;
                 d.tanganKanan.rotation.x = ayun * 0.8;
-                w.mesh.position.y = Math.abs(Math.sin(w.langkah)) * 0.03;   // sedikit memantul saat melangkah
+                w.mesh.position.y = Math.abs(Math.sin(w.langkah)) * 0.03;
             });
         }
 
@@ -2240,9 +2031,40 @@
             } else clearWalkers();
         });
 
+        /* --- PERBAIKAN SCRIPT VIEW IN AR --- */
+        const arModal = document.getElementById('ar-modal');
+        document.getElementById('arBtn').addEventListener('click', () => { 
+            if (lines.length === 0 && freeObjects.length === 0) {
+                return alert(currentLang === 'id' ? "Buat denah terlebih dahulu sebelum melihat dalam AR!" : "Create a floorplan first before viewing in AR!"); 
+            }
+            
+            const exporter = new THREE.GLTFExporter(); 
+            exporter.parse(modelGroup, (gltf) => { 
+                let dataUrl;
+                if (gltf instanceof ArrayBuffer) {
+                    const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+                    dataUrl = URL.createObjectURL(blob);
+                } else {
+                    const str = JSON.stringify(gltf);
+                    const blob = new Blob([str], { type: 'application/json' });
+                    dataUrl = URL.createObjectURL(blob);
+                }
+                
+                const viewer = document.getElementById('arViewer');
+                viewer.src = dataUrl; 
+                arModal.style.display = 'flex'; 
+            }, { binary: true }); 
+        });
 
-        document.getElementById('arBtn').addEventListener('click', () => { if (lines.length === 0 && freeObjects.length === 0) return alert(currentLang==='id'?"Buat denah terlebih dahulu sebelum melihat dalam AR!":"Create a floorplan first before viewing in AR!"); new THREE.GLTFExporter().parse(modelGroup, (gltf) => { document.getElementById('arViewer').src = URL.createObjectURL(new Blob([gltf], { type: 'model/gltf-binary' })); arModal.style.display = 'flex'; }, { binary: true }); });
-        document.getElementById('closeArBtn').addEventListener('click', () => arModal.style.display = 'none');
+        document.getElementById('closeArBtn').addEventListener('click', () => {
+            arModal.style.display = 'none';
+            const viewer = document.getElementById('arViewer');
+            if (viewer.src && viewer.src.startsWith('blob:')) {
+                URL.revokeObjectURL(viewer.src);
+            }
+            viewer.removeAttribute('src');
+        });
+
         document.getElementById('exportBtn').onclick = () => { new THREE.GLTFExporter().parse(modelGroup, (gltf) => { const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([gltf], { type: 'application/octet-stream' })); link.download = 'denah_3d_architect.glb'; link.click(); }, { binary: true }); };
 
         document.getElementById('exportObjBtn').onclick = () => { 
@@ -2257,8 +2079,6 @@
             const labelAsli = btn.innerText;
             btn.disabled = true; btn.innerText = currentLang === 'id' ? 'Menyiapkan...' : 'Preparing...';
             try {
-                // File .json diunduh, jadi tidak terkena kuota penyimpanan browser.
-                // Byte model tetap di-gzip supaya ukuran filenya wajar.
                 const packed = {};
                 for (const [id, rec] of Object.entries(customModelSrc)) {
                     if (!rec || !rec.buf) continue;
@@ -2281,9 +2101,7 @@
                     lines = loadedData.lines || []; openings = loadedData.openings || []; freeObjects = loadedData.freeObjects || [];
                     if(loadedData.wallHeight) inputWallH.value = loadedData.wallHeight; if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
                     undoStack = []; redoStack = []; releaseGizmo(); stopDrawing(); closeEditPanel(); draw2D(); update3D();
-                    restoreCustomModels(loadedData.customModelSrc); // bangun ulang GLB/OBJ
-                    // Model dari file proyek juga DISIMPAN ke IndexedDB supaya ikut
-                    // bertahan pada reload berikutnya, bukan cuma hidup di sesi ini.
+                    restoreCustomModels(loadedData.customModelSrc);
                     Object.entries(loadedData.customModelSrc || {}).forEach(([id, rec]) => {
                         unpackModel(rec)
                             .then(buf => { customModelSrc[id] = { kind: rec.kind, name: rec.name, buf }; return idbPutModel(id, customModelSrc[id]); })
@@ -2294,36 +2112,20 @@
             }; reader.readAsText(file); e.target.value = "";
         });
 
-        // === TRANSFORM CONTROLS LOGIC (3D EDITOR) ===
+        // === TRANSFORM CONTROLS LOGIC ===
         window.transformControl = new THREE.TransformControls(camera, renderer.domElement);
-        // Ukuran gizmo. Di layar sempit (HP/tablet) gizmo dibuat lebih besar supaya
-        // ketiga sumbunya terbaca jelas dan gampang ditarik pakai jari.
         function updateGizmoSize() {
             transformControl.size = window.innerWidth <= 1100 ? 2.4 : 1.8;
         }
         updateGizmoSize();
         window.addEventListener('resize', updateGizmoSize);
         
-        // Default World: panah gizmo sejajar sumbu dunia.
         isWorldSpaceMode = true;
         transformControl.setSpace('world');
 
         scene.add(transformControl);
 
         const _savedGizmoQuat = new THREE.Quaternion();
-        // ===== PATCH BUG THREE.JS r128 =====
-        // Di TransformControlsGizmo.updateMatrixWorld (baris 961 pada r128) tertulis:
-        //     const space = this.mode === 'scale' ? this.space : 'local';
-        // Ternary-nya TERBALIK dari komentarnya sendiri. Efeknya: untuk mode translate &
-        // rotate, TAMPILAN gizmo SELALU dipaksa 'local' — jadi arah panah tidak pernah
-        // mengikuti World walau setSpace('world') sudah dipanggil. Versi three.js yang
-        // lebih baru menulisnya dengan benar: ( mode === 'scale' ) ? 'local' : this.space.
-        //
-        // Matematika drag-nya sendiri sudah benar (memakai this.space), jadi yang perlu
-        // dikoreksi hanya sisi visual. Caranya: selama pemanggilan updateMatrixWorld,
-        // this.worldQuaternion ditukar sementara ke identity — karena seluruh orientasi
-        // handle di dalam fungsi itu mengalir dari nilai tersebut. Hasilnya persis sama
-        // dengan perilaku World space yang benar, tanpa perlu menyalin ulang ratusan baris.
         (function patchGizmoSpaceBug() {
             const gizmo = transformControl._gizmo;
             if (!gizmo || gizmo.__spacePatched) return;
@@ -2347,10 +2149,6 @@
             if (event.value) { 
                 saveState();
             }
-            // Catatan: orientasi gizmo (World/Local) sekarang dikoreksi otomatis
-            // setiap frame di dalam animate(), jadi tidak perlu diatur di sini lagi.
-            // Ini membuat gizmo SELALU auto-reset walau event drag-end ini gagal
-            // ter-trigger (misal di layar sentuh/mobile).
         });
 
         transformControl.addEventListener('change', () => {
@@ -2370,7 +2168,6 @@
                     
                     obj.rotationZ = THREE.MathUtils.radToDeg(mesh.rotation.z);
                     
-                    // Maintain magnitudes independently from flip state
                     obj.scaleX = Math.abs(mesh.scale.x);
                     obj.scaleY = Math.abs(mesh.scale.y);
                     obj.scaleZ = Math.abs(mesh.scale.z);
@@ -2397,10 +2194,6 @@
         const btnTrMv = document.getElementById('btnTrMv'); const btnTrRt = document.getElementById('btnTrRt'); const btnTrSc = document.getElementById('btnTrSc');
         const btnTrSpace = document.getElementById('btnTrSpace');
 
-        // three.js hanya menyebarkan nilai 'space' ke gizmo internal SAAT NILAINYA BERUBAH.
-        // Kalau properti luar sudah terlanjur 'world' tapi gizmo internal masih 'local',
-        // setSpace('world') akan di-skip diam-diam dan panah tetap miring ikut objek.
-        // Jadi kita tulis paksa ke objek internalnya juga.
         function forceGizmoSpace(space) {
             transformControl.space = space;
             transformControl.children.forEach(child => {
@@ -2408,18 +2201,11 @@
             });
         }
 
-        // Ruang orientasi yang SEHARUSNYA dipakai, mengikuti kaidah standar 3D editor:
-        //  - Scale  : SELALU Local. Skala non-uniform cuma bermakna di sumbu objek sendiri,
-        //             jadi Blender/Unity/Maya semuanya mengunci scale gizmo ke Local.
-        //  - Move   : ikut pilihan user (World / Local).
-        //  - Rotate : ikut pilihan user, dan TIDAK berubah di tengah drag.
         function getEffectiveSpace() {
             if (transformControl.getMode() === 'scale') return 'local';
             return isWorldSpaceMode ? 'world' : 'local';
         }
 
-        // Label tombol selalu diturunkan dari kondisi gizmo yang SEBENARNYA,
-        // supaya tulisan tidak pernah berbohong terhadap apa yang tampil di layar.
         function syncSpaceButton() {
             const locked = transformControl.getMode() === 'scale';
             const label = locked ? 'Local 🔒' : (isWorldSpaceMode ? 'World' : 'Local');
@@ -2433,24 +2219,19 @@
                 : 'Toggle Local / World Space  (shortcut: X)';
         }
 
-        // --- MODE CAT ---
-        // Mengecat langsung dengan mengetuk permukaannya di tampilan 3D. Raycaster
-        // melaporkan grup material mana yang kena (0 = sisi A, 1 = sisi B, 2 = tepi),
-        // jadi tiap bidang tembok bisa dicat sendiri-sendiri.
         var paintMode = false;
         const btnPaint = document.getElementById('btnPaint');
         btnPaint.onclick = () => {
             paintMode = !paintMode;
             btnPaint.style.background = paintMode ? '#ec4899' : '#3f3f46';
             renderer.domElement.style.cursor = paintMode ? 'crosshair' : '';
-            if (paintMode && window.transformControl) transformControl.detach();   // gizmo mengganggu saat mengecat
+            if (paintMode && window.transformControl) transformControl.detach();
         };
 
         function catPermukaan(hit) {
             const warna = document.getElementById('paintColor').value;
             let obj = hit.object;
 
-            // Silinder penambal di pertemuan tembok
             if (obj.userData && obj.userData.sudut) {
                 const { li, kunci } = obj.userData.sudut;
                 if (!lines[li]) return false;
@@ -2460,7 +2241,6 @@
                 return true;
             }
 
-            // Bidang tembok
             if (obj.userData && obj.userData.wallIndex !== undefined) {
                 const idx = obj.userData.wallIndex;
                 const garis = lines[idx];
@@ -2469,16 +2249,13 @@
                 saveState();
                 garis[sisi === 0 ? 'warnaA' : sisi === 1 ? 'warnaB' : 'warnaTepi'] = warna;
 
-                // Sudut di kedua ujung tembok ikut tercat SELAMA belum pernah dicat sendiri.
-                // Tanpa ini, tiap pertemuan tembok tertinggal sebagai belang putih dan harus
-                // diketuk satu per satu. Sudut yang sudah punya warna sendiri tidak diganggu.
                 const ujung = [
                     { x: garis.start.x, y: garis.start.y },
                     { x: garis.end.x, y: garis.end.y }
                 ];
                 lines.forEach(l => {
                     [['start', l.start, 'warnaSudutStart'], ['end', l.end, 'warnaSudutEnd']].forEach(([, pt, k]) => {
-                        if (l[k]) return;                                  // sudah dicat manual, biarkan
+                        if (l[k]) return;
                         if (ujung.some(u => Math.hypot(u.x - pt.x, u.y - pt.y) < 1)) l[k] = warna;
                     });
                 });
@@ -2487,7 +2264,6 @@
                 return true;
             }
 
-            // Perabot: naik ke grup objeknya, lalu warnai material utamanya
             let node = obj;
             while (node && !node.userData.isFreeObject && node !== modelGroup) node = node.parent;
             if (node && node.userData.isFreeObject) {
@@ -2504,7 +2280,6 @@
         }
 
         btnTrSpace.onclick = () => {
-            // Di mode Scale, toggle tidak berlaku — beri tahu, jangan diam-diam mengabaikan.
             if (transformControl.getMode() === 'scale') {
                 btnTrSpace.animate(
                     [{ transform: 'translateX(0)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }],
@@ -2529,7 +2304,6 @@
         btnTrSc.onclick = () => setTransformMode('scale', btnTrSc);
         syncSpaceButton();
 
-        // Shortcut keyboard standar (Unity/Maya style) — W/E/R ganti mode, X toggle space.
         window.addEventListener('keydown', (e) => {
             if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
             if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -2540,7 +2314,6 @@
             else if (k === 'x') btnTrSpace.onclick();
         });
 
-        // --- SISTEM RAYCASTER BARU (Bebas Flicker & Aman untuk Layar Sentuh) ---
         const raycaster = new THREE.Raycaster(); 
         const mouseVector = new THREE.Vector2();
         
@@ -2554,16 +2327,12 @@
         });
 
         renderer.domElement.addEventListener('pointermove', (e) => {
-            // Jika kursor/jari bergeser lebih dari 4 pixel, dianggap Dragging (geser kamera)
             if (Math.abs(e.clientX - startPtrX) > 4 || Math.abs(e.clientY - startPtrY) > 4) {
                 isDragging3D = true;
             }
         });
 
         renderer.domElement.addEventListener('pointerup', (e) => {
-            // Jangan pilih objek jika sedang menggeser kamera atau sedang menekan bagian Gizmo.
-            // Cek 'axis' hanya berlaku kalau gizmo memang sedang memegang objek — kalau tidak,
-            // nilai axis yang tertinggal bisa memblokir tap selamanya.
             if (isDragging3D || transformControl.dragging || (transformControl.object && transformControl.axis !== null)) {
                 return;
             }
@@ -2574,11 +2343,9 @@
             
             raycaster.setFromCamera(mouseVector, camera);
             
-            // HANYA intersect objek yang terlihat (mencegah salah pencet objek transparan/bounding box)
             const intersects = raycaster.intersectObjects(modelGroup.children, true);
             const validIntersects = intersects.filter(i => i.object.visible);
 
-            // Mode cat: ketukan mengecat, bukan memilih.
             if (paintMode) {
                 if (validIntersects.length) catPermukaan(validIntersects[0]);
                 return;
@@ -2600,12 +2367,11 @@
                         openEditPanel(item); 
                         transformControl.attach(object);
                         draw2D();
-                        return; // SELEKSI BERHASIL, BERHENTI DI SINI
+                        return;
                     }
                 } 
             } 
             
-            // JIKA KLIK RUANG KOSONG, LEPAS GIZMO
             transformControl.detach();
             selectedItem = null;
             closeEditPanel();
@@ -2616,7 +2382,7 @@
             if (item && item.lineIndex === undefined && !item.isWall) {
                 const mesh = modelGroup.children.find(c => c.userData.id === item.id);
                 if (mesh) transformControl.attach(mesh);
-                else transformControl.detach(); // mesh-nya tidak ada lagi -> jangan gantung
+                else transformControl.detach();
             } else {
                 transformControl.detach();
             }
