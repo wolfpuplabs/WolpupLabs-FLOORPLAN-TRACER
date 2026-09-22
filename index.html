@@ -219,6 +219,10 @@
                         <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h5v-5h5v-5h5V6"></path></svg>
                         <span id="txtModeStairs">Stairs</span>
                     </button>
+                    <button id="modeVoid" class="tool-btn-wide">
+                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M8 8h8v8H8z" stroke-dasharray="2 2"></path><path d="M3 3l5 5"></path><path d="M21 21l-5-5"></path></svg>
+                        <span id="txtModeVoid">Void / Opening</span>
+                    </button>
                 </div>
                 
                 <select id="furnitureSelect" style="margin-bottom: 12px; margin-top: 4px;">
@@ -400,6 +404,14 @@
                             <input type="range" id="editLightRange" min="3" max="40" step="1" value="20">
                         </div>
 
+                        <div id="voidControls" style="display:none;">
+                            <div class="wall-grid">
+                                <div><label id="txtLblVoidW">Width (m)</label><input type="number" id="editVoidW" step="0.1" min="0.3" value="2"></div>
+                                <div><label id="txtLblVoidD">Depth (m)</label><input type="number" id="editVoidD" step="0.1" min="0.3" value="2"></div>
+                            </div>
+                            <div id="voidHint" style="font-size:10px; color:#71717a; margin:6px 0 4px 0; line-height:1.35; text-align:left;">This opening cuts a hole in the floor slab of the level it sits on.</div>
+                        </div>
+
                         <div id="stairsControls">
                             <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
                                 <input type="checkbox" id="chkStairVoid" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
@@ -441,6 +453,7 @@
                         <li id="txtGuide2"><b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.</li>
                         <li id="txtGuide3"><b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.</li>
                         <li id="txtGuide4"><b>Floors:</b> Add / copy levels in the "Floors" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.</li>
+                        <li id="txtGuide6"><b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; use the <b>Void</b> tool: activate the floor that should have the hole, drop a void on it, then set its Width and Depth.</li>
                         <li id="txtGuide5"><b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.</li>
                     </ul>
                 </div>
@@ -503,6 +516,20 @@
                 lines: [], openings: [], freeObjects: []
             };
         }
+        /* Tangga adalah objek parametrik: lebar diatur slider "Stairs W" dan panjang
+           oleh jumlah anak tangga, sedangkan tingginya harus persis setinggi lantai.
+           Skala X/Z yang tidak seragam membuat anak tangganya melar dan bentuknya rusak,
+           jadi skala tangga dikunci seragam mendatar dan tingginya tetap 1. */
+        function rapikanSkalaTangga(o) {
+            if (!o || o.type !== 'stairs') return false;
+            const sx = Math.abs(parseFloat(o.scaleX)) || 1;
+            const sz = Math.abs(parseFloat(o.scaleZ)) || 1;
+            const s = Math.sqrt(sx * sz) || 1;
+            const berubah = (o.scaleX !== s || o.scaleZ !== s || o.scaleY !== 1);
+            o.scaleX = s; o.scaleZ = s; o.scaleY = 1;
+            return berubah;
+        }
+
         function activeFloor() { return floors[currentFloor]; }
         function syncActiveFloor() {
             const f = floors[currentFloor];
@@ -697,6 +724,7 @@
                 gTitle: "Panduan Singkat", g1: "<b>Free Draw:</b> Mulai gambar langsung! Tiap kotak (grid) = 1 meter.",
                 g2: "<b>Tembok:</b> Tap 1x titik awal, tap posisi lain. Tap 2x (atau ESC) untuk mengakhiri garis tembok.",
                 g3: "<b>Edit & Hapus Tembok:</b> Gunakan Mode 'Pilih/Edit', klik garis tembok untuk menggeser posisinya atau menghapusnya.",
+                g6: "<b>Void / Lubang Lantai:</b> Tangga otomatis melubangi lantai di atasnya. Untuk lubang lain &mdash; void ruang tinggi atau mezzanine &mdash; pakai alat <b>Void</b>: aktifkan dulu lantai yang mau dilubangi, pasang void di situ, lalu atur Lebar dan Dalam-nya.",
                 g4: "<b>Lantai Bertingkat:</b> Tambah / salin level di panel \"Lantai\". Lantai aktif adalah yang sedang digambar; lantai lain tampil transparan di 3D dan garis putus-putus di 2D.",
                 g5: "<b>Transform Tembok (3D):</b> Klik tembok di tampilan 3D untuk memegangnya dengan gizmo &mdash; Move, Rotate, Scale (X = panjang, Y = tinggi, Z = tebal), atau ketik angka pastinya di panel Properti.",
                 closeAr: "Tutup AR", viewArBtn: "Lihat di Ruangan (AR)", lblLoad3D: "Upload 3D (.glb, .gltf, .obj):",
@@ -704,7 +732,9 @@
                 lblFloorView: "Lantai Lain (3D):", fvGhost: "Transparan (Ghost)", fvSolid: "Tampil Penuh", fvHidden: "Sembunyikan",
                 lblFloorRef: "Bayangan Denah 2D", grp6: "Utilitas",
                 desk: "Meja Kerja", washbasin: "Wastafel", washingMachine: "Mesin Cuci", acUnit: "AC / Pendingin",
-                lblStairVoid: "Bolongi Lantai Atas",
+                lblStairVoid: "Bolongi Lantai Atas", modeVoid: "Void / Lubang Lantai",
+                lblVoidW: "Lebar (m)", lblVoidD: "Dalam (m)",
+                voidHint: "Void ini melubangi pelat lantai tempat ia berada. Mau lubang di lantai 2? Aktifkan Lantai 2 dulu, baru pasang void-nya.",
                 lblWLen2: "Panjang (m)", lblWAng: "Sudut (\u00b0)", lblWH2: "Tinggi (m)", lblWT2: "Tebal (m)",
                 wallReset: "Kembalikan Tinggi/Tebal Global",
                 wallGizmoHint: "Gizmo 3D (Move / Rotate / Scale) juga bekerja pada tembok ini. Scale X = panjang, Y = tinggi, Z = tebal.",
@@ -725,6 +755,7 @@
                 gTitle: "Quick Guide", g1: "<b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.",
                 g2: "<b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.",
                 g3: "<b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.",
+                g6: "<b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; use the <b>Void</b> tool: activate the floor that should have the hole, drop a void on it, then set its Width and Depth.",
                 g4: "<b>Floors:</b> Add / copy levels in the \"Floors\" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.",
                 g5: "<b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.",
                 closeAr: "Close AR", viewArBtn: "View in AR", lblLoad3D: "Upload 3D (.glb, .gltf, .obj):",
@@ -732,7 +763,9 @@
                 lblFloorView: "Other Floors (3D):", fvGhost: "Ghost (transparent)", fvSolid: "Solid", fvHidden: "Hidden",
                 lblFloorRef: "2D Underlay Ref", grp6: "Utility",
                 desk: "Desk / Work Table", washbasin: "Washbasin / Sink", washingMachine: "Washing Machine", acUnit: "Air Conditioner",
-                lblStairVoid: "Cut Opening Above",
+                lblStairVoid: "Cut Opening Above", modeVoid: "Void / Opening",
+                lblVoidW: "Width (m)", lblVoidD: "Depth (m)",
+                voidHint: "This opening cuts a hole in the floor slab of the level it sits on. Want a hole in floor 2? Activate floor 2 first, then place the void there.",
                 lblWLen2: "Length (m)", lblWAng: "Angle (\u00b0)", lblWH2: "Height (m)", lblWT2: "Thick (m)",
                 wallReset: "Reset Height/Thick to Global",
                 wallGizmoHint: "3D Gizmo (Move / Rotate / Scale) works on this wall too. Scale X = length, Y = height, Z = thickness.",
@@ -792,12 +825,14 @@
             setTxt('txtLblFloorRef', t.lblFloorRef);
             setTxt('txtLblWLen2', t.lblWLen2); setTxt('txtLblWAng', t.lblWAng); setTxt('txtLblWH2', t.lblWH2); setTxt('txtLblWT2', t.lblWT2);
             setTxt('btnWallReset', t.wallReset); setTxt('wallGizmoHint', t.wallGizmoHint); setTxt('txtLblStairVoid', t.lblStairVoid);
+            setTxt('txtModeVoid', t.modeVoid); setTxt('txtLblVoidW', t.lblVoidW); setTxt('txtLblVoidD', t.lblVoidD); setTxt('voidHint', t.voidHint);
             setTxt('optDesk', t.desk); setTxt('optWashbasin', t.washbasin); setTxt('optWashing', t.washingMachine); setTxt('optAc', t.acUnit);
             if (document.getElementById('optGrp6')) document.getElementById('optGrp6').label = t.grp6;
             if (typeof floors !== 'undefined' && floors.length) renderFloorList();
             document.getElementById('txtGuideTitle').innerText = t.gTitle; document.getElementById('txtGuide1').innerHTML = t.g1; document.getElementById('txtGuide2').innerHTML = t.g2; document.getElementById('txtGuide3').innerHTML = t.g3;
             if (document.getElementById('txtGuide4')) document.getElementById('txtGuide4').innerHTML = t.g4;
             if (document.getElementById('txtGuide5')) document.getElementById('txtGuide5').innerHTML = t.g5;
+            if (document.getElementById('txtGuide6')) document.getElementById('txtGuide6').innerHTML = t.g6;
             if (typeof selectedItem !== 'undefined' && selectedItem !== null) { openEditPanel(selectedItem); }
         }
 
@@ -1099,7 +1134,9 @@
             }
             else { 
                 saveState(); let snapPos = getSnapped(x, y);
-                freeObjects.push({ id: Date.now(), type: mode, variant: 0, x: snapPos.x, y: snapPos.y, rotationX: 0, rotationY: 0, rotationZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0, steps: 14, width3D: mode === 'stairs' ? 1.0 : 1.0, flipX: false, flipZ: false });
+                const baru = { id: Date.now(), type: mode, variant: 0, x: snapPos.x, y: snapPos.y, rotationX: 0, rotationY: 0, rotationZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0, steps: 14, width3D: mode === 'stairs' ? 1.0 : 1.0, flipX: false, flipZ: false };
+                if (mode === 'void') { baru.width3D = 2.0; baru.depth3D = 2.0; }
+                freeObjects.push(baru);
                 furnitureSelect.value = ""; setMode('select', document.getElementById('modeSelect')); update3D(); draw2D();
             }
         });
@@ -1133,7 +1170,7 @@
         });
 
         function stopDrawing() { if (isDrawing && currentLine) draw2D(); isDrawing = false; currentLine = null; draw2D(); }
-        document.getElementById('modeSelect').onclick = (e) => setMode('select', e.currentTarget); document.getElementById('modeWall').onclick = (e) => setMode('wall', e.currentTarget); document.getElementById('modeDoor').onclick = (e) => setMode('door', e.currentTarget); document.getElementById('modeWindow').onclick = (e) => setMode('window', e.currentTarget); document.getElementById('modeStairs').onclick = (e) => setMode('stairs', e.currentTarget); furnitureSelect.addEventListener('change', (e) => { if(e.target.value) setMode(e.target.value, null); });
+        document.getElementById('modeSelect').onclick = (e) => setMode('select', e.currentTarget); document.getElementById('modeWall').onclick = (e) => setMode('wall', e.currentTarget); document.getElementById('modeDoor').onclick = (e) => setMode('door', e.currentTarget); document.getElementById('modeWindow').onclick = (e) => setMode('window', e.currentTarget); document.getElementById('modeStairs').onclick = (e) => setMode('stairs', e.currentTarget); document.getElementById('modeVoid').onclick = (e) => setMode('void', e.currentTarget); furnitureSelect.addEventListener('change', (e) => { if(e.target.value) setMode(e.target.value, null); });
         function setMode(newMode, btn) { stopDrawing(); mode = newMode; document.querySelectorAll('#sidebar .tool-btn, #sidebar .tool-btn-wide').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); if (mode !== 'select') closeEditPanel(); if(window.innerWidth <= 1100 && mode !== 'select' && !sidebar.classList.contains('collapsed')){ sidebar.classList.add('collapsed'); updateToggleIcon(); } draw2D(); }
         window.addEventListener('keydown', (e) => { if (e.key === 'Escape') stopDrawing(); });
         function getTrueCoords(x, y) { const rect = canvas.getBoundingClientRect(); return { x: (x - rect.left) * (canvas.width / rect.width), y: (y - rect.top) * (canvas.height / rect.height) }; }
@@ -1216,6 +1253,11 @@
                     document.getElementById('valLightRange').innerText = item.lightRange;
                 }
 
+                document.getElementById('voidControls').style.display = (item.type === 'void') ? 'block' : 'none';
+                if (item.type === 'void') {
+                    document.getElementById('editVoidW').value = (item.width3D || 2.0);
+                    document.getElementById('editVoidD').value = (item.depth3D || 2.0);
+                }
                 if (item.type === 'stairs') { stairsControls.style.display = 'block'; document.getElementById('chkStairVoid').checked = item.bikinVoid !== false; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } else { stairsControls.style.display = 'none'; }
             }
         }
@@ -1298,10 +1340,29 @@
             } 
         });
 
-        editScaleX.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.scaleX = parseFloat(e.target.value); document.getElementById('valScaleX').innerText = selectedItem.scaleX; update3D(); draw2D(); } }); 
-        editScaleY.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.scaleY = parseFloat(e.target.value); document.getElementById('valScaleY').innerText = selectedItem.scaleY; update3D(); draw2D(); } }); 
-        editScaleZ.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.scaleZ = parseFloat(e.target.value); document.getElementById('valScaleZ').innerText = selectedItem.scaleZ; update3D(); draw2D(); } }); 
+        const terapkanSkala = (sumbu, nilai) => {
+            if (!selectedItem || selectedItem.isWall) return;
+            selectedItem['scale' + sumbu] = nilai;
+            if (rapikanSkalaTangga(selectedItem)) openEditPanel(selectedItem);
+            else document.getElementById('valScale' + sumbu).innerText = nilai;
+            update3D(); draw2D();
+        };
+        editScaleX.addEventListener('input', (e) => terapkanSkala('X', parseFloat(e.target.value)));
+        editScaleY.addEventListener('input', (e) => terapkanSkala('Y', parseFloat(e.target.value)));
+        editScaleZ.addEventListener('input', (e) => terapkanSkala('Z', parseFloat(e.target.value)));
         
+        ['editVoidW', 'editVoidD'].forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('focus', () => beginUndoStep());
+            el.addEventListener('change', () => {
+                if (!selectedItem || selectedItem.type !== 'void') return;
+                const w = parseFloat(document.getElementById('editVoidW').value);
+                const d = parseFloat(document.getElementById('editVoidD').value);
+                if (isFinite(w) && w >= 0.3) selectedItem.width3D = w;
+                if (isFinite(d) && d >= 0.3) selectedItem.depth3D = d;
+                update3D(); draw2D();
+            });
+        });
         document.getElementById('chkStairVoid').addEventListener('change', (e) => {
             if (!selectedItem || selectedItem.type !== 'stairs') return;
             saveState(); selectedItem.bikinVoid = e.target.checked; update3D(); draw2D();
@@ -1394,8 +1455,10 @@
             floors.forEach((f, i) => {
                 if (i === currentFloor) return;
                 f.freeObjects.forEach(o => {
-                    if (o.type !== 'stairs') return;
-                    const fp = footprintTangga(o);
+                    if (o.type !== 'stairs' && o.type !== 'void') return;
+                    const fp = o.type === 'void'
+                        ? { w: Math.max(0.3, o.width3D || 2.0), d: Math.max(0.3, o.depth3D || 2.0) }
+                        : footprintTangga(o);
                     ctx.save(); ctx.translate(o.x, o.y); ctx.rotate((o.rotationY || 0) * Math.PI / 180);
                     ctx.strokeRect(-(fp.w / scale3D) / 2, -(fp.d / scale3D) / 2, fp.w / scale3D, fp.d / scale3D);
                     ctx.restore();
@@ -1459,6 +1522,38 @@
             ctx.restore();
         }
 
+        /* Void digambar sebagai kotak oranye putus-putus dengan arsiran silang. */
+        function gambarVoid2D(obj, sX, sZ) {
+            const k = 1 / scale3D;
+            const w = Math.max(0.3, obj.width3D || 2.0) * Math.abs(sX || 1) * k;
+            const d = Math.max(0.3, obj.depth3D || 2.0) * Math.abs(sZ || 1) * k;
+            ctx.save();
+            ctx.fillStyle = 'rgba(249, 115, 22, 0.10)';
+            ctx.fillRect(-w / 2, -d / 2, w, d);
+            ctx.beginPath();
+            ctx.rect(-w / 2, -d / 2, w, d);
+            ctx.clip();
+            ctx.strokeStyle = 'rgba(249, 115, 22, 0.45)';
+            ctx.lineWidth = Math.max(1, 1.5 / scale);
+            const jarak = Math.max(18, 30 / scale);
+            for (let i = -d; i < w + d; i += jarak) {
+                ctx.beginPath(); ctx.moveTo(-w / 2 + i, -d / 2); ctx.lineTo(-w / 2 + i - d, d / 2); ctx.stroke();
+            }
+            ctx.restore();
+            ctx.save();
+            ctx.setLineDash([10, 7]);
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = Math.max(2, 2.5 / scale);
+            ctx.strokeRect(-w / 2, -d / 2, w, d);
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#ea580c';
+            ctx.font = `bold ${Math.max(11, Math.min(w, d) * 0.16)}px sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.scale(obj.flipX ? -1 : 1, obj.flipZ ? -1 : 1);
+            ctx.fillText('VOID', 0, 0);
+            ctx.restore();
+        }
+
         function draw2D() {
             ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.lineCap = 'round'; drawCanvasGrid(); gambarLantaiLain();
             const globalThick2D = parseFloat(inputWallT.value) / scale3D; ctx.lineWidth = Math.max(2, globalThick2D); 
@@ -1497,7 +1592,9 @@
                 ctx.scale(obj.flipX ? -1 : 1, obj.flipZ ? -1 : 1);
 
                 if (obj === selectedItem) { ctx.shadowColor = '#2563eb'; ctx.shadowBlur = 15; }
-                if (obj.type === 'stairs') { 
+                if (obj.type === 'void') {
+                    gambarVoid2D(obj, sX, sZ);
+                } else if (obj.type === 'stairs') { 
                     gambarTangga2D(obj, sX, sZ);
                 } else { 
                     const sizeX = (30 / scale) * sX; const sizeZ = (30 / scale) * sZ;
@@ -1673,7 +1770,7 @@
             renderer.shadowMap.enabled = aktif;
             modelGroup.traverse(o => {
                 if (!o.isMesh) return;
-                if (o.userData.ghost) { o.castShadow = false; o.receiveShadow = false; return; }
+                if (o.userData.ghost || o.userData.penanda) { o.castShadow = false; o.receiveShadow = false; return; }
                 const datar = o.userData.datar || (o.geometry && o.geometry.type === 'PlaneGeometry');
                 const tembusPandang = o.material && o.material.transparent;
                 const atap = o.userData && o.userData.atap;
@@ -2548,24 +2645,55 @@
 
         /* ---------- VOID TANGGA (lubang pelat lantai di atas tangga) ---------- */
 
-        /* Denah tangga sebagai poligon dunia (meter, relatif titik pusat). */
-        function poligonTangga(o, pad) {
-            const fp = footprintTangga(o);
-            const sX = Math.abs(o.scaleX !== undefined ? o.scaleX : (o.scaleVal || 1)) || 1;
-            const sZ = Math.abs(o.scaleZ !== undefined ? o.scaleZ : (o.scaleVal || 1)) || 1;
-            const cx = (o.x - center2DX) * scale3D, cz = (o.y - center2DY) * scale3D;
-            if ((o.variant || 0) === 4) {
-                const R = (fp.w / 2) * Math.max(sX, sZ) + pad;
+        /* Denah lokal tangga (meter, titik pusat = pusat objek), mengikuti bentuk
+           aslinya: tangga L dapat lubang berbentuk L, spiral dapat lubang bundar. */
+        function denahLokalTangga(o, pad) {
+            const n = Math.max(3, parseInt(o.steps) || 14);
+            const W = Math.max(0.4, o.width3D || 1.0);
+            const d = STEP_DEPTH;
+            const v = o.variant || 0;
+            if (v === 4) {
+                const R = Math.max(0.8, W) + pad;
                 const titik = [];
-                for (let i = 0; i < 20; i++) { const a = (i / 20) * Math.PI * 2; titik.push({ x: cx + Math.cos(a) * R, z: cz + Math.sin(a) * R }); }
+                for (let i = 0; i < 20; i++) { const a = (i / 20) * Math.PI * 2; titik.push({ x: Math.cos(a) * R, z: Math.sin(a) * R }); }
                 return titik;
             }
-            const w = fp.w * sX + pad * 2, d = fp.d * sZ + pad * 2;
+            if (v === 2) {
+                const n1 = Math.max(1, Math.floor(n / 2)), n2 = Math.max(1, n - n1 - 1);
+                const cx = -n2 * d / 2, cz = (n1 * d + W) / 2;
+                const kiri = -W / 2 - pad, kanan = W / 2 + pad;
+                const jauh = -W / 2 - n2 * d - pad;
+                const z0 = -pad, zSiku = n1 * d - pad, z1 = n1 * d + W + pad;
+                return [[kiri, z0], [kanan, z0], [kanan, z1], [jauh, z1], [jauh, zSiku], [kiri, zSiku]]
+                    .map(([x, z]) => ({ x: x - cx, z: z - cz }));
+            }
+            const fp = footprintTangga(o);
+            const w = fp.w / 2 + pad, dd = fp.d / 2 + pad;
+            return [{ x: -w, z: -dd }, { x: w, z: -dd }, { x: w, z: dd }, { x: -w, z: dd }];
+        }
+
+        /* Denah lokal void manual (persegi). */
+        function denahLokalVoid(o) {
+            const w = Math.max(0.3, o.width3D || 2.0) / 2, d = Math.max(0.3, o.depth3D || 2.0) / 2;
+            return [{ x: -w, z: -d }, { x: w, z: -d }, { x: w, z: d }, { x: -w, z: d }];
+        }
+
+        /* Denah lokal -> koordinat dunia, ikut flip, skala, rotasi dan posisi objek. */
+        function poligonKeDunia(o, lokal) {
+            const sX = Math.abs(o.scaleX !== undefined ? o.scaleX : (o.scaleVal || 1)) || 1;
+            const sZ = Math.abs(o.scaleZ !== undefined ? o.scaleZ : (o.scaleVal || 1)) || 1;
+            const fx = o.flipX ? -1 : 1, fz = o.flipZ ? -1 : 1;
             const t = -THREE.MathUtils.degToRad(o.rotationY !== undefined ? o.rotationY : (o.rotation || 0));
             const c = Math.cos(t), sn = Math.sin(t);
-            return [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]]
-                .map(([lx, lz]) => ({ x: cx + lx * c + lz * sn, z: cz - lx * sn + lz * c }));
+            const cx = (o.x - center2DX) * scale3D, cz = (o.y - center2DY) * scale3D;
+            return lokal.map(pt => {
+                const lx = pt.x * sX * fx, lz = pt.z * sZ * fz;
+                return { x: cx + lx * c + lz * sn, z: cz - lx * sn + lz * c };
+            });
         }
+
+        function poligonTangga(o, pad) { return poligonKeDunia(o, denahLokalTangga(o, pad)); }
+        function poligonVoid(o) { return poligonKeDunia(o, denahLokalVoid(o)); }
 
         const bboxPoligon = (poly) => poly.reduce((a, p) => ({
             x0: Math.min(a.x0, p.x), x1: Math.max(a.x1, p.x), z0: Math.min(a.z0, p.z), z1: Math.max(a.z1, p.z)
@@ -2591,13 +2719,26 @@
             });
         }
 
-        /* Semua void yang harus dilubangi pada pelat di ATAS lantai ke-i. */
-        function voidTangga(iLantai) {
+        /* Lubang pada pelat lantai ke-i:
+           - tangga di lantai BAWAHNYA (i-1), karena tangga itu naik menembus pelat ini;
+           - objek Void yang dipasang di lantai ini sendiri. */
+        function lubangPelat(iLantai) {
+            const poli = [];
+            const bawah = floors[iLantai - 1];
+            if (bawah) bawah.freeObjects.forEach(o => {
+                if (o.type === 'stairs' && o.bikinVoid !== false) poli.push(poligonTangga(o, 0.12));
+            });
+            const ini = floors[iLantai];
+            if (ini) ini.freeObjects.forEach(o => { if (o.type === 'void') poli.push(poligonVoid(o)); });
+            return poli.length ? gabungLubang(poli) : [];
+        }
+
+        /* Lubang pada atap lantai teratas: tangga lantai itu sendiri. */
+        function lubangAtap(iLantai) {
             const f = floors[iLantai];
             if (!f) return [];
             const tangga = f.freeObjects.filter(o => o.type === 'stairs' && o.bikinVoid !== false);
-            if (!tangga.length) return [];
-            return gabungLubang(tangga.map(o => poligonTangga(o, 0.12)));
+            return tangga.length ? gabungLubang(tangga.map(o => poligonTangga(o, 0.12))) : [];
         }
 
         /* Pelat datar (lantai / atap) berbentuk persegi dengan lubang void tangga.
@@ -2618,7 +2759,33 @@
             return mesh;
         }
 
+        /* Penanda void di 3D: hanya bingkai tipis supaya bisa diklik/digeser,
+           tidak ikut diekspor dan tidak menghasilkan bayangan. */
+        let modeEkspor = false;
+        function bikinPenandaVoid(o) {
+            const g = new THREE.Group();
+            const w = Math.max(0.3, o.width3D || 2.0), d = Math.max(0.3, o.depth3D || 2.0);
+            const tebal = Math.min(0.12, Math.min(w, d) * 0.12);
+            const luar = new THREE.Shape();
+            luar.moveTo(-w / 2, -d / 2); luar.lineTo(w / 2, -d / 2); luar.lineTo(w / 2, d / 2); luar.lineTo(-w / 2, d / 2); luar.closePath();
+            const dalam = new THREE.Path();
+            dalam.moveTo(-w / 2 + tebal, -d / 2 + tebal); dalam.lineTo(w / 2 - tebal, -d / 2 + tebal);
+            dalam.lineTo(w / 2 - tebal, d / 2 - tebal); dalam.lineTo(-w / 2 + tebal, d / 2 - tebal); dalam.closePath();
+            luar.holes.push(dalam);
+            const matBingkai = new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.95, side: THREE.DoubleSide });
+            const bingkai = new THREE.Mesh(new THREE.ShapeGeometry(luar), matBingkai);
+            bingkai.rotation.x = -Math.PI / 2; bingkai.position.y = 0.035;
+            g.add(bingkai);
+            const isi = new THREE.Mesh(new THREE.PlaneGeometry(w - tebal * 2, d - tebal * 2),
+                new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }));
+            isi.rotation.x = -Math.PI / 2; isi.position.y = 0.03;
+            g.add(isi);
+            g.traverse(o2 => { if (o2.isMesh) o2.userData.penanda = true; });
+            return g;
+        }
+
         function bangunLantai(dataLantai, indexLantai, aktif) {
+            dataLantai.freeObjects.forEach(rapikanSkalaTangga);
             const grup = new THREE.Group();
             grup.userData.aktif = aktif;
             const lines = dataLantai.lines, openings = dataLantai.openings, freeObjects = dataLantai.freeObjects;
@@ -2634,8 +2801,8 @@
             if (minX !== Infinity) { 
                 /* Pelat lantai ini dilubangi oleh tangga dari lantai di bawahnya,
                    dan atap dilubangi oleh tangga lantai teratas itu sendiri. */
-                const voidLantai = voidTangga(indexLantai - 1);
-                const voidAtap = voidTangga(indexLantai);
+                const voidLantai = lubangPelat(indexLantai);
+                const voidAtap = lubangAtap(indexLantai);
                 let X0 = (minX - center2DX) * scale3D - 0.5, X1 = (maxX - center2DX) * scale3D + 0.5;
                 let Z0 = (minY - center2DY) * scale3D - 0.5, Z1 = (maxY - center2DY) * scale3D + 0.5;
                 /* Pelat diperlebar bila perlu supaya lubangnya tidak menggantung di luar tepi. */
@@ -2758,6 +2925,9 @@
                         new THREE.EdgesGeometry(ph.geometry),
                         new THREE.LineBasicMaterial({ color: 0x8b5cf6 })
                     ).translateY(0.5));
+                } else if (obj.type === 'void') {
+                    if (modeEkspor) return;
+                    innerMesh = bikinPenandaVoid(obj);
                 } else {
                     innerMesh = (obj.type === 'stairs') ? createStairsMesh(obj.steps || 14, obj.width3D || 1.0, heightWall, obj.variant || 0, obj) : createFurnitureMesh(obj.type, obj.variant || 0, obj); 
                 }
@@ -2849,6 +3019,14 @@
             const box = new THREE.Box3();
             const dasarY = floorBaseY(currentFloor);
             freeObjects.forEach(o => {
+                if (o.type === 'void') {
+                    const b = bboxPoligon(poligonVoid(o));
+                    const c0 = Math.floor((b.x0 - minX) / cell), c1 = Math.floor((b.x1 - minX) / cell);
+                    const r0 = Math.floor((b.z0 - minZ) / cell), r1 = Math.floor((b.z1 - minZ) / cell);
+                    for (let c = c0; c <= c1; c++) for (let rr = r0; rr <= r1; rr++)
+                        if (c >= 0 && rr >= 0 && c < GRID.cols && rr < GRID.rows) blocked[rr * GRID.cols + c] = 1;
+                    return;
+                }
                 const mesh = meshObjekBebas(o.id);
                 if (!mesh) return;
                 box.setFromObject(mesh);
@@ -3023,12 +3201,14 @@
             const tampakLama = floors.map(f => f.visible !== false);
             let sudahPulih = false;
             floorViewMode = 'solid';
+            modeEkspor = true;
             floors.forEach(f => { f.visible = true; });
             update3D();
             return () => {
                 if (sudahPulih) return;
                 sudahPulih = true;
                 floorViewMode = modeLama;
+                modeEkspor = false;
                 floors.forEach((f, i) => { f.visible = tampakLama[i]; });
                 update3D();
             };
@@ -3222,6 +3402,7 @@
                     obj.scaleX = Math.abs(mesh.scale.x);
                     obj.scaleY = Math.abs(mesh.scale.y);
                     obj.scaleZ = Math.abs(mesh.scale.z);
+                    if (rapikanSkalaTangga(obj)) mesh.scale.set(obj.scaleX, 1, obj.scaleZ);
                     
                     draw2D(); 
                     
@@ -3449,8 +3630,10 @@
             const o = transformControl.object;
             const tembok = !!(o && o.userData.isWall);
             const m = transformControl.getMode();
+            const tangga = !!(o && o.userData.isFreeObject && selectedItem && selectedItem.type === 'stairs');
             if (tembok && m === 'translate') { transformControl.showX = true; transformControl.showY = false; transformControl.showZ = true; }
             else if (tembok && m === 'rotate') { transformControl.showX = false; transformControl.showY = true; transformControl.showZ = false; }
+            else if (tangga && m === 'scale') { transformControl.showX = true; transformControl.showY = false; transformControl.showZ = true; }
             else { transformControl.showX = true; transformControl.showY = true; transformControl.showZ = true; }
         }
 
