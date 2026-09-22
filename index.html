@@ -401,6 +401,10 @@
                         </div>
 
                         <div id="stairsControls">
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
+                                <input type="checkbox" id="chkStairVoid" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
+                                <span id="txtLblStairVoid">Cut opening above</span>
+                            </label>
                             <label><span id="txtLblSteps">Steps:</span> <span id="valSteps">14</span></label>
                             <input type="range" id="editSteps" min="5" max="25" step="1" value="14">
                             <label><span id="txtLblStairW">Stairs W:</span> <span id="valStairW">1.0</span> m</label>
@@ -700,6 +704,7 @@
                 lblFloorView: "Lantai Lain (3D):", fvGhost: "Transparan (Ghost)", fvSolid: "Tampil Penuh", fvHidden: "Sembunyikan",
                 lblFloorRef: "Bayangan Denah 2D", grp6: "Utilitas",
                 desk: "Meja Kerja", washbasin: "Wastafel", washingMachine: "Mesin Cuci", acUnit: "AC / Pendingin",
+                lblStairVoid: "Bolongi Lantai Atas",
                 lblWLen2: "Panjang (m)", lblWAng: "Sudut (\u00b0)", lblWH2: "Tinggi (m)", lblWT2: "Tebal (m)",
                 wallReset: "Kembalikan Tinggi/Tebal Global",
                 wallGizmoHint: "Gizmo 3D (Move / Rotate / Scale) juga bekerja pada tembok ini. Scale X = panjang, Y = tinggi, Z = tebal.",
@@ -727,6 +732,7 @@
                 lblFloorView: "Other Floors (3D):", fvGhost: "Ghost (transparent)", fvSolid: "Solid", fvHidden: "Hidden",
                 lblFloorRef: "2D Underlay Ref", grp6: "Utility",
                 desk: "Desk / Work Table", washbasin: "Washbasin / Sink", washingMachine: "Washing Machine", acUnit: "Air Conditioner",
+                lblStairVoid: "Cut Opening Above",
                 lblWLen2: "Length (m)", lblWAng: "Angle (\u00b0)", lblWH2: "Height (m)", lblWT2: "Thick (m)",
                 wallReset: "Reset Height/Thick to Global",
                 wallGizmoHint: "3D Gizmo (Move / Rotate / Scale) works on this wall too. Scale X = length, Y = height, Z = thickness.",
@@ -785,7 +791,7 @@
             setTxt('txtLblFloorView', t.lblFloorView); setTxt('optFvGhost', t.fvGhost); setTxt('optFvSolid', t.fvSolid); setTxt('optFvHidden', t.fvHidden);
             setTxt('txtLblFloorRef', t.lblFloorRef);
             setTxt('txtLblWLen2', t.lblWLen2); setTxt('txtLblWAng', t.lblWAng); setTxt('txtLblWH2', t.lblWH2); setTxt('txtLblWT2', t.lblWT2);
-            setTxt('btnWallReset', t.wallReset); setTxt('wallGizmoHint', t.wallGizmoHint);
+            setTxt('btnWallReset', t.wallReset); setTxt('wallGizmoHint', t.wallGizmoHint); setTxt('txtLblStairVoid', t.lblStairVoid);
             setTxt('optDesk', t.desk); setTxt('optWashbasin', t.washbasin); setTxt('optWashing', t.washingMachine); setTxt('optAc', t.acUnit);
             if (document.getElementById('optGrp6')) document.getElementById('optGrp6').label = t.grp6;
             if (typeof floors !== 'undefined' && floors.length) renderFloorList();
@@ -1210,7 +1216,7 @@
                     document.getElementById('valLightRange').innerText = item.lightRange;
                 }
 
-                if (item.type === 'stairs') { stairsControls.style.display = 'block'; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } else { stairsControls.style.display = 'none'; }
+                if (item.type === 'stairs') { stairsControls.style.display = 'block'; document.getElementById('chkStairVoid').checked = item.bikinVoid !== false; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } else { stairsControls.style.display = 'none'; }
             }
         }
 
@@ -1296,6 +1302,10 @@
         editScaleY.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.scaleY = parseFloat(e.target.value); document.getElementById('valScaleY').innerText = selectedItem.scaleY; update3D(); draw2D(); } }); 
         editScaleZ.addEventListener('input', (e) => { if (selectedItem && !selectedItem.isWall) { selectedItem.scaleZ = parseFloat(e.target.value); document.getElementById('valScaleZ').innerText = selectedItem.scaleZ; update3D(); draw2D(); } }); 
         
+        document.getElementById('chkStairVoid').addEventListener('change', (e) => {
+            if (!selectedItem || selectedItem.type !== 'stairs') return;
+            saveState(); selectedItem.bikinVoid = e.target.checked; update3D(); draw2D();
+        });
         editSteps.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.steps = parseInt(e.target.value); document.getElementById('valSteps').innerText = selectedItem.steps; update3D(); draw2D(); } }); 
         editStairW.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.width3D = parseFloat(e.target.value); document.getElementById('valStairW').innerText = selectedItem.width3D; update3D(); draw2D(); } }); 
 
@@ -1664,7 +1674,7 @@
             modelGroup.traverse(o => {
                 if (!o.isMesh) return;
                 if (o.userData.ghost) { o.castShadow = false; o.receiveShadow = false; return; }
-                const datar = o.geometry && o.geometry.type === 'PlaneGeometry';
+                const datar = o.userData.datar || (o.geometry && o.geometry.type === 'PlaneGeometry');
                 const tembusPandang = o.material && o.material.transparent;
                 const atap = o.userData && o.userData.atap;
                 o.castShadow = aktif && !tembusPandang && (atap || !datar);
@@ -2536,6 +2546,78 @@
             terapkanBayangan();
         }
 
+        /* ---------- VOID TANGGA (lubang pelat lantai di atas tangga) ---------- */
+
+        /* Denah tangga sebagai poligon dunia (meter, relatif titik pusat). */
+        function poligonTangga(o, pad) {
+            const fp = footprintTangga(o);
+            const sX = Math.abs(o.scaleX !== undefined ? o.scaleX : (o.scaleVal || 1)) || 1;
+            const sZ = Math.abs(o.scaleZ !== undefined ? o.scaleZ : (o.scaleVal || 1)) || 1;
+            const cx = (o.x - center2DX) * scale3D, cz = (o.y - center2DY) * scale3D;
+            if ((o.variant || 0) === 4) {
+                const R = (fp.w / 2) * Math.max(sX, sZ) + pad;
+                const titik = [];
+                for (let i = 0; i < 20; i++) { const a = (i / 20) * Math.PI * 2; titik.push({ x: cx + Math.cos(a) * R, z: cz + Math.sin(a) * R }); }
+                return titik;
+            }
+            const w = fp.w * sX + pad * 2, d = fp.d * sZ + pad * 2;
+            const t = -THREE.MathUtils.degToRad(o.rotationY !== undefined ? o.rotationY : (o.rotation || 0));
+            const c = Math.cos(t), sn = Math.sin(t);
+            return [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]]
+                .map(([lx, lz]) => ({ x: cx + lx * c + lz * sn, z: cz - lx * sn + lz * c }));
+        }
+
+        const bboxPoligon = (poly) => poly.reduce((a, p) => ({
+            x0: Math.min(a.x0, p.x), x1: Math.max(a.x1, p.x), z0: Math.min(a.z0, p.z), z1: Math.max(a.z1, p.z)
+        }), { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity });
+
+        /* Lubang yang saling tumpang tindih digabung jadi satu kotak,
+           supaya triangulasi pelat tidak rusak karena poligon beririsan. */
+        function gabungLubang(daftar) {
+            const kotak = daftar.map(bboxPoligon);
+            const induk = daftar.map((_, i) => i);
+            const akar = (i) => { while (induk[i] !== i) i = induk[i]; return i; };
+            const bertemu = (a, b) => !(a.x1 < b.x0 || b.x1 < a.x0 || a.z1 < b.z0 || b.z1 < a.z0);
+            for (let i = 0; i < daftar.length; i++) for (let j = i + 1; j < daftar.length; j++)
+                if (bertemu(kotak[i], kotak[j])) { const ri = akar(i), rj = akar(j); if (ri !== rj) induk[rj] = ri; }
+            const kelompok = {};
+            daftar.forEach((_, i) => { const r = akar(i); (kelompok[r] = kelompok[r] || []).push(i); });
+            return Object.values(kelompok).map(anggota => {
+                if (anggota.length === 1) return daftar[anggota[0]];
+                const g = anggota.map(i => kotak[i]).reduce((a, b) => ({
+                    x0: Math.min(a.x0, b.x0), x1: Math.max(a.x1, b.x1), z0: Math.min(a.z0, b.z0), z1: Math.max(a.z1, b.z1)
+                }));
+                return [{ x: g.x0, z: g.z0 }, { x: g.x1, z: g.z0 }, { x: g.x1, z: g.z1 }, { x: g.x0, z: g.z1 }];
+            });
+        }
+
+        /* Semua void yang harus dilubangi pada pelat di ATAS lantai ke-i. */
+        function voidTangga(iLantai) {
+            const f = floors[iLantai];
+            if (!f) return [];
+            const tangga = f.freeObjects.filter(o => o.type === 'stairs' && o.bikinVoid !== false);
+            if (!tangga.length) return [];
+            return gabungLubang(tangga.map(o => poligonTangga(o, 0.12)));
+        }
+
+        /* Pelat datar (lantai / atap) berbentuk persegi dengan lubang void tangga.
+           Shape berada di bidang XY lalu diputar -90 deg pada X, sehingga Y shape = -Z dunia. */
+        function bikinPelat(X0, Z0, X1, Z1, lubang, mat, tinggiY) {
+            const bentuk = new THREE.Shape();
+            bentuk.moveTo(X0, -Z0); bentuk.lineTo(X1, -Z0); bentuk.lineTo(X1, -Z1); bentuk.lineTo(X0, -Z1); bentuk.closePath();
+            lubang.forEach(poly => {
+                const jalur = new THREE.Path();
+                poly.forEach((pt, i) => { if (i === 0) jalur.moveTo(pt.x, -pt.z); else jalur.lineTo(pt.x, -pt.z); });
+                jalur.closePath();
+                bentuk.holes.push(jalur);
+            });
+            const mesh = new THREE.Mesh(new THREE.ShapeGeometry(bentuk), mat);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.position.y = tinggiY;
+            mesh.userData.datar = true;
+            return mesh;
+        }
+
         function bangunLantai(dataLantai, indexLantai, aktif) {
             const grup = new THREE.Group();
             grup.userData.aktif = aktif;
@@ -2550,11 +2632,23 @@
             const matWall = new THREE.MeshLambertMaterial({ color: 0xefefef }); const matDoor = new THREE.MeshLambertMaterial({ color: 0x5c4033 }); const matWindow = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.5 }); const matFrame = new THREE.MeshLambertMaterial({ color: 0x3f3f46 }); const matFloor = new THREE.MeshLambertMaterial({ color: 0xd4d4d8, side: THREE.DoubleSide }); const matRoof = new THREE.MeshLambertMaterial({ color: 0xe4e4e7, side: THREE.DoubleSide });
             
             if (minX !== Infinity) { 
-                const floorW = (maxX - minX) * scale3D + 1.0; const floorH = (maxY - minY) * scale3D + 1.0; 
-                const floorCX = (((minX + maxX) / 2) - center2DX) * scale3D;
-                const floorCZ = (((minY + maxY) / 2) - center2DY) * scale3D;
-                const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matFloor); floorMesh.rotation.x = -Math.PI / 2; floorMesh.position.set(floorCX, 0.001, floorCZ); grup.add(floorMesh); 
-                if (lantaiTeratas && document.getElementById('chkShowRoof').checked) { const roofMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorW, floorH), matRoof); roofMesh.rotation.x = -Math.PI / 2; roofMesh.position.set(floorCX, heightWall, floorCZ); roofMesh.userData.atap = true; grup.add(roofMesh); }
+                /* Pelat lantai ini dilubangi oleh tangga dari lantai di bawahnya,
+                   dan atap dilubangi oleh tangga lantai teratas itu sendiri. */
+                const voidLantai = voidTangga(indexLantai - 1);
+                const voidAtap = voidTangga(indexLantai);
+                let X0 = (minX - center2DX) * scale3D - 0.5, X1 = (maxX - center2DX) * scale3D + 0.5;
+                let Z0 = (minY - center2DY) * scale3D - 0.5, Z1 = (maxY - center2DY) * scale3D + 0.5;
+                /* Pelat diperlebar bila perlu supaya lubangnya tidak menggantung di luar tepi. */
+                voidLantai.concat(voidAtap).forEach(poly => poly.forEach(pt => {
+                    X0 = Math.min(X0, pt.x - 0.3); X1 = Math.max(X1, pt.x + 0.3);
+                    Z0 = Math.min(Z0, pt.z - 0.3); Z1 = Math.max(Z1, pt.z + 0.3);
+                }));
+                grup.add(bikinPelat(X0, Z0, X1, Z1, voidLantai, matFloor, 0.001));
+                if (lantaiTeratas && document.getElementById('chkShowRoof').checked) {
+                    const roofMesh = bikinPelat(X0, Z0, X1, Z1, voidAtap, matRoof, heightWall);
+                    roofMesh.userData.atap = true;
+                    grup.add(roofMesh);
+                }
             }
 
             lines.forEach((line, index) => {
