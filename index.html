@@ -219,9 +219,13 @@
                         <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h5v-5h5v-5h5V6"></path></svg>
                         <span id="txtModeStairs">Stairs</span>
                     </button>
-                    <button id="modeVoid" class="tool-btn-wide">
+                    <button id="modeVoid" class="tool-btn">
                         <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M8 8h8v8H8z" stroke-dasharray="2 2"></path><path d="M3 3l5 5"></path><path d="M21 21l-5-5"></path></svg>
-                        <span id="txtModeVoid">Void / Opening</span>
+                        <span id="txtModeVoid">Void (Box)</span>
+                    </button>
+                    <button id="modeVoidTrace" class="tool-btn">
+                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14l4-9 6 5 5-3v10z" stroke-dasharray="3 2"></path><circle cx="4" cy="14" r="1.6"></circle><circle cx="8" cy="5" r="1.6"></circle><circle cx="14" cy="10" r="1.6"></circle><circle cx="19" cy="7" r="1.6"></circle></svg>
+                        <span id="txtModeVoidTrace">Void (Trace)</span>
                     </button>
                 </div>
                 
@@ -499,6 +503,7 @@
         let isSnappingEnabled = true;
         let center2DX = 0, center2DY = 0; 
 
+        let jejakVoid = null;   /* titik-titik void yang sedang di-trace (koordinat kanvas) */
         let selectedItem = null; let isDraggingObject = false; let isDraggingCanvas = false; let isPinchZooming = false;
         let undoStack = []; let redoStack = [];
         let isWorldSpaceMode = true;
@@ -724,7 +729,7 @@
                 gTitle: "Panduan Singkat", g1: "<b>Free Draw:</b> Mulai gambar langsung! Tiap kotak (grid) = 1 meter.",
                 g2: "<b>Tembok:</b> Tap 1x titik awal, tap posisi lain. Tap 2x (atau ESC) untuk mengakhiri garis tembok.",
                 g3: "<b>Edit & Hapus Tembok:</b> Gunakan Mode 'Pilih/Edit', klik garis tembok untuk menggeser posisinya atau menghapusnya.",
-                g6: "<b>Void / Lubang Lantai:</b> Tangga otomatis melubangi lantai di atasnya. Untuk lubang lain &mdash; void ruang tinggi atau mezzanine &mdash; pakai alat <b>Void</b>: aktifkan dulu lantai yang mau dilubangi, pasang void di situ, lalu atur Lebar dan Dalam-nya.",
+                g6: "<b>Void / Lubang Lantai:</b> Tangga otomatis melubangi lantai di atasnya. Untuk lubang lain &mdash; void ruang tinggi atau mezzanine &mdash; aktifkan dulu lantai yang mau dilubangi, lalu pakai <b>Void (Kotak)</b> dan atur Lebar/Dalam-nya, atau <b>Void (Trace)</b> untuk menggambar bentuk bebas: ketuk tiap sudut, lalu ketuk lagi titik pertama (atau ESC) untuk menutup.",
                 g4: "<b>Lantai Bertingkat:</b> Tambah / salin level di panel \"Lantai\". Lantai aktif adalah yang sedang digambar; lantai lain tampil transparan di 3D dan garis putus-putus di 2D.",
                 g5: "<b>Transform Tembok (3D):</b> Klik tembok di tampilan 3D untuk memegangnya dengan gizmo &mdash; Move, Rotate, Scale (X = panjang, Y = tinggi, Z = tebal), atau ketik angka pastinya di panel Properti.",
                 closeAr: "Tutup AR", viewArBtn: "Lihat di Ruangan (AR)", lblLoad3D: "Upload 3D (.glb, .gltf, .obj):",
@@ -732,7 +737,9 @@
                 lblFloorView: "Lantai Lain (3D):", fvGhost: "Transparan (Ghost)", fvSolid: "Tampil Penuh", fvHidden: "Sembunyikan",
                 lblFloorRef: "Bayangan Denah 2D", grp6: "Utilitas",
                 desk: "Meja Kerja", washbasin: "Wastafel", washingMachine: "Mesin Cuci", acUnit: "AC / Pendingin",
-                lblStairVoid: "Bolongi Lantai Atas", modeVoid: "Void / Lubang Lantai",
+                lblStairVoid: "Bolongi Lantai Atas", modeVoid: "Void (Kotak)", modeVoidTrace: "Void (Trace)",
+                voidTraceHint: "Trace: ketuk tiap sudut lubang, lalu ketuk lagi titik pertama (atau tekan ESC) untuk menutup bentuknya.",
+                voidTracePoly: "Bentuknya hasil trace, jadi Lebar/Dalam tidak dipakai. Rotasi dan skala tetap bisa.",
                 lblVoidW: "Lebar (m)", lblVoidD: "Dalam (m)",
                 voidHint: "Void ini melubangi pelat lantai tempat ia berada. Mau lubang di lantai 2? Aktifkan Lantai 2 dulu, baru pasang void-nya.",
                 lblWLen2: "Panjang (m)", lblWAng: "Sudut (\u00b0)", lblWH2: "Tinggi (m)", lblWT2: "Tebal (m)",
@@ -755,7 +762,7 @@
                 gTitle: "Quick Guide", g1: "<b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.",
                 g2: "<b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.",
                 g3: "<b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.",
-                g6: "<b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; use the <b>Void</b> tool: activate the floor that should have the hole, drop a void on it, then set its Width and Depth.",
+                g6: "<b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; activate the floor that should have the hole, then use <b>Void (Box)</b> and set its Width/Depth, or <b>Void (Trace)</b> to draw a free shape: tap each corner, then tap the first point again (or press ESC) to close it.",
                 g4: "<b>Floors:</b> Add / copy levels in the \"Floors\" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.",
                 g5: "<b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.",
                 closeAr: "Close AR", viewArBtn: "View in AR", lblLoad3D: "Upload 3D (.glb, .gltf, .obj):",
@@ -763,7 +770,9 @@
                 lblFloorView: "Other Floors (3D):", fvGhost: "Ghost (transparent)", fvSolid: "Solid", fvHidden: "Hidden",
                 lblFloorRef: "2D Underlay Ref", grp6: "Utility",
                 desk: "Desk / Work Table", washbasin: "Washbasin / Sink", washingMachine: "Washing Machine", acUnit: "Air Conditioner",
-                lblStairVoid: "Cut Opening Above", modeVoid: "Void / Opening",
+                lblStairVoid: "Cut Opening Above", modeVoid: "Void (Box)", modeVoidTrace: "Void (Trace)",
+                voidTraceHint: "Trace: tap each corner of the opening, then tap the first point again (or press ESC) to close the shape.",
+                voidTracePoly: "This shape was traced, so Width/Depth do not apply. Rotation and scale still work.",
                 lblVoidW: "Width (m)", lblVoidD: "Depth (m)",
                 voidHint: "This opening cuts a hole in the floor slab of the level it sits on. Want a hole in floor 2? Activate floor 2 first, then place the void there.",
                 lblWLen2: "Length (m)", lblWAng: "Angle (\u00b0)", lblWH2: "Height (m)", lblWT2: "Thick (m)",
@@ -825,7 +834,9 @@
             setTxt('txtLblFloorRef', t.lblFloorRef);
             setTxt('txtLblWLen2', t.lblWLen2); setTxt('txtLblWAng', t.lblWAng); setTxt('txtLblWH2', t.lblWH2); setTxt('txtLblWT2', t.lblWT2);
             setTxt('btnWallReset', t.wallReset); setTxt('wallGizmoHint', t.wallGizmoHint); setTxt('txtLblStairVoid', t.lblStairVoid);
-            setTxt('txtModeVoid', t.modeVoid); setTxt('txtLblVoidW', t.lblVoidW); setTxt('txtLblVoidD', t.lblVoidD); setTxt('voidHint', t.voidHint);
+            setTxt('txtModeVoid', t.modeVoid); setTxt('txtModeVoidTrace', t.modeVoidTrace);
+            setTxt('txtLblVoidW', t.lblVoidW); setTxt('txtLblVoidD', t.lblVoidD);
+            if (selectedItem && selectedItem.type === 'void' && selectedItem.poly) setTxt('voidHint', t.voidTracePoly); else setTxt('voidHint', t.voidHint);
             setTxt('optDesk', t.desk); setTxt('optWashbasin', t.washbasin); setTxt('optWashing', t.washingMachine); setTxt('optAc', t.acUnit);
             if (document.getElementById('optGrp6')) document.getElementById('optGrp6').label = t.grp6;
             if (typeof floors !== 'undefined' && floors.length) renderFloorList();
@@ -1128,6 +1139,16 @@
                 if (!isDrawing) { saveState(); isDrawing = true; currentLine = { start: snap, end: snap }; } 
                 else { const dist = Math.hypot(snap.x - currentLine.start.x, snap.y - currentLine.start.y); if (dist < 10 / scale) { stopDrawing(); } else { currentLine.end = snap; saveState(); lines.push({...currentLine}); update3D(); currentLine = { start: snap, end: snap }; } } draw2D();
             } 
+            else if (mode === 'voidtrace') {
+                const snap = getSnapped(x, y);
+                if (!jejakVoid) { jejakVoid = [snap]; }
+                else {
+                    const awal = jejakVoid[0];
+                    if (jejakVoid.length >= 3 && Math.hypot(snap.x - awal.x, snap.y - awal.y) < 25 / scale) selesaikanJejakVoid();
+                    else jejakVoid.push(snap);
+                }
+                draw2D();
+            }
             else if (mode === 'door' || mode === 'window') {
                 let nearest = findNearestLine(x, y, 30 / scale);
                 if (nearest) { saveState(); openings.push({ id: Date.now(), type: mode, variant: 0, lineIndex: nearest.index, ratio: nearest.ratio, width3D: mode === 'door' ? 0.9 : 1.2, height3D: mode === 'door' ? 2.1 : 1.2, elevation: mode === 'door' ? 0 : 0.9, swing: 85, flipHinge: false }); update3D(); draw2D(); }
@@ -1169,10 +1190,44 @@
             workspaceContainer.style.cursor = 'crosshair'; 
         });
 
-        function stopDrawing() { if (isDrawing && currentLine) draw2D(); isDrawing = false; currentLine = null; draw2D(); }
-        document.getElementById('modeSelect').onclick = (e) => setMode('select', e.currentTarget); document.getElementById('modeWall').onclick = (e) => setMode('wall', e.currentTarget); document.getElementById('modeDoor').onclick = (e) => setMode('door', e.currentTarget); document.getElementById('modeWindow').onclick = (e) => setMode('window', e.currentTarget); document.getElementById('modeStairs').onclick = (e) => setMode('stairs', e.currentTarget); document.getElementById('modeVoid').onclick = (e) => setMode('void', e.currentTarget); furnitureSelect.addEventListener('change', (e) => { if(e.target.value) setMode(e.target.value, null); });
+        function stopDrawing() { if (isDrawing && currentLine) draw2D(); isDrawing = false; currentLine = null; batalkanJejakVoid(); draw2D(); }
+
+        function batalkanJejakVoid() { jejakVoid = null; }
+
+        /* Titik hasil trace disimpan relatif terhadap titik berat poligon,
+           dalam meter, supaya rotasi/skala objek bekerja sama seperti void kotak. */
+        function selesaikanJejakVoid() {
+            if (!jejakVoid || jejakVoid.length < 3) { jejakVoid = null; draw2D(); return; }
+            const titik = jejakVoid.slice();
+            jejakVoid = null;
+            const cx = titik.reduce((a, t) => a + t.x, 0) / titik.length;
+            const cy = titik.reduce((a, t) => a + t.y, 0) / titik.length;
+            let luas = 0;
+            for (let i = 0; i < titik.length; i++) {
+                const a = titik[i], b = titik[(i + 1) % titik.length];
+                luas += (a.x - cx) * (b.y - cy) - (b.x - cx) * (a.y - cy);
+            }
+            if (Math.abs(luas) * scale3D * scale3D / 2 < 0.05) {
+                alert(currentLang === 'id' ? "Bentuk void terlalu kecil atau titiknya segaris." : "The traced shape is too small or its points are collinear.");
+                draw2D(); return;
+            }
+            if (luas < 0) titik.reverse();
+            saveState();
+            const poly = titik.map(t => ({ x: (t.x - cx) * scale3D, z: (t.y - cy) * scale3D }));
+            const baru = { id: Date.now(), type: 'void', variant: 0, x: cx, y: cy, poly: poly,
+                rotationX: 0, rotationY: 0, rotationZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0,
+                width3D: 2.0, depth3D: 2.0, flipX: false, flipZ: false };
+            freeObjects.push(baru);
+            setMode('select', document.getElementById('modeSelect'));
+            update3D(); draw2D();
+            selectedItem = baru; openEditPanel(baru); updateTransformControlSelection(baru); draw2D();
+        }
+        document.getElementById('modeSelect').onclick = (e) => setMode('select', e.currentTarget); document.getElementById('modeWall').onclick = (e) => setMode('wall', e.currentTarget); document.getElementById('modeDoor').onclick = (e) => setMode('door', e.currentTarget); document.getElementById('modeWindow').onclick = (e) => setMode('window', e.currentTarget); document.getElementById('modeStairs').onclick = (e) => setMode('stairs', e.currentTarget); document.getElementById('modeVoid').onclick = (e) => setMode('void', e.currentTarget); document.getElementById('modeVoidTrace').onclick = (e) => setMode('voidtrace', e.currentTarget); furnitureSelect.addEventListener('change', (e) => { if(e.target.value) setMode(e.target.value, null); });
         function setMode(newMode, btn) { stopDrawing(); mode = newMode; document.querySelectorAll('#sidebar .tool-btn, #sidebar .tool-btn-wide').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); if (mode !== 'select') closeEditPanel(); if(window.innerWidth <= 1100 && mode !== 'select' && !sidebar.classList.contains('collapsed')){ sidebar.classList.add('collapsed'); updateToggleIcon(); } draw2D(); }
-        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') stopDrawing(); });
+        window.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (jejakVoid && jejakVoid.length >= 3) selesaikanJejakVoid(); else stopDrawing();
+        });
         function getTrueCoords(x, y) { const rect = canvas.getBoundingClientRect(); return { x: (x - rect.left) * (canvas.width / rect.width), y: (y - rect.top) * (canvas.height / rect.height) }; }
         
         function getSnapped(x, y, refPoint = null) {
@@ -1255,8 +1310,12 @@
 
                 document.getElementById('voidControls').style.display = (item.type === 'void') ? 'block' : 'none';
                 if (item.type === 'void') {
+                    const ditrace = !!(item.poly && item.poly.length >= 3);
                     document.getElementById('editVoidW').value = (item.width3D || 2.0);
                     document.getElementById('editVoidD').value = (item.depth3D || 2.0);
+                    document.getElementById('editVoidW').disabled = ditrace;
+                    document.getElementById('editVoidD').disabled = ditrace;
+                    document.getElementById('voidHint').innerText = ditrace ? texts[currentLang].voidTracePoly : texts[currentLang].voidHint;
                 }
                 if (item.type === 'stairs') { stairsControls.style.display = 'block'; document.getElementById('chkStairVoid').checked = item.bikinVoid !== false; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } else { stairsControls.style.display = 'none'; }
             }
@@ -1456,11 +1515,17 @@
                 if (i === currentFloor) return;
                 f.freeObjects.forEach(o => {
                     if (o.type !== 'stairs' && o.type !== 'void') return;
-                    const fp = o.type === 'void'
-                        ? { w: Math.max(0.3, o.width3D || 2.0), d: Math.max(0.3, o.depth3D || 2.0) }
-                        : footprintTangga(o);
                     ctx.save(); ctx.translate(o.x, o.y); ctx.rotate((o.rotationY || 0) * Math.PI / 180);
-                    ctx.strokeRect(-(fp.w / scale3D) / 2, -(fp.d / scale3D) / 2, fp.w / scale3D, fp.d / scale3D);
+                    if (o.type === 'void') {
+                        const sX = Math.abs(o.scaleX !== undefined ? o.scaleX : 1) / scale3D;
+                        const sZ = Math.abs(o.scaleZ !== undefined ? o.scaleZ : 1) / scale3D;
+                        ctx.beginPath();
+                        denahLokalVoid(o).forEach((pt, i) => { const X = pt.x * sX, Z = pt.z * sZ; if (i === 0) ctx.moveTo(X, Z); else ctx.lineTo(X, Z); });
+                        ctx.closePath(); ctx.stroke();
+                    } else {
+                        const fp = footprintTangga(o);
+                        ctx.strokeRect(-(fp.w / scale3D) / 2, -(fp.d / scale3D) / 2, fp.w / scale3D, fp.d / scale3D);
+                    }
                     ctx.restore();
                 });
             });
@@ -1497,9 +1562,9 @@
                 kotak(-W / 2 - n2 * d - cx, n1 * d - cz, -W / 2 - cx, n1 * d + W - cz, n2, false);
             } else if (v === 3) {
                 const n1 = Math.max(1, Math.floor((n - 1) / 2)), n2 = Math.max(1, n - 1 - n1);
-                const jarak = W / 2 + 0.05, cz = (n1 * d + W) / 2;
+                const jarak = W / 2 + U_SUMUR / 2, cz = (n1 * d + W) / 2;
                 kotak(-jarak - W / 2, -cz, -jarak + W / 2, n1 * d - cz, n1, true);
-                kotak(-W - 0.05, n1 * d - cz, W + 0.05, n1 * d + W - cz, 1, true);
+                kotak(-W - U_SUMUR / 2, n1 * d - cz, W + U_SUMUR / 2, n1 * d + W - cz, 1, true);
                 kotak(jarak - W / 2, n1 * d + W - n2 * d - cz, jarak + W / 2, n1 * d + W - cz, n2, true);
             } else if (v === 4) {
                 const R = Math.max(0.8, W) * k;
@@ -1512,45 +1577,105 @@
             } else {
                 const D = n * d;
                 kotak(-W / 2, -D / 2, W / 2, D / 2, n, true);
-                if (v === 1 || v === 5) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, D / 2 * k * 0.8); ctx.lineTo(0, -D / 2 * k * 0.8);
-                    ctx.lineTo(-W * k * 0.12, -D / 2 * k * 0.6); ctx.moveTo(0, -D / 2 * k * 0.8); ctx.lineTo(W * k * 0.12, -D / 2 * k * 0.6);
-                    ctx.strokeStyle = '#2563eb'; ctx.stroke();
-                }
             }
+            gambarJalurNaik(v, n, W, d, k);
             ctx.restore();
+        }
+
+        /* Garis arah naik (simbol denah standar): lingkaran kecil di anak tangga
+           pertama, garis mengikuti rute, lalu mata panah di ujung atas.
+           Tangga naik ke arah +Z, yang di kanvas 2D berarti ke BAWAH. */
+        function gambarJalurNaik(v, n, W, d, k) {
+            let jalur;
+            if (v === 4) {
+                const R = Math.max(0.8, W) * 0.62;
+                jalur = [];
+                for (let i = 0; i <= 10; i++) { const a = (i / 10) * (Math.PI * 2 * 0.85); jalur.push([Math.sin(a) * R, Math.cos(a) * R]); }
+            } else if (v === 2) {
+                const n1 = Math.max(1, Math.floor(n / 2)), n2 = Math.max(1, n - n1 - 1);
+                const cx = -n2 * d / 2, cz = (n1 * d + W) / 2;
+                jalur = [[0 - cx, 0.1 - cz], [0 - cx, n1 * d + W / 2 - cz], [-W / 2 - n2 * d + 0.1 - cx, n1 * d + W / 2 - cz]];
+            } else if (v === 3) {
+                const n1 = Math.max(1, Math.floor((n - 1) / 2)), n2 = Math.max(1, n - 1 - n1);
+                const jarak = W / 2 + U_SUMUR / 2, cz = (n1 * d + W) / 2;
+                jalur = [[-jarak, 0.1 - cz], [-jarak, n1 * d + W / 2 - cz], [jarak, n1 * d + W / 2 - cz], [jarak, n1 * d + W - n2 * d + 0.1 - cz]];
+            } else {
+                const D = n * d;
+                jalur = [[0, -D / 2 + 0.1], [0, D / 2 - 0.1]];
+            }
+            ctx.strokeStyle = '#2563eb'; ctx.fillStyle = '#2563eb';
+            ctx.lineWidth = Math.max(1.5, 2 / Math.max(0.2, scale));
+            ctx.beginPath();
+            jalur.forEach((pt, i) => { const X = pt[0] * k, Z = pt[1] * k; if (i === 0) ctx.moveTo(X, Z); else ctx.lineTo(X, Z); });
+            ctx.stroke();
+            const awal = jalur[0], ujung = jalur[jalur.length - 1], sebelum = jalur[jalur.length - 2] || awal;
+            ctx.beginPath(); ctx.arc(awal[0] * k, awal[1] * k, Math.max(3, 0.07 * k), 0, Math.PI * 2); ctx.fill();
+            const sudut = Math.atan2((ujung[1] - sebelum[1]) * k, (ujung[0] - sebelum[0]) * k);
+            const pjg = Math.max(8, 0.18 * k);
+            ctx.beginPath();
+            ctx.moveTo(ujung[0] * k, ujung[1] * k);
+            ctx.lineTo(ujung[0] * k - Math.cos(sudut - 0.4) * pjg, ujung[1] * k - Math.sin(sudut - 0.4) * pjg);
+            ctx.lineTo(ujung[0] * k - Math.cos(sudut + 0.4) * pjg, ujung[1] * k - Math.sin(sudut + 0.4) * pjg);
+            ctx.closePath(); ctx.fill();
         }
 
         /* Void digambar sebagai kotak oranye putus-putus dengan arsiran silang. */
         function gambarVoid2D(obj, sX, sZ) {
             const k = 1 / scale3D;
-            const w = Math.max(0.3, obj.width3D || 2.0) * Math.abs(sX || 1) * k;
-            const d = Math.max(0.3, obj.depth3D || 2.0) * Math.abs(sZ || 1) * k;
+            const fx = Math.abs(sX || 1) * k, fz = Math.abs(sZ || 1) * k;
+            const poly = denahLokalVoid(obj).map(pt => [pt.x * fx, pt.z * fz]);
+            const jalur = () => { ctx.beginPath(); poly.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt[0], pt[1]); else ctx.lineTo(pt[0], pt[1]); }); ctx.closePath(); };
+            let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+            poly.forEach(pt => { x0 = Math.min(x0, pt[0]); x1 = Math.max(x1, pt[0]); z0 = Math.min(z0, pt[1]); z1 = Math.max(z1, pt[1]); });
+            const w = x1 - x0, d = z1 - z0;
             ctx.save();
-            ctx.fillStyle = 'rgba(249, 115, 22, 0.10)';
-            ctx.fillRect(-w / 2, -d / 2, w, d);
-            ctx.beginPath();
-            ctx.rect(-w / 2, -d / 2, w, d);
+            jalur();
+            ctx.fillStyle = 'rgba(249, 115, 22, 0.10)'; ctx.fill();
             ctx.clip();
             ctx.strokeStyle = 'rgba(249, 115, 22, 0.45)';
             ctx.lineWidth = Math.max(1, 1.5 / scale);
             const jarak = Math.max(18, 30 / scale);
-            for (let i = -d; i < w + d; i += jarak) {
-                ctx.beginPath(); ctx.moveTo(-w / 2 + i, -d / 2); ctx.lineTo(-w / 2 + i - d, d / 2); ctx.stroke();
+            for (let i = 0; i < w + d; i += jarak) {
+                ctx.beginPath(); ctx.moveTo(x0 + i, z0); ctx.lineTo(x0 + i - d, z1); ctx.stroke();
             }
             ctx.restore();
             ctx.save();
             ctx.setLineDash([10, 7]);
             ctx.strokeStyle = '#ea580c';
             ctx.lineWidth = Math.max(2, 2.5 / scale);
-            ctx.strokeRect(-w / 2, -d / 2, w, d);
+            jalur(); ctx.stroke();
             ctx.setLineDash([]);
             ctx.fillStyle = '#ea580c';
             ctx.font = `bold ${Math.max(11, Math.min(w, d) * 0.16)}px sans-serif`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.scale(obj.flipX ? -1 : 1, obj.flipZ ? -1 : 1);
-            ctx.fillText('VOID', 0, 0);
+            ctx.fillText('VOID', (x0 + x1) / 2, (z0 + z1) / 2);
+            ctx.restore();
+        }
+
+        /* Poligon void yang sedang di-trace. */
+        function gambarJejakVoid() {
+            if (!jejakVoid || !jejakVoid.length) return;
+            ctx.save();
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = Math.max(2, 3 / scale);
+            ctx.beginPath();
+            jejakVoid.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
+            ctx.stroke();
+            if (jejakVoid.length >= 3) {
+                ctx.setLineDash([8, 8]);
+                ctx.beginPath();
+                ctx.moveTo(jejakVoid[jejakVoid.length - 1].x, jejakVoid[jejakVoid.length - 1].y);
+                ctx.lineTo(jejakVoid[0].x, jejakVoid[0].y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            const r = Math.max(4, 7 / scale);
+            jejakVoid.forEach((pt, i) => {
+                ctx.beginPath(); ctx.arc(pt.x, pt.y, i === 0 ? r * 1.5 : r, 0, Math.PI * 2);
+                ctx.fillStyle = i === 0 ? '#ffffff' : '#ea580c';
+                ctx.fill(); ctx.stroke();
+            });
             ctx.restore();
         }
 
@@ -1617,7 +1742,9 @@
                     ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(10, Math.min(sizeX,sizeZ)*0.35)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
                     const labels = { bed:'BED', sofa:'SOFA', table:'TBL', chair:'CHR', tv:'TV', buffet:'BUF', wardrobe:'WRD', bookshelf:'BKS', head_cabinet:'NKS', kitchen_set:'KIT', stove:'STV', fridge:'FRG', toilet:'WC', shower:'SHW', bathtub:'BAT', standing_lamp:'LMP', spot_light:'SPT', area_light:'PNL', carpet:'CRP', curtain:'CUR', plant:'PLT', tree:'TRE', desk:'DSK', washbasin:'WSB', washing_machine:'WSH', ac_unit:'AC', custom_glb:'GLB', custom_obj:'OBJ' }; ctx.fillText(labels[obj.type] || 'OBJ', 0, 0); 
                 } ctx.restore();
-            }); triggerAutosave();
+            });
+            gambarJejakVoid();
+            triggerAutosave();
         }
 
         document.getElementById('upload').addEventListener('change', (e) => {
@@ -1829,6 +1956,23 @@
 
         /* ---------- TANGGA: beberapa varian bentuk ---------- */
         const STEP_DEPTH = 0.28;
+        const U_SUMUR = 0.2;   /* celah (sumur) antara dua larik tangga U */
+
+        /* Bordes: pelat tebal dengan balok penopang, bukan papan tipis melayang. */
+        function bikinBordes(x, yAtas, z, lebar, dalam, matAtas, matBawah) {
+            const g = new THREE.Group();
+            const tebal = 0.12;
+            const pelat = new THREE.Mesh(new THREE.BoxGeometry(lebar, tebal, dalam), matAtas);
+            pelat.position.set(0, -tebal / 2, 0); g.add(pelat);
+            for (const sx of [-lebar / 2 + 0.06, lebar / 2 - 0.06]) {
+                const balok = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, dalam), matBawah);
+                balok.position.set(sx, -tebal - 0.08, 0); g.add(balok);
+            }
+            const tepi = new THREE.Mesh(new THREE.BoxGeometry(lebar, 0.16, 0.08), matBawah);
+            tepi.position.set(0, -tebal - 0.08, dalam / 2 - 0.04); g.add(tepi);
+            g.position.set(x, yAtas, z);
+            return g;
+        }
 
         /* Perkiraan denah (meter) dipakai untuk menggambar tangga di kanvas 2D. */
         function footprintTangga(obj) {
@@ -1837,7 +1981,7 @@
             const v = obj.variant || 0;
             const D = n * STEP_DEPTH;
             if (v === 2) { const n1 = Math.max(1, Math.floor(n / 2)); const n2 = Math.max(1, n - n1 - 1); return { w: W + n2 * STEP_DEPTH, d: n1 * STEP_DEPTH + W }; }
-            if (v === 3) { const n1 = Math.max(1, Math.floor((n - 1) / 2)); return { w: W * 2 + 0.1, d: n1 * STEP_DEPTH + W }; }
+            if (v === 3) { const n1 = Math.max(1, Math.floor((n - 1) / 2)); return { w: W * 2 + U_SUMUR, d: n1 * STEP_DEPTH + W }; }
             if (v === 4) { const R = Math.max(0.8, W); return { w: R * 2, d: R * 2 }; }
             return { w: W, d: D };
         }
@@ -1865,6 +2009,9 @@
 
             /* satu larik anak tangga lurus menghadap +Z, mulai dari (x0, y0, z0) */
             const larikLurus = (jml, x0, y0, z0, lebar, adaRiser, adaRailing, melayang) => {
+                /* adaRailing: true = dua sisi, 'kiri' / 'kanan' = satu sisi saja, false = tanpa railing.
+                   Pada tangga L dan U hanya sisi luar yang dipasangi railing, supaya
+                   pegangan kedua larik tidak saling menembus di celah antar larik. */
                 const g = new THREE.Group();
                 for (let i = 0; i < jml; i++) {
                     const y = y0 + (i + 1) * hStep;
@@ -1885,7 +2032,10 @@
                     }
                 }
                 if (adaRailing) {
-                    for (const sx of [x0 - lebar / 2 + 0.04, x0 + lebar / 2 - 0.04]) {
+                    const sisi = [];
+                    if (adaRailing !== 'kanan') sisi.push(x0 - lebar / 2 + 0.04);
+                    if (adaRailing !== 'kiri') sisi.push(x0 + lebar / 2 - 0.04);
+                    for (const sx of sisi) {
                         g.add(barMiring(0, z0, y0 + 0.95, zAkhir, yAkhir + 0.95, 0.05, matBesi, sx));
                         for (let i = 0; i <= jml; i += 2) {
                             const tiang = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.95, 8), matBesi);
@@ -1908,12 +2058,10 @@
             else if (variant === 2) {
                 const n1 = Math.max(1, Math.floor(n / 2));
                 const n2 = Math.max(1, n - n1 - 1);
-                const r1 = larikLurus(n1, 0, 0, 0, W, true, true, false);
+                const r1 = larikLurus(n1, 0, 0, 0, W, true, 'kanan', false);
                 sub.add(r1.grup);
-                const bordes = new THREE.Mesh(new THREE.BoxGeometry(W, 0.1, W), matStairs);
-                bordes.position.set(0, r1.yAkhir + hStep - 0.05, r1.zAkhir + W / 2);
-                sub.add(bordes);
-                const r2 = larikLurus(n2, 0, 0, 0, W, true, true, false);
+                sub.add(bikinBordes(0, r1.yAkhir + hStep, r1.zAkhir + W / 2, W, W, matStairs, matGelap));
+                const r2 = larikLurus(n2, 0, 0, 0, W, true, 'kiri', false);
                 r2.grup.rotation.y = -Math.PI / 2;
                 r2.grup.position.set(-W / 2, r1.yAkhir + hStep, r1.zAkhir + W / 2);
                 sub.add(r2.grup);
@@ -1921,13 +2069,12 @@
             else if (variant === 3) {
                 const n1 = Math.max(1, Math.floor((n - 1) / 2));
                 const n2 = Math.max(1, n - 1 - n1);
-                const jarak = W / 2 + 0.05;
-                const r1 = larikLurus(n1, -jarak, 0, 0, W, true, true, false);
+                const sumur = U_SUMUR;
+                const jarak = W / 2 + sumur / 2;
+                const r1 = larikLurus(n1, -jarak, 0, 0, W, true, 'kiri', false);
                 sub.add(r1.grup);
-                const bordes = new THREE.Mesh(new THREE.BoxGeometry(W * 2 + 0.1, 0.1, W), matStairs);
-                bordes.position.set(0, r1.yAkhir + hStep - 0.05, r1.zAkhir + W / 2);
-                sub.add(bordes);
-                const r2 = larikLurus(n2, 0, 0, 0, W, true, true, false);
+                sub.add(bikinBordes(0, r1.yAkhir + hStep, r1.zAkhir + W / 2, W * 2 + sumur, W, matStairs, matGelap));
+                const r2 = larikLurus(n2, 0, 0, 0, W, true, 'kiri', false);
                 r2.grup.rotation.y = Math.PI;
                 r2.grup.position.set(jarak, r1.yAkhir + hStep, r1.zAkhir + W);
                 sub.add(r2.grup);
@@ -2672,8 +2819,9 @@
             return [{ x: -w, z: -dd }, { x: w, z: -dd }, { x: w, z: dd }, { x: -w, z: dd }];
         }
 
-        /* Denah lokal void manual (persegi). */
+        /* Denah lokal void: hasil trace kalau ada, kalau tidak persegi Lebar x Dalam. */
         function denahLokalVoid(o) {
+            if (o.poly && o.poly.length >= 3) return o.poly;
             const w = Math.max(0.3, o.width3D || 2.0) / 2, d = Math.max(0.3, o.depth3D || 2.0) / 2;
             return [{ x: -w, z: -d }, { x: w, z: -d }, { x: w, z: d }, { x: -w, z: d }];
         }
@@ -2764,22 +2912,28 @@
         let modeEkspor = false;
         function bikinPenandaVoid(o) {
             const g = new THREE.Group();
-            const w = Math.max(0.3, o.width3D || 2.0), d = Math.max(0.3, o.depth3D || 2.0);
-            const tebal = Math.min(0.12, Math.min(w, d) * 0.12);
-            const luar = new THREE.Shape();
-            luar.moveTo(-w / 2, -d / 2); luar.lineTo(w / 2, -d / 2); luar.lineTo(w / 2, d / 2); luar.lineTo(-w / 2, d / 2); luar.closePath();
-            const dalam = new THREE.Path();
-            dalam.moveTo(-w / 2 + tebal, -d / 2 + tebal); dalam.lineTo(w / 2 - tebal, -d / 2 + tebal);
-            dalam.lineTo(w / 2 - tebal, d / 2 - tebal); dalam.lineTo(-w / 2 + tebal, d / 2 - tebal); dalam.closePath();
-            luar.holes.push(dalam);
-            const matBingkai = new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.95, side: THREE.DoubleSide });
-            const bingkai = new THREE.Mesh(new THREE.ShapeGeometry(luar), matBingkai);
-            bingkai.rotation.x = -Math.PI / 2; bingkai.position.y = 0.035;
-            g.add(bingkai);
-            const isi = new THREE.Mesh(new THREE.PlaneGeometry(w - tebal * 2, d - tebal * 2),
-                new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }));
+            const poly = denahLokalVoid(o);
+            /* Isi tipis: mudah diketuk, tetap tembus pandang supaya lubangnya terlihat. */
+            const bentuk = new THREE.Shape();
+            poly.forEach((pt, i) => { if (i === 0) bentuk.moveTo(pt.x, -pt.z); else bentuk.lineTo(pt.x, -pt.z); });
+            bentuk.closePath();
+            const isi = new THREE.Mesh(new THREE.ShapeGeometry(bentuk),
+                new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false }));
             isi.rotation.x = -Math.PI / 2; isi.position.y = 0.03;
             g.add(isi);
+            /* Bingkai: balok tipis di tiap sisi, jadi bentuk apa pun tetap bertepi jelas. */
+            const matBingkai = new THREE.MeshBasicMaterial({ color: 0xf97316, side: THREE.DoubleSide });
+            const tebal = 0.07;
+            for (let i = 0; i < poly.length; i++) {
+                const a = poly[i], b = poly[(i + 1) % poly.length];
+                const dx = b.x - a.x, dz = b.z - a.z;
+                const pjg = Math.hypot(dx, dz);
+                if (pjg < 0.001) continue;
+                const sisi = new THREE.Mesh(new THREE.BoxGeometry(pjg + tebal, 0.03, tebal), matBingkai);
+                sisi.position.set((a.x + b.x) / 2, 0.04, (a.z + b.z) / 2);
+                sisi.rotation.y = -Math.atan2(dz, dx);
+                g.add(sisi);
+            }
             g.traverse(o2 => { if (o2.isMesh) o2.userData.penanda = true; });
             return g;
         }
