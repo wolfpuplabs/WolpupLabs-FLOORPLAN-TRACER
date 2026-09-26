@@ -72,6 +72,13 @@
         #wallLineControls { background: #f4f4f5; padding: 8px; border-radius: 6px; margin-bottom: 10px; border: 1px dashed #a1a1aa; text-align: center; }
 
         /* --- MODE JALAN (POV) --- */
+        body.mode-jalan #sidebar,
+        body.mode-jalan #workspace-container,
+        body.mode-jalan #helpBtnToggle { display: none !important; }
+        body.mode-jalan #main-container { flex-direction: row !important; }
+        body.mode-jalan #render-container { flex: 1 1 100% !important; width: 100% !important; height: 100% !important; border: none !important; }
+        #walkFull { position: absolute; top: 12px; right: 92px; width: auto; padding: 8px 14px; background: rgba(24,24,27,0.8); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; font-weight: 600; font-size: 12px; pointer-events: auto; cursor: pointer; }
+
         #walkUI { display: none; position: absolute; inset: 0; z-index: 14; pointer-events: none; touch-action: none; }
         #walkCross { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; opacity: 0.75; }
         #walkCross::before, #walkCross::after { content: ''; position: absolute; background: #fff; box-shadow: 0 0 3px rgba(0,0,0,0.8); }
@@ -536,6 +543,7 @@
                 <div id="walkCross"></div>
                 <div id="walkJoy"><div id="walkKnob"></div></div>
                 <button id="walkRun" type="button">RUN</button>
+                <button id="walkFull" type="button">Fullscreen</button>
                 <button id="walkExit" type="button">&times; Exit</button>
             </div>
         </div>
@@ -821,7 +829,7 @@
                 pbrHint: "Permukaan berbasis fisika: roughness, metalness, peta normal, dan pantulan lingkungan.",
                 lblLightTemp: "Warna Lampu:", lblWallMat: "Finishing Tembok:", lblObjMat: "Material / Tekstur:",
                 lblFloorMat: "Finishing Lantai (level aktif):",
-                btnWalk: "Jalan", btnWalkExit: "Keluar",
+                btnWalk: "Jalan", btnWalkExit: "Keluar", btnWalkFull: "Layar Penuh",
                 walkHint: "Seret layar untuk menoleh &middot; joystick / WASD untuk jalan &middot; tangga otomatis kenaikan &middot; ESC keluar",
                 bahan: { bawaan: "Bawaan", cat: "Cat Polos", plester: "Plester", bata: "Bata Ekspos", beton: "Beton", keramik: "Keramik", marmer: "Marmer", granit: "Granit", kayu: "Kayu", parket: "Parket", batu: "Batu Alam", kain: "Kain", karpet: "Karpet", logam: "Logam", daun: "Daun" },
                 lblVoidW: "Lebar (m)", lblVoidD: "Dalam (m)",
@@ -866,7 +874,7 @@
                 pbrHint: "Physically based surfaces: roughness, metalness, normal maps and environment reflections.",
                 lblLightTemp: "Light Color:", lblWallMat: "Wall Finish:", lblObjMat: "Material / Texture:",
                 lblFloorMat: "Floor Finish (active level):",
-                btnWalk: "Walk", btnWalkExit: "Exit",
+                btnWalk: "Walk", btnWalkExit: "Exit", btnWalkFull: "Fullscreen",
                 walkHint: "Drag to look &middot; joystick / WASD to move &middot; stairs are climbed automatically &middot; ESC to exit",
                 bahan: { bawaan: "Default", cat: "Flat Paint", plester: "Plaster", bata: "Exposed Brick", beton: "Concrete", keramik: "Ceramic Tile", marmer: "Marble", granit: "Granite", kayu: "Wood", parket: "Parquet", batu: "Natural Stone", kain: "Fabric", karpet: "Carpet", logam: "Metal", daun: "Foliage" },
                 lblVoidW: "Width (m)", lblVoidD: "Depth (m)",
@@ -946,6 +954,7 @@
             setTxt('txtLblShadowSoft', t.lblShadowSoft); setTxt('txtLblPBR', t.lblPBR); setTxt('pbrHint', t.pbrHint);
             if (typeof POV !== 'undefined' && !POV.aktif) setTxt('btnWalk', t.btnWalk);
             setTxt('walkExit', '\u00d7 ' + t.btnWalkExit);
+            setTxt('walkFull', t.btnWalkFull);
             setTxt('txtLblLightTemp', t.lblLightTemp); setTxt('txtLblWallMat', t.lblWallMat);
             setTxt('txtLblObjMat', t.lblObjMat); setTxt('txtLblFloorMat', t.lblFloorMat);
             if (bahanSiap) {
@@ -2464,16 +2473,105 @@
             return new THREE.MeshStandardMaterial(opt);
         }
 
+        /* Ukuran fisik satu pengulangan tekstur, dalam meter. Karena UV semua mesh
+           dipetakan ulang ke satuan meter (lihat proyeksiUV), satu bata selalu
+           seukuran bata asli - tidak ikut membesar atau mengecil mengikuti ukuran
+           bidangnya seperti sebelumnya. */
+        const SKALA_TEKSTUR = {
+            bata: 1.20, keramik: 1.20, parket: 1.60, beton: 3.00, plester: 2.50,
+            batu: 1.80, marmer: 2.40, granit: 1.10, kayu: 1.30, karpet: 1.00,
+            kain: 0.70, logam: 1.20, daun: 0.45
+        };
+        const skalaTekstur = (jenis) => SKALA_TEKSTUR[jenis] || 1.5;
+
+        /* Kekuatan relief peta normal per bahan. */
+        const KUAT_NORMAL = {
+            bata: 1.0, batu: 1.0, keramik: 0.45, parket: 0.5, beton: 0.55,
+            plester: 0.4, kayu: 0.45, karpet: 0.8, kain: 0.6, granit: 0.3,
+            marmer: 0.2, logam: 0.25, daun: 0.5
+        };
+
+        /* Petakan ulang UV sebuah mesh memakai proyeksi kotak dalam satuan meter:
+           sumbu dengan normal terkuat dibuang, dua sumbu sisanya jadi U dan V.
+           Ini menyamakan konvensi UV antara tembok (ExtrudeGeometry), pelat
+           (ShapeGeometry), dan perabot (BoxGeometry) yang sebelumnya berbeda-beda. */
+        const _skalaDunia = new THREE.Vector3();
+        function proyeksiUV(mesh) {
+            const geo = mesh.geometry;
+            if (!geo || !geo.attributes || !geo.attributes.position) return;
+            if (geo.userData.uvMeter) return;
+            let nor = geo.attributes.normal;
+            if (!nor) { geo.computeVertexNormals(); nor = geo.attributes.normal; }
+            if (!nor) return;
+            const pos = geo.attributes.position;
+            mesh.getWorldScale(_skalaDunia);
+            const sx = Math.abs(_skalaDunia.x) || 1, sy = Math.abs(_skalaDunia.y) || 1, sz = Math.abs(_skalaDunia.z) || 1;
+            const uv = new Float32Array(pos.count * 2);
+            for (let i = 0; i < pos.count; i++) {
+                const x = pos.getX(i) * sx, y = pos.getY(i) * sy, z = pos.getZ(i) * sz;
+                const nx = Math.abs(nor.getX(i)), ny = Math.abs(nor.getY(i)), nz = Math.abs(nor.getZ(i));
+                let u, v;
+                if (ny >= nx && ny >= nz) { u = x; v = z; }          /* bidang datar */
+                else if (nx >= nz) { u = z; v = y; }                  /* menghadap X */
+                else { u = x; v = y; }                                /* menghadap Z */
+                uv[i * 2] = u; uv[i * 2 + 1] = v;
+            }
+            geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+            geo.userData.uvMeter = true;
+        }
+
+        /* Model 3D yang diunggah pengguna sudah punya UV sendiri - jangan disentuh. */
+        function petakanUVLantai(grup) {
+            grup.traverse(o => {
+                if (!o.isMesh || o.userData.penanda) return;
+                let n = o, model = false;
+                while (n && n !== grup) { if (n.userData.modelLuar) { model = true; break; } n = n.parent; }
+                if (!model) proyeksiUV(o);
+            });
+        }
+
         const _texCache = {};
         const _kanvasCache = {};
+
+        /* Acak berulang (seeded) supaya tekstur yang sama selalu identik antar sesi. */
+        function acakTetap(benih) {
+            let x = benih | 0 || 1;
+            return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 100000) / 100000; };
+        }
+
         function kanvasTekstur(jenis, warnaDasar) {
             const kunci = jenis + '_' + warnaDasar;
             if (!_kanvasCache[kunci]) {
-                const S = 256, cv = document.createElement('canvas');
+                const S = 512, cv = document.createElement('canvas');
                 cv.width = cv.height = S;
                 const g = cv.getContext('2d');
                 const hex = '#' + warnaDasar.toString(16).padStart(6, '0');
                 g.fillStyle = hex; g.fillRect(0, 0, S, S);
+                const rnd = acakTetap(warnaDasar + jenis.length * 7919);
+
+                /* Bercak besar yang tidak seirama dengan pola utama: inilah yang
+                   memecah kesan "ubin berulang" saat bidangnya luas. */
+                const bercakBesar = (kuat) => {
+                    g.save(); g.globalCompositeOperation = 'overlay';
+                    for (let i = 0; i < 26; i++) {
+                        const r = S * (0.18 + rnd() * 0.42);
+                        const grad = g.createRadialGradient(rnd() * S, rnd() * S, 0, rnd() * S, rnd() * S, r);
+                        const t = rnd() < 0.5 ? 255 : 0;
+                        grad.addColorStop(0, 'rgba(' + t + ',' + t + ',' + t + ',' + (kuat * (0.4 + rnd() * 0.6)) + ')');
+                        grad.addColorStop(1, 'rgba(' + t + ',' + t + ',' + t + ',0)');
+                        g.fillStyle = grad; g.fillRect(0, 0, S, S);
+                    }
+                    g.restore();
+                };
+                /* Butiran halus supaya permukaan tidak terlihat rata seperti plastik. */
+                const butiran = (kuat, ukuran) => {
+                    const n = Math.round(S * S * 0.09);
+                    for (let i = 0; i < n; i++) {
+                        const t = rnd() < 0.5 ? 255 : 0;
+                        g.fillStyle = 'rgba(' + t + ',' + t + ',' + t + ',' + (rnd() * kuat) + ')';
+                        g.fillRect(rnd() * S, rnd() * S, ukuran, ukuran);
+                    }
+                };
 
                 if (jenis === 'kayu') {
                     for (let i = 0; i < 70; i++) {
@@ -2526,73 +2624,102 @@
                         g.stroke();
                     }
                 } else if (jenis === 'bata') {
-                    const th = S / 6, tw = S / 3;
-                    g.fillStyle = 'rgba(240,240,240,0.5)'; g.fillRect(0, 0, S, S);
-                    for (let baris = 0; baris < 6; baris++) {
-                        const geser = (baris % 2) * (tw / 2);
+                    /* 1,2 m tekstur = 6 lapis bata 20 cm, jadi ukurannya realistis. */
+                    const baris = 6, th = S / baris, tw = S / 3, nat = Math.max(3, S * 0.012);
+                    g.fillStyle = '#b9b3aa'; g.fillRect(0, 0, S, S);   /* adukan/nat */
+                    for (let b = 0; b < baris; b++) {
+                        const geser = (b % 2) * (tw / 2);
                         for (let i = -1; i < 4; i++) {
-                            const x = i * tw + geser + 2, y = baris * th + 2;
-                            const v = 1 + (Math.random() - 0.5) * 0.22;
-                            g.fillStyle = 'rgba(' + [0, 0, 0].map(() => 0).join(',') + ',0)';
-                            g.save();
-                            g.globalCompositeOperation = 'source-over';
-                            g.fillStyle = hex; g.fillRect(x, y, tw - 4, th - 4);
-                            g.fillStyle = 'rgba(' + (v > 1 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v - 1) + ')';
-                            g.fillRect(x, y, tw - 4, th - 4);
-                            g.restore();
+                            const x = i * tw + geser + nat / 2, y = b * th + nat / 2;
+                            const w = tw - nat, h = th - nat;
+                            g.fillStyle = hex; g.fillRect(x, y, w, h);
+                            const v = (rnd() - 0.5) * 0.30;
+                            g.fillStyle = 'rgba(' + (v > 0 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v) + ')';
+                            g.fillRect(x, y, w, h);
+                            /* tepi atas sedikit terang, tepi bawah gelap: kesan timbul */
+                            g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(x, y, w, Math.max(1, h * 0.09));
+                            g.fillStyle = 'rgba(0,0,0,0.16)'; g.fillRect(x, y + h - Math.max(1, h * 0.11), w, Math.max(1, h * 0.11));
+                            for (let k = 0; k < 40; k++) {
+                                const t = rnd() < 0.5 ? 255 : 0;
+                                g.fillStyle = 'rgba(' + t + ',' + t + ',' + t + ',' + rnd() * 0.10 + ')';
+                                g.fillRect(x + rnd() * w, y + rnd() * h, 2, 2);
+                            }
                         }
                     }
-                    for (let i = 0; i < 5000; i++) {
-                        g.fillStyle = 'rgba(0,0,0,' + Math.random() * 0.05 + ')';
-                        g.fillRect(Math.random() * S, Math.random() * S, 2, 2);
-                    }
+                    bercakBesar(0.10); butiran(0.05, 2);
                 } else if (jenis === 'keramik') {
-                    const n = 4, t = S / n;
+                    /* 1,2 m = 4 ubin 30x30 cm. */
+                    const n = 4, t = S / n, nat = Math.max(3, S * 0.008);
+                    g.fillStyle = '#9d9892'; g.fillRect(0, 0, S, S);
                     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
-                        g.fillStyle = hex; g.fillRect(i * t + 1.5, j * t + 1.5, t - 3, t - 3);
-                        const v = (Math.random() - 0.5) * 0.06;
+                        const x = i * t + nat, y = j * t + nat, w = t - nat * 2, h = t - nat * 2;
+                        g.fillStyle = hex; g.fillRect(x, y, w, h);
+                        const v = (rnd() - 0.5) * 0.07;
                         g.fillStyle = 'rgba(' + (v > 0 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v) + ')';
-                        g.fillRect(i * t + 1.5, j * t + 1.5, t - 3, t - 3);
-                    }
-                    g.strokeStyle = 'rgba(0,0,0,0.30)'; g.lineWidth = 3;
-                    for (let i = 0; i <= n; i++) {
-                        g.beginPath(); g.moveTo(i * t, 0); g.lineTo(i * t, S); g.stroke();
-                        g.beginPath(); g.moveTo(0, i * t); g.lineTo(S, i * t); g.stroke();
-                    }
-                    const kilau = g.createLinearGradient(0, 0, S, S);
-                    kilau.addColorStop(0, 'rgba(255,255,255,0.10)'); kilau.addColorStop(0.5, 'rgba(255,255,255,0)');
-                    g.fillStyle = kilau; g.fillRect(0, 0, S, S);
-                } else if (jenis === 'parket') {
-                    const bw = S / 4, bh = S / 8;
-                    for (let baris = 0; baris < 8; baris++) for (let i = 0; i < 4; i++) {
-                        const x = i * bw + (baris % 2 ? bw / 2 : 0), y = baris * bh;
-                        const v = (Math.random() - 0.5) * 0.16;
-                        g.fillStyle = hex; g.fillRect(x, y, bw - 1.5, bh - 1.5);
-                        g.fillStyle = 'rgba(' + (v > 0 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v) + ')';
-                        g.fillRect(x, y, bw - 1.5, bh - 1.5);
-                        g.strokeStyle = 'rgba(0,0,0,0.06)'; g.lineWidth = 0.7;
-                        for (let k = 0; k < 5; k++) {
-                            const yy = y + Math.random() * bh;
-                            g.beginPath(); g.moveTo(x, yy); g.lineTo(x + bw - 1.5, yy + (Math.random() - 0.5) * 2); g.stroke();
+                        g.fillRect(x, y, w, h);
+                        for (let k = 0; k < 6; k++) {
+                            g.strokeStyle = 'rgba(0,0,0,' + (0.015 + rnd() * 0.025) + ')';
+                            g.lineWidth = 0.6 + rnd() * 1.4;
+                            g.beginPath();
+                            let px = x + rnd() * w, py = y;
+                            g.moveTo(px, py);
+                            while (py < y + h) { px += (rnd() - 0.5) * w * 0.3; py += h / 5; g.lineTo(px, py); }
+                            g.stroke();
                         }
+                        const kilau = g.createLinearGradient(x, y, x + w, y + h);
+                        kilau.addColorStop(0, 'rgba(255,255,255,0.13)');
+                        kilau.addColorStop(0.45, 'rgba(255,255,255,0.02)');
+                        kilau.addColorStop(1, 'rgba(0,0,0,0.05)');
+                        g.fillStyle = kilau; g.fillRect(x, y, w, h);
                     }
-                } else if (jenis === 'beton') {
-                    for (let i = 0; i < 260; i++) {
-                        const r = 8 + Math.random() * 46;
-                        const v = (Math.random() - 0.5) * 0.12;
+                    bercakBesar(0.05); butiran(0.02, 1);
+                } else if (jenis === 'parket') {
+                    /* 1,6 m = papan 40 x 20 cm dengan pola setengah-bata. */
+                    const bw = S / 4, bh = S / 8, celah = Math.max(1.5, S * 0.004);
+                    g.fillStyle = '#3d2f22'; g.fillRect(0, 0, S, S);   /* celah antar papan */
+                    for (let baris = 0; baris < 8; baris++) for (let i = -1; i < 5; i++) {
+                        const x = i * bw + (baris % 2 ? bw / 2 : 0), y = baris * bh;
+                        const w = bw - celah, h = bh - celah;
+                        g.fillStyle = hex; g.fillRect(x, y, w, h);
+                        const v = (rnd() - 0.5) * 0.20;
                         g.fillStyle = 'rgba(' + (v > 0 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v) + ')';
-                        g.beginPath(); g.arc(Math.random() * S, Math.random() * S, r, 0, Math.PI * 2); g.fill();
+                        g.fillRect(x, y, w, h);
+                        g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+                        for (let k = 0; k < 14; k++) {
+                            g.strokeStyle = 'rgba(0,0,0,' + (0.02 + rnd() * 0.07) + ')';
+                            g.lineWidth = 0.5 + rnd() * 1.6;
+                            const yy = y + rnd() * h;
+                            g.beginPath(); g.moveTo(x, yy);
+                            for (let px = x; px <= x + w; px += w / 6) g.lineTo(px, yy + Math.sin(px * 0.06 + k) * 1.6);
+                            g.stroke();
+                        }
+                        g.restore();
+                        g.fillStyle = 'rgba(255,255,255,0.07)'; g.fillRect(x, y, w, 1.5);
+                        g.fillStyle = 'rgba(0,0,0,0.13)'; g.fillRect(x, y + h - 1.5, w, 1.5);
                     }
-                    for (let i = 0; i < 9000; i++) {
-                        g.fillStyle = 'rgba(0,0,0,' + Math.random() * 0.06 + ')';
-                        g.fillRect(Math.random() * S, Math.random() * S, 1.6, 1.6);
+                    bercakBesar(0.07); butiran(0.03, 1);
+                } else if (jenis === 'beton') {
+                    bercakBesar(0.16);
+                    for (let i = 0; i < 90; i++) {   /* pori-pori kecil */
+                        g.fillStyle = 'rgba(0,0,0,' + (0.05 + rnd() * 0.12) + ')';
+                        g.beginPath(); g.arc(rnd() * S, rnd() * S, 1 + rnd() * 3.5, 0, Math.PI * 2); g.fill();
                     }
+                    for (let i = 0; i < 3; i++) {    /* retak rambut */
+                        g.strokeStyle = 'rgba(0,0,0,0.10)'; g.lineWidth = 0.8 + rnd();
+                        let x = rnd() * S, y = rnd() * S;
+                        g.beginPath(); g.moveTo(x, y);
+                        for (let k = 0; k < 14; k++) { x += (rnd() - 0.5) * 60; y += (rnd() - 0.5) * 60; g.lineTo(x, y); }
+                        g.stroke();
+                    }
+                    butiran(0.05, 2);
                 } else if (jenis === 'plester') {
-                    for (let i = 0; i < 6000; i++) {
-                        const v = Math.random() < 0.5 ? 255 : 0;
-                        g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + Math.random() * 0.045 + ')';
-                        g.beginPath(); g.arc(Math.random() * S, Math.random() * S, 1 + Math.random() * 2.4, 0, Math.PI * 2); g.fill();
+                    bercakBesar(0.05);
+                    for (let i = 0; i < 2600; i++) {
+                        const v = rnd() < 0.5 ? 255 : 0;
+                        g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + rnd() * 0.05 + ')';
+                        g.beginPath(); g.arc(rnd() * S, rnd() * S, 1 + rnd() * 3.2, 0, Math.PI * 2); g.fill();
                     }
+                    butiran(0.03, 2);
                 } else if (jenis === 'batu') {
                     for (let i = 0; i < 34; i++) {
                         const cx = Math.random() * S, cy = Math.random() * S, r = 14 + Math.random() * 26;
@@ -2608,38 +2735,46 @@
                         g.strokeStyle = 'rgba(0,0,0,0.22)'; g.lineWidth = 2; g.stroke();
                     }
                 } else if (jenis === 'granit') {
-                    for (let i = 0; i < 16000; i++) {
-                        const v = Math.random();
-                        const warna = v < 0.33 ? '0,0,0' : (v < 0.66 ? '255,255,255' : '120,110,100');
-                        g.fillStyle = 'rgba(' + warna + ',' + Math.random() * 0.22 + ')';
-                        g.fillRect(Math.random() * S, Math.random() * S, 1.5 + Math.random() * 2, 1.5 + Math.random() * 2);
+                    for (let i = 0; i < 26000; i++) {
+                        const v = rnd();
+                        const warna = v < 0.3 ? '0,0,0' : (v < 0.62 ? '255,255,255' : (v < 0.84 ? '120,110,100' : '90,70,60'));
+                        g.fillStyle = 'rgba(' + warna + ',' + rnd() * 0.26 + ')';
+                        const r = 1.2 + rnd() * 3.4;
+                        g.beginPath(); g.ellipse(rnd() * S, rnd() * S, r, r * (0.5 + rnd()), rnd() * 3, 0, Math.PI * 2); g.fill();
                     }
+                    bercakBesar(0.06);
                 } else if (jenis === 'daun') {
+                    bercakBesar(0.08);
                     for (let i = 0; i < 1800; i++) {
                         const t = Math.random() < 0.5 ? 255 : 0;
                         g.fillStyle = 'rgba(' + t + ',' + t + ',' + t + ',' + Math.random() * 0.12 + ')';
                         g.beginPath(); g.ellipse(Math.random() * S, Math.random() * S, 3 + Math.random() * 5, 2 + Math.random() * 3, Math.random() * 3, 0, Math.PI * 2); g.fill();
                     }
                 }
+                if (jenis === 'kayu' || jenis === 'marmer' || jenis === 'logam') bercakBesar(0.07);
                 _kanvasCache[kunci] = cv;
             }
             return _kanvasCache[kunci];
         }
 
-        function bikinTekstur(jenis, warnaDasar, ulang = 1) {
+        /* Parameter "ulang" lama kini hanya pengali kerapatan; kerapatan sebenarnya
+           ditentukan ukuran fisik bahan, bukan jumlah pengulangan per bidang. */
+        function bikinTekstur(jenis, warnaDasar, ulang) {
             const kunci = jenis + '_' + warnaDasar;
             if (!_texCache[kunci]) {
                 const t = new THREE.CanvasTexture(kanvasTekstur(jenis, warnaDasar));
                 t.wrapS = t.wrapT = THREE.RepeatWrapping;
                 t.encoding = THREE.sRGBEncoding;
-                t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+                t.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy());
                 _texCache[kunci] = t;
             }
+            const r = 1 / skalaTekstur(jenis);
             const tex = _texCache[kunci].clone();
             tex.needsUpdate = true;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             tex.encoding = THREE.sRGBEncoding;
-            tex.repeat.set(ulang, ulang);
+            tex.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy());
+            tex.repeat.set(r, r);
             return tex;
         }
 
@@ -2674,10 +2809,11 @@
                 t.wrapS = t.wrapT = THREE.RepeatWrapping;
                 _normCache[kunci] = t;
             }
+            const r = 1 / skalaTekstur(jenis);
             const tex = _normCache[kunci].clone();
             tex.needsUpdate = true;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(ulang, ulang);
+            tex.repeat.set(r, r);
             return tex;
         }
 
@@ -2710,7 +2846,8 @@
             if (!pbrAktif) return new THREE.MeshLambertMaterial(opt);
             const sifat = PBR_SIFAT[jenis] || PBR_SIFAT.polos;
             opt.normalMap = bikinNormal(jenis, warna, ulang);
-            opt.normalScale = new THREE.Vector2(0.55, 0.55);
+            const kuat = KUAT_NORMAL[jenis] !== undefined ? KUAT_NORMAL[jenis] : 0.5;
+            opt.normalScale = new THREE.Vector2(kuat, kuat);
             if (opt.roughness === undefined) opt.roughness = sifat.roughness;
             if (opt.metalness === undefined) opt.metalness = sifat.metalness;
             return new THREE.MeshStandardMaterial(opt);
@@ -3513,6 +3650,9 @@
                 floorGroups[i] = grup;
             });
 
+            modelGroup.updateMatrixWorld(true);
+            floorGroups.forEach(g => { if (g) petakanUVLantai(g); });
+
             if (window.transformControl) updateTransformControlSelection(selectedItem);
             if (typeof POV !== 'undefined' && POV.aktif) kumpulkanPenghalang();
             if (charactersOn) { characterGroup.position.y = floorBaseY(currentFloor); buildWalkGrid(); }
@@ -3826,6 +3966,7 @@
                 let innerMesh;
                 if ((obj.type === 'custom_glb' || obj.type === 'custom_obj') && customModels[obj.modelId]) {
                     innerMesh = customModels[obj.modelId].clone();
+                    innerMesh.userData.modelLuar = true;
                 } else if (obj.type === 'custom_glb' || obj.type === 'custom_obj') {
                     innerMesh = new THREE.Group();
                     const ph = new THREE.Mesh(
@@ -4320,6 +4461,12 @@
             camera.rotation.order = 'YXZ';
             document.getElementById('walkUI').style.display = 'block';
             document.getElementById('transformUI').style.display = 'none';
+            /* Tampilan 3D memenuhi layar: sidebar dan kanvas 2D disembunyikan,
+               lalu layar penuh perangkat diminta (butuh gestur pengguna - klik tombol ini). */
+            document.body.classList.add('mode-jalan');
+            mintaLayarPenuh(true);
+            resizeViewports();
+            setTimeout(resizeViewports, 60);
             document.getElementById('btnWalk').style.background = '#ef4444';
             document.getElementById('btnWalk').innerText = 'Exit';
             perbaruiInfoJalan();
@@ -4331,6 +4478,10 @@
             const s = POV.simpan;
             document.getElementById('walkUI').style.display = 'none';
             document.getElementById('transformUI').style.display = 'flex';
+            document.body.classList.remove('mode-jalan');
+            mintaLayarPenuh(false);
+            resizeViewports();
+            setTimeout(resizeViewports, 60);
             document.getElementById('btnWalk').style.background = '#10b981';
             document.getElementById('btnWalk').innerText = 'Walk';
             POV.tombol = {}; POV.joy.x = POV.joy.y = 0; POV.lihat = null;
@@ -4348,6 +4499,35 @@
             controls.enabled = true;
             controls.update();
         }
+
+        /* Layar penuh perangkat; kalau ditolak browser, tata letak penuh di dalam
+           halaman tetap berlaku sehingga mode jalan selalu memenuhi layar. */
+        function mintaLayarPenuh(mau) {
+            const el = document.documentElement;
+            try {
+                if (mau) {
+                    if (!document.fullscreenElement && el.requestFullscreen) {
+                        const janji = el.requestFullscreen();
+                        if (janji && janji.catch) janji.catch(() => {});
+                    } else if (!document.webkitFullscreenElement && el.webkitRequestFullscreen) {
+                        el.webkitRequestFullscreen();
+                    }
+                } else {
+                    if (document.fullscreenElement && document.exitFullscreen) {
+                        const janji = document.exitFullscreen();
+                        if (janji && janji.catch) janji.catch(() => {});
+                    } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                }
+            } catch (err) {}
+        }
+
+        document.getElementById('walkFull').onclick = (e) => {
+            e.stopPropagation();
+            mintaLayarPenuh(!(document.fullscreenElement || document.webkitFullscreenElement));
+        };
+        document.addEventListener('fullscreenchange', () => { fitAppToViewport(); resizeViewports(); });
 
         function perbaruiInfoJalan() {
             const el = document.getElementById('walkInfo');
