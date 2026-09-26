@@ -86,6 +86,7 @@
         #walkCross::after { top: 50%; left: 4px; height: 2px; width: 14px; margin-top: -1px; }
         #walkJoy { position: absolute; left: 22px; bottom: 22px; width: 118px; height: 118px; border-radius: 50%; background: rgba(24,24,27,0.42); border: 2px solid rgba(255,255,255,0.35); pointer-events: auto; touch-action: none; }
         #walkKnob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: rgba(255,255,255,0.8); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+        #walkWaktu { position: absolute; top: 12px; right: 206px; width: auto; padding: 8px 14px; background: rgba(24,24,27,0.8); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; font-weight: 600; font-size: 12px; pointer-events: auto; cursor: pointer; }
         #walkExit { position: absolute; top: 12px; right: 12px; width: auto; padding: 8px 16px; background: rgba(239,68,68,0.92); color: #fff; border: none; border-radius: 20px; font-weight: 700; font-size: 13px; pointer-events: auto; cursor: pointer; }
         #walkRun { position: absolute; right: 22px; bottom: 30px; width: 74px; height: 74px; border-radius: 50%; background: rgba(37,99,235,0.55); color: #fff; border: 2px solid rgba(255,255,255,0.35); font-weight: 700; font-size: 12px; pointer-events: auto; cursor: pointer; padding: 0; }
         #walkRun.on { background: rgba(37,99,235,0.95); }
@@ -328,6 +329,13 @@
 
             <div class="sidebar-section">
                 <h4 id="txtSecLight">Lighting</h4>
+                <label id="txtLblSuasana">Time of Day:</label>
+                <select id="suasanaSel" style="margin-bottom: 8px;">
+                    <option value="siang" id="optWaktuSiang">Day</option>
+                    <option value="sore" id="optWaktuSore">Golden Hour</option>
+                    <option value="malam" id="optWaktuMalam">Night</option>
+                    <option value="kustom" id="optWaktuKustom">Custom</option>
+                </select>
                 <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
                     <input type="checkbox" id="chkShadow" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
                     <span id="txtLblShadow">Enable Shadows</span>
@@ -546,7 +554,7 @@
                         <li id="txtGuide2"><b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.</li>
                         <li id="txtGuide3"><b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.</li>
                         <li id="txtGuide4"><b>Floors:</b> Add / copy levels in the "Floors" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.</li>
-                        <li id="txtGuide7"><b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, TV, door, window or curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it. Window curtains are added from the window panel; for a balcony railing, draw a line and set its <b>Type</b> to Railing.</li>
+                        <li id="txtGuide7"><b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, TV, door, window or curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it. The time button at the top right switches Day / Golden Hour / Night &mdash; at night rooms are lit only by their lamps. Window curtains are added from the window panel; for a balcony railing, draw a line and set its <b>Type</b> to Railing.</li>
                         <li id="txtGuide6"><b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; use the <b>Void</b> tool: activate the floor that should have the hole, drop a void on it, then set its Width and Depth.</li>
                         <li id="txtGuide5"><b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.</li>
                     </ul>
@@ -573,6 +581,7 @@
                 <div id="walkAim"></div>
                 <div id="walkJoy"><div id="walkKnob"></div></div>
                 <button id="walkRun" type="button">RUN</button>
+                <button id="walkWaktu" type="button">Day</button>
                 <button id="walkFull" type="button">Fullscreen</button>
                 <button id="walkExit" type="button">&times; Exit</button>
             </div>
@@ -841,7 +850,7 @@
                 gTitle: "Panduan Singkat", g1: "<b>Free Draw:</b> Mulai gambar langsung! Tiap kotak (grid) = 1 meter.",
                 g2: "<b>Tembok:</b> Tap 1x titik awal, tap posisi lain. Tap 2x (atau ESC) untuk mengakhiri garis tembok.",
                 g3: "<b>Edit & Hapus Tembok:</b> Gunakan Mode 'Pilih/Edit', klik garis tembok untuk menggeser posisinya atau menghapusnya.",
-                g7: "<b>Jalan (POV):</b> Tekan <b>Walk</b> di atas tampilan 3D untuk berdiri di dalam denah. Seret layar untuk menoleh, pakai joystick atau WASD untuk berjalan, dan tangga otomatis dinaiki &mdash; jadi bisa naik ke lantai berikutnya. Arahkan ke lampu, TV, pintu, jendela, atau tirai sampai crosshair menguning: ketuk (atau tekan E) untuk menyalakan/mematikan dan membuka/menutup. Tirai jendela dipasang lewat panel jendela; railing balkon dibuat dengan menggambar garis lalu mengganti <b>Jenis</b>-nya menjadi Railing.",
+                g7: "<b>Jalan (POV):</b> Tekan <b>Walk</b> di atas tampilan 3D untuk berdiri di dalam denah. Seret layar untuk menoleh, pakai joystick atau WASD untuk berjalan, dan tangga otomatis dinaiki &mdash; jadi bisa naik ke lantai berikutnya. Arahkan ke lampu, TV, pintu, jendela, atau tirai sampai crosshair menguning: ketuk (atau tekan E) untuk menyalakan/mematikan dan membuka/menutup. Tombol waktu di kanan atas mengganti suasana Siang / Sore / Malam &mdash; di malam hari ruangan hanya diterangi lampu. Tirai jendela dipasang lewat panel jendela; railing balkon dibuat dengan menggambar garis lalu mengganti <b>Jenis</b>-nya menjadi Railing.",
                 g6: "<b>Void / Lubang Lantai:</b> Tangga otomatis melubangi lantai di atasnya. Untuk lubang lain &mdash; void ruang tinggi atau mezzanine &mdash; aktifkan dulu lantai yang mau dilubangi, lalu pakai <b>Void (Kotak)</b> dan atur Lebar/Dalam-nya, atau <b>Void (Trace)</b> untuk menggambar bentuk bebas: ketuk tiap sudut, lalu ketuk lagi titik pertama (atau ESC) untuk menutup.",
                 g4: "<b>Lantai Bertingkat:</b> Tambah / salin level di panel \"Lantai\". Lantai aktif adalah yang sedang digambar; lantai lain tampil transparan di 3D dan garis putus-putus di 2D.",
                 g5: "<b>Transform Tembok (3D):</b> Klik tembok di tampilan 3D untuk memegangnya dengan gizmo &mdash; Move, Rotate, Scale (X = panjang, Y = tinggi, Z = tebal), atau ketik angka pastinya di panel Properti.",
@@ -864,6 +873,7 @@
                 lblLightTemp: "Warna Lampu:", lblWallMat: "Finishing Tembok:", lblObjMat: "Material / Tekstur:",
                 lblFloorMat: "Finishing Lantai (level aktif):",
                 btnWalk: "Jalan", btnWalkExit: "Keluar", btnWalkFull: "Layar Penuh",
+                lblSuasana: "Suasana Waktu:", waktu_siang: "Siang", waktu_sore: "Sore", waktu_malam: "Malam", waktu_kustom: "Kustom",
                 walkHint: "Seret untuk menoleh &middot; joystick / WASD untuk jalan &middot; ketuk objek untuk memakainya &middot; ESC keluar",
                 aksiLampu: "Lampu &mdash; ketuk untuk {a}", aksiPintu: "Pintu &mdash; ketuk untuk {a}", aksiTirai: "Tirai &mdash; ketuk untuk {a}", aksiTV: "TV &mdash; ketuk untuk {a}", aksiJendela: "Jendela &mdash; ketuk untuk {a}",
                 aksiNyalakan: "nyalakan", aksiMatikan: "matikan", aksiBuka: "buka", aksiTutup: "tutup",
@@ -892,7 +902,7 @@
                 gTitle: "Quick Guide", g1: "<b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.",
                 g2: "<b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.",
                 g3: "<b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.",
-                g7: "<b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, TV, door, window or curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it. Window curtains are added from the window panel; for a balcony railing, draw a line and set its <b>Type</b> to Railing.",
+                g7: "<b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, TV, door, window or curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it. The time button at the top right switches Day / Golden Hour / Night &mdash; at night rooms are lit only by their lamps. Window curtains are added from the window panel; for a balcony railing, draw a line and set its <b>Type</b> to Railing.",
                 g6: "<b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; activate the floor that should have the hole, then use <b>Void (Box)</b> and set its Width/Depth, or <b>Void (Trace)</b> to draw a free shape: tap each corner, then tap the first point again (or press ESC) to close it.",
                 g4: "<b>Floors:</b> Add / copy levels in the \"Floors\" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.",
                 g5: "<b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.",
@@ -915,6 +925,7 @@
                 lblLightTemp: "Light Color:", lblWallMat: "Wall Finish:", lblObjMat: "Material / Texture:",
                 lblFloorMat: "Floor Finish (active level):",
                 btnWalk: "Walk", btnWalkExit: "Exit", btnWalkFull: "Fullscreen",
+                lblSuasana: "Time of Day:", waktu_siang: "Day", waktu_sore: "Golden Hour", waktu_malam: "Night", waktu_kustom: "Custom",
                 walkHint: "Drag to look &middot; joystick / WASD to move &middot; tap an object to use it &middot; ESC to exit",
                 aksiLampu: "Lamp &mdash; tap to {a}", aksiPintu: "Door &mdash; tap to {a}", aksiTirai: "Curtain &mdash; tap to {a}", aksiTV: "TV &mdash; tap to {a}", aksiJendela: "Window &mdash; tap to {a}",
                 aksiNyalakan: "switch on", aksiMatikan: "switch off", aksiBuka: "open", aksiTutup: "close",
@@ -1003,6 +1014,9 @@
             if (typeof POV !== 'undefined' && !POV.aktif) setTxt('btnWalk', t.btnWalk);
             setTxt('walkExit', '\u00d7 ' + t.btnWalkExit);
             setTxt('walkFull', t.btnWalkFull);
+            setTxt('txtLblSuasana', t.lblSuasana); setTxt('optWaktuSiang', t.waktu_siang); setTxt('optWaktuSore', t.waktu_sore);
+            setTxt('optWaktuMalam', t.waktu_malam); setTxt('optWaktuKustom', t.waktu_kustom);
+            perbaruiTombolWaktu();
             setTxt('txtLblLightTemp', t.lblLightTemp); setTxt('txtLblWallMat', t.lblWallMat);
             setTxt('txtLblObjMat', t.lblObjMat); setTxt('txtLblFloorMat', t.lblFloorMat);
             if (bahanSiap) {
@@ -1144,10 +1158,12 @@
                 const map = { sunInt: 'valSunInt', sunAzim: 'valSunAzim', sunElev: 'valSunElev', sunTemp: 'valSunTemp', ambInt: 'valAmbient', expo: 'valExposure' };
                 const nilai = parseFloat(e.target.value);
                 document.getElementById(map[id]).innerText = (id === 'expo') ? nilai.toFixed(2) : e.target.value;
+                const pilih = document.getElementById('suasanaSel'); if (pilih) pilih.value = 'kustom';
                 updateSun();
             });
         });
         document.getElementById('chkSun').addEventListener('change', updateSun);
+        document.getElementById('suasanaSel').addEventListener('change', (e) => { if (e.target.value !== 'kustom') terapkanSuasana(e.target.value); });
         document.getElementById('chkShadow').addEventListener('change', terapkanBayangan);
         document.getElementById('shadowQ').addEventListener('change', (e) => { mutuBayangan = e.target.value; terapkanBayangan(); });
         document.getElementById('shadowSoft').addEventListener('input', (e) => { document.getElementById('valShadowSoft').innerText = e.target.value; terapkanBayangan(); });
@@ -2156,7 +2172,7 @@
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.34);
         scene.add(ambientLight);
-        const langitLight = new THREE.HemisphereLight(0xbfd4ff, 0x8a7f6f, 0.45);
+        const langitLight = new THREE.HemisphereLight(0xd3e0f0, 0xa89a88, 0.45);
         scene.add(langitLight);
 
         const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.15);
@@ -2166,6 +2182,55 @@
 
         scene.add(new THREE.GridHelper(50, 50, 0x555555, 0x333333));
 
+        /* Suasana waktu. Langit dan ambien di siang hari sengaja netral (bukan biru
+           pekat): cahaya ini menerangi SEMUA permukaan, termasuk interior tertutup, dan
+           langit biru murni membuat dinding dalam rumah tampak ungu kebiruan. Malam
+           hari ambien hampir padam sehingga ruangan benar-benar bergantung pada lampu. */
+        var suasana = 'siang';
+        const PRESET_SUASANA = {
+            siang: { sunInt: 1.15, sunElev: 55, sunTemp: 5600, amb: 0.45, expo: 1.0, langit: 0xd3e0f0, tanah: 0xa89a88, ambien: 0xffffff, latar: 0xa9c4de },
+            sore:  { sunInt: 1.05, sunElev: 9,  sunTemp: 2900, amb: 0.28, expo: 1.05, langit: 0xf0c7a0, tanah: 0x6e5a48, ambien: 0xffe6cc, latar: 0xe1a57d },
+            malam: { sunInt: 0.14, sunElev: 42, sunTemp: 9500, amb: 0.05, expo: 1.0, langit: 0x3a4a72, tanah: 0x1c1813, ambien: 0xb8c6ff, latar: 0x0b1222 }
+        };
+        function terapkanSuasana(nama) {
+            const ps = PRESET_SUASANA[nama];
+            if (!ps) return;
+            suasana = nama;
+            const set = (id, nilai, label, desimal) => {
+                const el = document.getElementById(id); if (!el) return;
+                el.value = nilai;
+                const lb = document.getElementById(label); if (lb) lb.innerText = desimal ? parseFloat(nilai).toFixed(2) : nilai;
+            };
+            set('sunInt', ps.sunInt, 'valSunInt'); set('sunElev', ps.sunElev, 'valSunElev');
+            set('sunTemp', ps.sunTemp, 'valSunTemp'); set('ambInt', ps.amb, 'valAmbient');
+            set('expo', ps.expo, 'valExposure', true);
+            const pilih = document.getElementById('suasanaSel'); if (pilih) pilih.value = nama;
+            updateSun();
+            perbaruiTombolWaktu();
+            if (typeof triggerAutosave === 'function') triggerAutosave();
+        }
+        function aturKuatLingkungan(k) {
+            if (Math.abs(k - kuatLingkungan) < 1e-3) return;
+            kuatLingkungan = k;
+            scene.traverse(o => {
+                if (!o.isMesh || !o.material) return;
+                (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m.isMeshStandardMaterial) m.envMapIntensity = k; });
+            });
+        }
+        /* Saat berjalan di dalam denah, jendela memperlihatkan langit sesuai waktunya. */
+        function aturLatarJalan() {
+            if (typeof POV === 'undefined' || !POV.aktif) { scene.background = null; return; }
+            const ps = PRESET_SUASANA[suasana] || PRESET_SUASANA.siang;
+            scene.background = new THREE.Color(ps.latar);   /* warna latar tidak melewati konversi sRGB di r128 */
+        }
+        function perbaruiTombolWaktu() {
+            const el = document.getElementById('walkWaktu');
+            if (!el || typeof texts === 'undefined') return;
+            const t = texts[currentLang];
+            const w = suasana || 'siang';   /* setLanguage() bisa berjalan sebelum suasana diisi */
+            el.innerText = ({ siang: '\u2600\ufe0f ', sore: '\ud83c\udf07 ', malam: '\ud83c\udf19 ' }[w] || '') + (t['waktu_' + w] || w);
+        }
+
         function updateSun() {
             const on = document.getElementById('chkSun').checked;
             sunLight.color.copy(warnaKelvin(parseFloat(document.getElementById('sunTemp').value) || 5200));
@@ -2173,7 +2238,13 @@
             if (isFinite(kuatAmbien)) {
                 ambientLight.intensity = kuatAmbien * 0.55;
                 langitLight.intensity = kuatAmbien;
+                aturKuatLingkungan(Math.min(1, kuatAmbien * 1.3));
             }
+            const ps = PRESET_SUASANA[suasana] || PRESET_SUASANA.siang;
+            langitLight.color.copy(sRGB(ps.langit));
+            langitLight.groundColor.copy(sRGB(ps.tanah));
+            ambientLight.color.copy(sRGB(ps.ambien));
+            aturLatarJalan();
             renderer.toneMappingExposure = parseFloat(document.getElementById('expo').value) || 1.0;
             const azim = THREE.MathUtils.degToRad(parseFloat(document.getElementById('sunAzim').value));
             const elev = THREE.MathUtils.degToRad(parseFloat(document.getElementById('sunElev').value));
@@ -2232,7 +2303,7 @@
                 const datar = o.userData.datar || (o.geometry && (o.geometry.type === 'PlaneGeometry' || o.userData.tipeAsli === 'PlaneGeometry'));
                 const tembusPandang = o.material && o.material.transparent;
                 const atap = o.userData && o.userData.atap;
-                o.castShadow = aktif && !tembusPandang && (atap || !datar);
+                o.castShadow = aktif && !tembusPandang && (atap || !datar) && !o.userData.tanpaBayangan;
                 o.receiveShadow = aktif;
                 if (atap) o.material.shadowSide = THREE.DoubleSide;
             });
@@ -2249,8 +2320,23 @@
         function resizeViewports() { const renderRect = renderContainer.getBoundingClientRect(); if (renderRect.width > 0 && renderRect.height > 0) { camera.aspect = renderRect.width / renderRect.height; camera.updateProjectionMatrix(); renderer.setSize(renderRect.width, renderRect.height); } }
         window.addEventListener('resize', resizeViewports); const resizeObserver = new ResizeObserver(() => resizeViewports()); resizeObserver.observe(renderContainer); resizeObserver.observe(workspaceContainer);
         
+        /* Nyala/padam lampu memudar 0,3 detik, seperti lampu sungguhan, bukan meloncat. */
+        var animasiCahaya = [];
+        var _jamCahaya = null;
+        function majukanAnimasiCahaya() {
+            if (!_jamCahaya) _jamCahaya = new THREE.Clock();
+            const dt = Math.min(_jamCahaya.getDelta(), 0.1);
+            for (let i = animasiCahaya.length - 1; i >= 0; i--) {
+                const a = animasiCahaya[i];
+                a.t = Math.min(1, a.t + dt / 0.3);
+                const e = a.t * a.t * (3 - 2 * a.t);
+                a.cahaya.intensity = a.dari + (a.ke - a.dari) * e;
+                if (a.t >= 1) { if (a.ke === 0) a.cahaya.visible = false; animasiCahaya.splice(i, 1); }
+            }
+        }
         function animate() { 
             requestAnimationFrame(animate); 
+            majukanAnimasiCahaya();
             /* animate() sudah berjalan sebelum blok POV dideklarasikan, jadi harus dijaga. */
             if (typeof POV !== 'undefined' && POV.aktif) { updateJalan(); renderer.render(scene, camera); return; }
             controls.update(); 
@@ -2596,7 +2682,8 @@
             const v = (id) => { const el = document.getElementById(id); return el ? el.value : null; };
             return { pbr: pbrAktif, expo: v('expo'), sunInt: v('sunInt'), sunTemp: v('sunTemp'), sunAzim: v('sunAzim'),
                      sunElev: v('sunElev'), amb: v('ambInt'), mutu: v('shadowQ'), halus: v('shadowSoft'),
-                     bayangan: document.getElementById('chkShadow').checked, matahari: document.getElementById('chkSun').checked };
+                     bayangan: document.getElementById('chkShadow').checked, matahari: document.getElementById('chkSun').checked,
+                     suasana: suasana, suasanaSel: document.getElementById('suasanaSel').value };
         }
         function terapkanPengaturanRender(r) {
             if (!r) return;
@@ -2614,6 +2701,9 @@
             if (r.mutu) { document.getElementById('shadowQ').value = r.mutu; mutuBayangan = r.mutu; }
             if (r.bayangan !== undefined) document.getElementById('chkShadow').checked = r.bayangan;
             if (r.matahari !== undefined) document.getElementById('chkSun').checked = r.matahari;
+            if (r.suasana && PRESET_SUASANA[r.suasana]) suasana = r.suasana;
+            document.getElementById('suasanaSel').value = r.suasanaSel || suasana;
+            perbaruiTombolWaktu();
             pbrAktif = !!r.pbr;
             document.getElementById('chkPBR').checked = pbrAktif;
             siapkanLingkungan();
@@ -2631,13 +2721,30 @@
         }
 
         /* Material warna polos. Di mode PBR jadi MeshStandardMaterial. */
+        /* Material mode cepat (non-PBR). Dulu MeshLambertMaterial, tapi Lambert di three.js
+           r128 menghitung cahaya per titik sudut (dinding besar hanya punya empat titik,
+           jadi genangan cahaya lampu tidak pernah tampak) dan mengalikan SEMUA cahaya
+           langsung dengan gabungan bayangan dari semua lampu: satu lampu berkap membuat
+           matahari dan lampu lain ikut padam. Phong menghitung per piksel dan bayangannya
+           per lampu. */
+        const KILAP_CEPAT = { logam: [60, 0x3a3a3a], keramik: [45, 0x262626], marmer: [45, 0x262626], granit: [30, 0x1c1c1c], parket: [22, 0x141414] };
+        function matCepat(opt, jenis) {
+            const k = KILAP_CEPAT[jenis] || [8, 0x080808];
+            if (opt.shininess === undefined) opt.shininess = k[0];
+            if (opt.specular === undefined) opt.specular = new THREE.Color(k[1]);
+            return new THREE.MeshPhongMaterial(opt);
+        }
+        /* Kekuatan pantulan lingkungan (PBR) mengikuti tingkat cahaya langit: di malam
+           hari langit tidak lagi menerangi interior. */
+        var kuatLingkungan = 0.6;
         function matPolos(warna, extra, jenis) {
             const opt = Object.assign({}, extra || {});
             opt.color = sRGB(warna);
-            if (!pbrAktif) { delete opt.roughness; delete opt.metalness; return new THREE.MeshLambertMaterial(opt); }
+            if (!pbrAktif) { delete opt.roughness; delete opt.metalness; return matCepat(opt, jenis); }
             const sifat = PBR_SIFAT[jenis || 'polos'] || PBR_SIFAT.polos;
             if (opt.roughness === undefined) opt.roughness = sifat.roughness;
             if (opt.metalness === undefined) opt.metalness = sifat.metalness;
+            if (opt.envMapIntensity === undefined) opt.envMapIntensity = kuatLingkungan;
             return new THREE.MeshStandardMaterial(opt);
         }
 
@@ -3035,13 +3142,14 @@
         }
         function matTeks(jenis, warna, ulang, extra) {
             const opt = Object.assign({ map: bikinTekstur(jenis, warna, ulang) }, extra || {});
-            if (!pbrAktif) return new THREE.MeshLambertMaterial(opt);
+            if (!pbrAktif) return matCepat(opt, jenis);
             const sifat = PBR_SIFAT[jenis] || PBR_SIFAT.polos;
             opt.normalMap = bikinNormal(jenis, warna, ulang);
             const kuat = KUAT_NORMAL[jenis] !== undefined ? KUAT_NORMAL[jenis] : 0.5;
             opt.normalScale = new THREE.Vector2(kuat, kuat);
             if (opt.roughness === undefined) opt.roughness = sifat.roughness;
             if (opt.metalness === undefined) opt.metalness = sifat.metalness;
+            if (opt.envMapIntensity === undefined) opt.envMapIntensity = kuatLingkungan;
             return new THREE.MeshStandardMaterial(opt);
         }
 
@@ -3057,6 +3165,46 @@
             painting: 'kayu', mirror: 'logam', wall_clock: 'kayu', vase: 'putih', fireplace: 'batu', pendant_lamp: 'logam',
             tv: 'hitam'
         };
+
+        /* ---------- LAMPU ----------
+           Setiap lampu = cahaya langsung + cahaya pantul. Cahaya pantul adalah titik cahaya
+           lembut tanpa bayangan yang menerangi plafon, dinding dan sudut ruangan, meniru
+           cahaya yang memantul dari permukaan ruangan. Tanpa itu, menyalakan lampu hanya
+           menerangi lantai tepat di bawahnya dan suasana ruangan tidak berubah. */
+        const FAKTOR_PANTUL = 0.26;
+        function kuatLampu(obj, bawaan) { return (obj && obj.lightIntensity !== undefined) ? obj.lightIntensity : bawaan; }
+        function lampuNyala(obj, kuat) { return (!obj || obj.lightOn !== false) && kuat > 0; }
+        function tandaiCahaya(cahaya, kuatPenuh, nyala) {
+            cahaya.userData.kuatPenuh = kuatPenuh;
+            cahaya.intensity = nyala ? kuatPenuh : 0;
+            cahaya.visible = nyala;
+            return cahaya;
+        }
+        function pasangPantulan(group, warna, kuat, jangkau, pos, nyala) {
+            const p = new THREE.PointLight(warna, 0, Math.max(4.5, jangkau * 0.75), 1.25);
+            p.position.copy(pos);
+            p.castShadow = false; p.userData.mauBayangan = false; p.userData.pantulan = true;
+            group.add(tandaiCahaya(p, kuat * FAKTOR_PANTUL, nyala));
+            return p;
+        }
+        function aturBayanganLampu(cahaya, mau, dekat, jauh, ukuran) {
+            cahaya.castShadow = mau; cahaya.userData.mauBayangan = mau;
+            cahaya.shadow.mapSize.set(ukuran, ukuran);
+            cahaya.shadow.bias = -0.0015; cahaya.shadow.normalBias = 0.04; cahaya.shadow.radius = 4;
+            cahaya.shadow.camera.near = dekat; cahaya.shadow.camera.far = jauh;
+        }
+        /* Bagian lampu yang berpendar (kaca, kap, diffuser): bahan menyala tidak ikut
+           tone mapping supaya benar-benar tampak sebagai sumber cahaya. Bagian lampu tidak
+           melempar bayangan - bohlam di dalam kap yang melempar bayangan kapnya sendiri
+           dulu menutupi seluruh ruangan. */
+        function kacaLampu(geo, warnaNyala, matMati, nyala) {
+            const matNyala = new THREE.MeshBasicMaterial({ color: sRGB(warnaNyala), toneMapped: false, side: THREE.DoubleSide });
+            const m = new THREE.Mesh(geo, nyala ? matNyala : matMati);
+            m.userData.kacaLampu = true; m.userData.matNyala = matNyala; m.userData.matMati = matMati;
+            m.userData.tanpaBayangan = true;
+            return m;
+        }
+        function tanpaBayangan(m) { m.userData.tanpaBayangan = true; return m; }
 
         function createFurnitureMesh(type, variant = 0, obj = null) {
             const group = new THREE.Group(); 
@@ -3316,58 +3464,46 @@
                 }
             }
             else if (type === 'spot_light' || type === 'area_light') {
+                /* Lampu plafon. Geometri dirancang untuk plafon 2,75 m; bangunLantai menggesernya
+                   supaya menempel ke plafon lantai yang sebenarnya. */
                 const warna = warnaKelvin((obj && obj.lightTemp) || 3000);
-                const bawaan = [1.6, 2.6, 3.6][variant] || 1.6;
-                const nyala = !obj || obj.lightOn !== false;
+                const kuat = kuatLampu(obj, [1.6, 2.6, 3.6][variant] || 1.6);
+                const nyala = lampuNyala(obj, kuat);
                 const mauBayangan = !obj || obj.lightShadow !== false;
-                const kuat = nyala ? (obj && obj.lightIntensity !== undefined ? obj.lightIntensity : bawaan) : 0;
                 const jangkauan = (obj && obj.lightRange !== undefined) ? obj.lightRange : 20;
-                const efektifNyala = nyala && kuat > 0;
-                const warnaKaca = efektifNyala ? 0xfff1d0 : 0x555555;
+                const matMati = matPolos(0xd9d9d6, null, 'keramik');
 
                 if (type === 'spot_light') {
-                    const batang = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 8), matMetal);
-                    batang.position.y = 2.62; group.add(batang);
-                    const rumah = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.14, 0.2, 16), matMetal);
-                    rumah.position.y = 2.35; group.add(rumah);
-                    const kaca = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 16),
-                        new THREE.MeshBasicMaterial({ color: sRGB(warnaKaca) }));
-                    kaca.position.y = 2.25; kaca.userData.kacaLampu = true; group.add(kaca);
+                    const batang = tanpaBayangan(new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 8), matMetal));
+                    batang.position.y = 2.575; group.add(batang);
+                    const rumah = tanpaBayangan(new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.14, 0.2, 18, 1, true), matMetal));
+                    rumah.material.side = THREE.DoubleSide; rumah.position.y = 2.35; group.add(rumah);
+                    const tutup = tanpaBayangan(new THREE.Mesh(new THREE.CircleGeometry(0.1, 18), matMetal));
+                    tutup.rotation.x = -Math.PI / 2; tutup.position.y = 2.449; group.add(tutup);
+                    const kaca = kacaLampu(new THREE.CircleGeometry(0.125, 20), 0xfff1d6, matMati, nyala);
+                    kaca.rotation.x = Math.PI / 2; kaca.position.y = 2.262; group.add(kaca);
 
-                    const lampu = new THREE.SpotLight(warna, kuat, jangkauan, Math.PI / 7, 0.45, 2);
-                    lampu.position.set(0, 2.3, 0);
-                    lampu.visible = efektifNyala;
-                    lampu.castShadow = mauBayangan;
-                    lampu.userData.mauBayangan = mauBayangan;
-                    lampu.shadow.mapSize.set(2048, 2048);
-                    lampu.shadow.bias = -0.001;
-                    lampu.shadow.normalBias = 0.05;
-                    lampu.shadow.radius = 4;
-                    lampu.shadow.camera.near = 0.3; lampu.shadow.camera.far = 24;
-                    const arah = new THREE.Object3D(); arah.position.set(0, 0, 0);
-                    group.add(arah); lampu.target = arah;
-                    group.add(lampu);
+                    const lampu = new THREE.SpotLight(warna, 0, jangkauan, Math.PI / 5.5, 0.55, 2);
+                    lampu.position.set(0, 2.24, 0);
+                    aturBayanganLampu(lampu, mauBayangan, 0.1, 24, 1024);
+                    const arah = new THREE.Object3D(); group.add(arah); lampu.target = arah;
+                    group.add(tandaiCahaya(lampu, kuat, nyala));
+                    pasangPantulan(group, warna, kuat, jangkauan, new THREE.Vector3(0, 1.1, 0), nyala);
                 } else {
+                    /* Panel LED: bingkai tipis rata plafon, diffuser menghadap ke bawah. */
                     const W = 1.2, D = 0.6;
-                    const bingkai = new THREE.Mesh(new THREE.BoxGeometry(W + 0.06, 0.06, D + 0.06), matMetal);
-                    bingkai.position.y = 2.72; group.add(bingkai);
-                    const bidang = new THREE.Mesh(new THREE.BoxGeometry(W, 0.03, D),
-                        new THREE.MeshBasicMaterial({ color: sRGB(warnaKaca) }));
-                    bidang.position.y = 2.68; bidang.userData.kacaLampu = true; group.add(bidang);
+                    const bingkai = tanpaBayangan(new THREE.Mesh(new THREE.BoxGeometry(W + 0.06, 0.05, D + 0.06), matMetal));
+                    bingkai.position.y = 2.725; group.add(bingkai);
+                    const bidang = kacaLampu(new THREE.PlaneGeometry(W, D), 0xfff6e8, matMati, nyala);
+                    bidang.rotation.x = Math.PI / 2; bidang.position.y = 2.697; group.add(bidang);
 
-                    const lampu = new THREE.SpotLight(warna, kuat, jangkauan, Math.PI / 2.4, 1.0, 2);
+                    /* Panel memancar ke setengah bola bawah: spot bersudut lebar tanpa tepi keras. */
+                    const lampu = new THREE.SpotLight(warna, 0, jangkauan, Math.PI / 2.15, 1.0, 2);
                     lampu.position.set(0, 2.66, 0);
-                    lampu.visible = efektifNyala;
-                    lampu.castShadow = mauBayangan;
-                    lampu.userData.mauBayangan = mauBayangan;
-                    lampu.shadow.mapSize.set(2048, 2048);
-                    lampu.shadow.bias = -0.001;
-                    lampu.shadow.normalBias = 0.05;
-                    lampu.shadow.radius = 5;
-                    lampu.shadow.camera.near = 0.3; lampu.shadow.camera.far = 22;
-                    const arah = new THREE.Object3D(); arah.position.set(0, 0, 0);
-                    group.add(arah); lampu.target = arah;
-                    group.add(lampu);
+                    aturBayanganLampu(lampu, mauBayangan, 0.1, 22, 1024);
+                    const arah = new THREE.Object3D(); group.add(arah); lampu.target = arah;
+                    group.add(tandaiCahaya(lampu, kuat, nyala));
+                    pasangPantulan(group, warna, kuat, jangkauan, new THREE.Vector3(0, 1.2, 0), nyala);
                 }
             }
             else if (type === 'bookshelf') {
@@ -3518,20 +3654,26 @@
                 }
             } 
             else if (type === 'standing_lamp') {
-                const nyalaL = !obj || obj.lightOn !== false;
-                const kuatL = nyalaL ? (obj && obj.lightIntensity !== undefined ? obj.lightIntensity : 1.8) : 0;
+                const kuatL = kuatLampu(obj, 1.8);
+                const hidup = lampuNyala(obj, kuatL);
                 const bayanganL = !obj || obj.lightShadow !== false;
-                const hidup = nyalaL && kuatL > 0;
-                const matNyala = hidup ? new THREE.MeshBasicMaterial({ color: sRGB(0xfff0c8) }) : matWhite;
+                const warnaL = warnaKelvin((obj && obj.lightTemp) || 2700);
+                const matKapMati = matTeks('kain', 0xf1e9da, 2, { side: THREE.DoubleSide });
+                /* Kap kain terbuka atas-bawah (bukan tabung tertutup), jadi bohlam memancar
+                   ke plafon dan lantai seperti lampu berdiri sungguhan. */
+                const kapKain = (rAtas, rBawah, t) => kacaLampu(new THREE.CylinderGeometry(rAtas, rBawah, t, 24, 1, true), 0xffdca8, matKapMati, hidup);
+                const bohlam = (pos) => { const b = kacaLampu(new THREE.SphereGeometry(0.045, 12, 8), 0xfff4dc, matWhite, hidup); b.position.copy(pos); group.add(b); };
                 let posKap = new THREE.Vector3(0, 1.58, 0);
                 if (variant === 1) {
                     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.06, 20), matMetal); base.position.y = 0.03; group.add(base);
                     const tiang = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.5, 10), matMetal); tiang.position.y = 0.78; group.add(tiang);
-                    const busur = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.022, 8, 24, Math.PI / 2), matMetal);
+                    const busur = tanpaBayangan(new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.022, 8, 24, Math.PI / 2), matMetal));
                     busur.position.set(0, 1.52, 0); busur.rotation.z = Math.PI / 2; busur.rotation.y = Math.PI / 2; group.add(busur);
-                    const kap = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.26, 18), matNyala);
+                    const kap = tanpaBayangan(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.22, 0.26, 20, 1, true), matMetal));
+                    kap.material = kap.material.clone(); kap.material.side = THREE.DoubleSide;
                     kap.position.set(0, 2.18, 0.8); group.add(kap);
-                    posKap.set(0, 2.06, 0.8);
+                    posKap.set(0, 2.1, 0.8);
+                    bohlam(posKap);
                 } else if (variant === 2) {
                     for (let i = 0; i < 3; i++) {
                         const a = (i / 3) * Math.PI * 2;
@@ -3540,26 +3682,21 @@
                         kaki.rotation.x = -Math.cos(a) * 0.3; kaki.rotation.z = Math.sin(a) * 0.3;
                         group.add(kaki);
                     }
-                    const kap = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 0.34, 18), matNyala);
-                    kap.position.y = 1.62; group.add(kap);
-                    posKap.set(0, 1.55, 0);
+                    const kap = kapKain(0.2, 0.3, 0.34); kap.position.y = 1.62; group.add(kap);
+                    posKap.set(0, 1.6, 0);
+                    bohlam(posKap);
                 } else {
                     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.05, 16), matMetal); base.position.y = 0.025; group.add(base);
                     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8), matMetal); pole.position.y = 0.8; group.add(pole);
-                    const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 0.3, 16), matNyala);
-                    shade.position.y = 1.6; group.add(shade);
+                    const shade = kapKain(0.12, 0.21, 0.3); shade.position.y = 1.62; group.add(shade);
+                    posKap.set(0, 1.62, 0);
+                    bohlam(new THREE.Vector3(0, 1.57, 0));
                 }
-                const bohlam = new THREE.PointLight(warnaKelvin((obj && obj.lightTemp) || 2700), kuatL, (obj && obj.lightRange !== undefined) ? obj.lightRange : 9, 2);
-                bohlam.position.copy(posKap);
-                bohlam.visible = hidup;
-                bohlam.castShadow = bayanganL;
-                bohlam.userData.mauBayangan = bayanganL;
-                bohlam.shadow.mapSize.set(1024, 1024);
-                bohlam.shadow.bias = -0.002;
-                bohlam.shadow.normalBias = 0.05;
-                bohlam.shadow.radius = 4;
-                bohlam.shadow.camera.near = 0.15; bohlam.shadow.camera.far = 20;
-                group.add(bohlam);
+                const cahaya = new THREE.PointLight(warnaL, 0, (obj && obj.lightRange !== undefined) ? obj.lightRange : 9, 2);
+                cahaya.position.copy(posKap);
+                aturBayanganLampu(cahaya, bayanganL, 0.12, 20, 1024);
+                group.add(tandaiCahaya(cahaya, kuatL, hidup));
+                pasangPantulan(group, warnaL, kuatL, 9, posKap.clone().add(new THREE.Vector3(0, 0.9, 0)), hidup);
             }
             else if (type === 'plant') {
                 const daunLebar = (x, y, z, s, miring, putar) => {
@@ -3700,43 +3837,40 @@
                 else { const rak = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.08, 0.55), matWood); rak.position.y = 1.34; group.add(rak); }
             }
             else if (type === 'pendant_lamp') {
-                const nyalaP = !obj || obj.lightOn !== false;
-                const kuatP = nyalaP ? (obj && obj.lightIntensity !== undefined ? obj.lightIntensity : 2.0) : 0;
+                const kuatP = kuatLampu(obj, 2.0);
+                const hidupP = lampuNyala(obj, kuatP);
                 const bayanganP = !obj || obj.lightShadow !== false;
-                const hidupP = nyalaP && kuatP > 0;
                 const warnaP = warnaKelvin((obj && obj.lightTemp) || 2700);
-                const matNyalaP = hidupP ? new THREE.MeshBasicMaterial({ color: sRGB(0xfff0c8) }) : matWhite;
+                const matMatiP = matPolos(0xf2efe8, null, 'keramik');
                 let yLampu = 2.1;
                 if (variant === 1) {
                     for (const [x, y] of [[-0.35, 2.05], [0, 2.3], [0.35, 1.85]]) {
-                        const kabel = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 2.85 - y, 5), matBlack);
+                        const kabel = tanpaBayangan(new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 2.85 - y, 5), matBlack));
                         kabel.position.set(x, (2.85 + y) / 2, 0); group.add(kabel);
-                        const bola = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), matNyalaP);
+                        const bola = kacaLampu(new THREE.SphereGeometry(0.12, 18, 12), 0xfff0d2, matMatiP, hidupP);
                         bola.position.set(x, y, 0); group.add(bola);
                     }
                     yLampu = 2.05;
                 } else if (variant === 2) {
-                    const kabel = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.6, 6), matBlack);
+                    const kabel = tanpaBayangan(new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.6, 6), matBlack));
                     kabel.position.y = 2.55; group.add(kabel);
-                    const kap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.3, 0.26, 18, 1, true), matMetal);
-                    kap.material.side = THREE.DoubleSide; kap.position.y = 2.12; group.add(kap);
-                    const bola = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), matNyalaP);
+                    const kap = tanpaBayangan(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.3, 0.26, 20, 1, true), matMetal));
+                    kap.material = kap.material.clone(); kap.material.side = THREE.DoubleSide; kap.position.y = 2.12; group.add(kap);
+                    const bola = kacaLampu(new THREE.SphereGeometry(0.08, 14, 10), 0xfff4dc, matMatiP, hidupP);
                     bola.position.y = 2.02; group.add(bola);
                     yLampu = 2.0;
                 } else {
-                    const kabel = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.5, 6), matBlack);
+                    const kabel = tanpaBayangan(new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.5, 6), matBlack));
                     kabel.position.y = 2.6; group.add(kabel);
-                    const kubah = new THREE.Mesh(new THREE.SphereGeometry(0.28, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), matNyalaP);
+                    const kubah = kacaLampu(new THREE.SphereGeometry(0.28, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), 0xffeccb, matMatiP, hidupP);
                     kubah.rotation.x = Math.PI; kubah.position.y = 2.35; group.add(kubah);
                     yLampu = 2.2;
                 }
-                const lampu = new THREE.PointLight(warnaP, kuatP, (obj && obj.lightRange !== undefined) ? obj.lightRange : 11, 2);
+                const lampu = new THREE.PointLight(warnaP, 0, (obj && obj.lightRange !== undefined) ? obj.lightRange : 11, 2);
                 lampu.position.y = yLampu;
-                lampu.visible = hidupP;
-                lampu.castShadow = bayanganP;
-                lampu.userData.mauBayangan = bayanganP;
-                lampu.shadow.camera.near = 0.15; lampu.shadow.camera.far = 22;
-                group.add(lampu);
+                aturBayanganLampu(lampu, bayanganP, 0.12, 22, 1024);
+                group.add(tandaiCahaya(lampu, kuatP, hidupP));
+                pasangPantulan(group, warnaP, kuatP, 11, new THREE.Vector3(0, 1.3, 0), hidupP);
             }
             else if (type === 'desk') {
                 const W = 1.4, D = 0.7, H = 0.75;
@@ -4355,6 +4489,13 @@
                     Z0 = Math.min(Z0, pt.z - 0.3); Z1 = Math.max(Z1, pt.z + 0.3);
                 }));
                 grup.add(bikinPelat(X0, Z0, X1, Z1, voidLantai, matFloor, 0.001));
+                if (indexLantai > 0) {
+                    /* Plafon lantai di bawahnya: bidang plester putih di sisi bawah pelat.
+                       Tanpa ini plafon memperlihatkan keramik lantai atas. */
+                    const plafon = bikinPelat(X0, Z0, X1, Z1, voidLantai, matPolos(0xf3f1ec, { side: THREE.BackSide }, 'plester'), -0.012);
+                    plafon.userData.plafon = true;
+                    grup.add(plafon);
+                }
                 const pagarLubang = railingLubang(indexLantai);
                 if (pagarLubang) grup.add(pagarLubang);
                 if (lantaiTeratas && document.getElementById('chkShowRoof').checked) {
@@ -4590,6 +4731,9 @@
                     }
                 }
                 
+                /* Lampu plafon menempel ke plafon lantai ini, bukan melayang di ketinggian tetap. */
+                const PLAFON_RANCANGAN = { spot_light: 2.75, area_light: 2.75, pendant_lamp: 2.85 };
+                if (PLAFON_RANCANGAN[obj.type]) innerMesh.position.y += heightWall - PLAFON_RANCANGAN[obj.type];
                 let meshGroup = new THREE.Group();
                 innerMesh.scale.set(obj.flipX ? -1 : 1, 1, obj.flipZ ? -1 : 1);
                 meshGroup.add(innerMesh);
@@ -5174,6 +5318,7 @@
             floorViewMode = 'solid';
             floors.forEach(f => { f.visible = true; });
             POV.aktif = true;
+            aturLatarJalan(); perbaruiTombolWaktu();
             releaseGizmo();
             selectionBox.visible = false;
             controls.enabled = false;
@@ -5200,6 +5345,7 @@
         function hentikanJalan() {
             if (!POV.aktif) return;
             POV.aktif = false;
+            aturLatarJalan();
             const s = POV.simpan;
             document.getElementById('walkUI').style.display = 'none';
             document.getElementById('transformUI').style.display = 'flex';
@@ -5251,6 +5397,11 @@
             } catch (err) {}
         }
 
+        document.getElementById('walkWaktu').onclick = (e) => {
+            e.stopPropagation();
+            const urut = ['siang', 'sore', 'malam'];
+            terapkanSuasana(urut[(urut.indexOf(suasana) + 1) % urut.length]);
+        };
         document.getElementById('walkFull').onclick = (e) => {
             e.stopPropagation();
             mintaLayarPenuh(!(document.fullscreenElement || document.webkitFullscreenElement));
@@ -5329,11 +5480,14 @@
            seluruh adegan - supaya tidak ada hentakan saat sedang berjalan. */
         function saklarLampu(grup, obj) {
             const nyala = obj.lightOn !== false;
-            const kuat = (obj.lightIntensity !== undefined) ? obj.lightIntensity : 2;
             grup.traverse(o => {
-                if (o.isLight) { o.visible = nyala && kuat > 0; o.intensity = nyala ? kuat : 0; }
-                if (o.isMesh && o.userData.kacaLampu && o.material && o.material.color)
-                    o.material.color.copy(sRGB(nyala ? 0xfff0c8 : 0x555555));
+                if (o.isLight && o.userData.kuatPenuh !== undefined) {
+                    const ke = nyala ? o.userData.kuatPenuh : 0;
+                    if (ke > 0) o.visible = true;
+                    for (let i = animasiCahaya.length - 1; i >= 0; i--) if (animasiCahaya[i].cahaya === o) animasiCahaya.splice(i, 1);
+                    animasiCahaya.push({ cahaya: o, dari: o.intensity, ke: ke, t: 0 });
+                }
+                if (o.isMesh && o.userData.kacaLampu) o.material = nyala ? o.userData.matNyala : o.userData.matMati;
             });
         }
 
