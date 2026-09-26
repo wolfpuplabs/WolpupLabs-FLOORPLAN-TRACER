@@ -89,6 +89,9 @@
         #walkExit { position: absolute; top: 12px; right: 12px; width: auto; padding: 8px 16px; background: rgba(239,68,68,0.92); color: #fff; border: none; border-radius: 20px; font-weight: 700; font-size: 13px; pointer-events: auto; cursor: pointer; }
         #walkRun { position: absolute; right: 22px; bottom: 30px; width: 74px; height: 74px; border-radius: 50%; background: rgba(37,99,235,0.55); color: #fff; border: 2px solid rgba(255,255,255,0.35); font-weight: 700; font-size: 12px; pointer-events: auto; cursor: pointer; padding: 0; }
         #walkRun.on { background: rgba(37,99,235,0.95); }
+        #walkAim { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 28px); padding: 7px 14px; background: rgba(24,24,27,0.82); color: #fff; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; display: none; pointer-events: none; box-shadow: 0 2px 10px rgba(0,0,0,0.4); }
+        #walkAim b { color: #facc15; }
+        #walkCross.bisa::before, #walkCross.bisa::after { background: #facc15; }
         #walkInfo { position: absolute; top: 12px; left: 12px; padding: 6px 12px; background: rgba(24,24,27,0.72); color: #e4e4e7; border-radius: 8px; font-size: 11px; line-height: 1.5; max-width: 60%; }
         #walkInfo b { color: #fff; }
 
@@ -518,7 +521,7 @@
                         <li id="txtGuide2"><b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.</li>
                         <li id="txtGuide3"><b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.</li>
                         <li id="txtGuide4"><b>Floors:</b> Add / copy levels in the "Floors" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.</li>
-                        <li id="txtGuide7"><b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor.</li>
+                        <li id="txtGuide7"><b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, a door or a curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it.</li>
                         <li id="txtGuide6"><b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; use the <b>Void</b> tool: activate the floor that should have the hole, drop a void on it, then set its Width and Depth.</li>
                         <li id="txtGuide5"><b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.</li>
                     </ul>
@@ -542,6 +545,7 @@
             <div id="walkUI">
                 <div id="walkInfo"></div>
                 <div id="walkCross"></div>
+                <div id="walkAim"></div>
                 <div id="walkJoy"><div id="walkKnob"></div></div>
                 <button id="walkRun" type="button">RUN</button>
                 <button id="walkFull" type="button">Fullscreen</button>
@@ -810,7 +814,7 @@
                 gTitle: "Panduan Singkat", g1: "<b>Free Draw:</b> Mulai gambar langsung! Tiap kotak (grid) = 1 meter.",
                 g2: "<b>Tembok:</b> Tap 1x titik awal, tap posisi lain. Tap 2x (atau ESC) untuk mengakhiri garis tembok.",
                 g3: "<b>Edit & Hapus Tembok:</b> Gunakan Mode 'Pilih/Edit', klik garis tembok untuk menggeser posisinya atau menghapusnya.",
-                g7: "<b>Jalan (POV):</b> Tekan <b>Walk</b> di atas tampilan 3D untuk berdiri di dalam denah. Seret layar untuk menoleh, pakai joystick atau WASD untuk berjalan, dan tangga otomatis dinaiki &mdash; jadi bisa naik ke lantai berikutnya.",
+                g7: "<b>Jalan (POV):</b> Tekan <b>Walk</b> di atas tampilan 3D untuk berdiri di dalam denah. Seret layar untuk menoleh, pakai joystick atau WASD untuk berjalan, dan tangga otomatis dinaiki &mdash; jadi bisa naik ke lantai berikutnya. Arahkan ke lampu, pintu, atau tirai sampai crosshair menguning: ketuk (atau tekan E) untuk menyalakan/mematikan dan membuka/menutup.",
                 g6: "<b>Void / Lubang Lantai:</b> Tangga otomatis melubangi lantai di atasnya. Untuk lubang lain &mdash; void ruang tinggi atau mezzanine &mdash; aktifkan dulu lantai yang mau dilubangi, lalu pakai <b>Void (Kotak)</b> dan atur Lebar/Dalam-nya, atau <b>Void (Trace)</b> untuk menggambar bentuk bebas: ketuk tiap sudut, lalu ketuk lagi titik pertama (atau ESC) untuk menutup.",
                 g4: "<b>Lantai Bertingkat:</b> Tambah / salin level di panel \"Lantai\". Lantai aktif adalah yang sedang digambar; lantai lain tampil transparan di 3D dan garis putus-putus di 2D.",
                 g5: "<b>Transform Tembok (3D):</b> Klik tembok di tampilan 3D untuk memegangnya dengan gizmo &mdash; Move, Rotate, Scale (X = panjang, Y = tinggi, Z = tebal), atau ketik angka pastinya di panel Properti.",
@@ -833,7 +837,9 @@
                 lblLightTemp: "Warna Lampu:", lblWallMat: "Finishing Tembok:", lblObjMat: "Material / Tekstur:",
                 lblFloorMat: "Finishing Lantai (level aktif):",
                 btnWalk: "Jalan", btnWalkExit: "Keluar", btnWalkFull: "Layar Penuh",
-                walkHint: "Seret layar untuk menoleh &middot; joystick / WASD untuk jalan &middot; tangga otomatis kenaikan &middot; ESC keluar",
+                walkHint: "Seret untuk menoleh &middot; joystick / WASD untuk jalan &middot; ketuk objek untuk memakainya &middot; ESC keluar",
+                aksiLampu: "Lampu &mdash; ketuk untuk {a}", aksiPintu: "Pintu &mdash; ketuk untuk {a}", aksiTirai: "Tirai &mdash; ketuk untuk {a}",
+                aksiNyalakan: "nyalakan", aksiMatikan: "matikan", aksiBuka: "buka", aksiTutup: "tutup",
                 bahan: { bawaan: "Bawaan", cat: "Cat Polos", plester: "Plester", bata: "Bata Ekspos", beton: "Beton", keramik: "Keramik", marmer: "Marmer", granit: "Granit", kayu: "Kayu", parket: "Parket", batu: "Batu Alam", kain: "Kain", karpet: "Karpet", logam: "Logam", daun: "Daun" },
                 lblVoidW: "Lebar (m)", lblVoidD: "Dalam (m)",
                 voidHint: "Void ini melubangi pelat lantai tempat ia berada. Mau lubang di lantai 2? Aktifkan Lantai 2 dulu, baru pasang void-nya.",
@@ -857,7 +863,7 @@
                 gTitle: "Quick Guide", g1: "<b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.",
                 g2: "<b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.",
                 g3: "<b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.",
-                g7: "<b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor.",
+                g7: "<b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, a door or a curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it.",
                 g6: "<b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; activate the floor that should have the hole, then use <b>Void (Box)</b> and set its Width/Depth, or <b>Void (Trace)</b> to draw a free shape: tap each corner, then tap the first point again (or press ESC) to close it.",
                 g4: "<b>Floors:</b> Add / copy levels in the \"Floors\" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.",
                 g5: "<b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.",
@@ -880,7 +886,9 @@
                 lblLightTemp: "Light Color:", lblWallMat: "Wall Finish:", lblObjMat: "Material / Texture:",
                 lblFloorMat: "Floor Finish (active level):",
                 btnWalk: "Walk", btnWalkExit: "Exit", btnWalkFull: "Fullscreen",
-                walkHint: "Drag to look &middot; joystick / WASD to move &middot; stairs are climbed automatically &middot; ESC to exit",
+                walkHint: "Drag to look &middot; joystick / WASD to move &middot; tap an object to use it &middot; ESC to exit",
+                aksiLampu: "Lamp &mdash; tap to {a}", aksiPintu: "Door &mdash; tap to {a}", aksiTirai: "Curtain &mdash; tap to {a}",
+                aksiNyalakan: "switch on", aksiMatikan: "switch off", aksiBuka: "open", aksiTutup: "close",
                 bahan: { bawaan: "Default", cat: "Flat Paint", plester: "Plaster", bata: "Exposed Brick", beton: "Concrete", keramik: "Ceramic Tile", marmer: "Marble", granit: "Granite", kayu: "Wood", parket: "Parquet", batu: "Natural Stone", kain: "Fabric", karpet: "Carpet", logam: "Metal", daun: "Foliage" },
                 lblVoidW: "Width (m)", lblVoidD: "Depth (m)",
                 voidHint: "This opening cuts a hole in the floor slab of the level it sits on. Want a hole in floor 2? Activate floor 2 first, then place the void there.",
@@ -3106,7 +3114,7 @@
                     rumah.position.y = 2.35; group.add(rumah);
                     const kaca = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 16),
                         new THREE.MeshBasicMaterial({ color: sRGB(warnaKaca) }));
-                    kaca.position.y = 2.25; group.add(kaca);
+                    kaca.position.y = 2.25; kaca.userData.kacaLampu = true; group.add(kaca);
 
                     const lampu = new THREE.SpotLight(warna, kuat, jangkauan, Math.PI / 7, 0.45, 2);
                     lampu.position.set(0, 2.3, 0);
@@ -3127,7 +3135,7 @@
                     bingkai.position.y = 2.72; group.add(bingkai);
                     const bidang = new THREE.Mesh(new THREE.BoxGeometry(W, 0.03, D),
                         new THREE.MeshBasicMaterial({ color: sRGB(warnaKaca) }));
-                    bidang.position.y = 2.68; group.add(bidang);
+                    bidang.position.y = 2.68; bidang.userData.kacaLampu = true; group.add(bidang);
 
                     const lampu = new THREE.SpotLight(warna, kuat, jangkauan, Math.PI / 2.4, 1.0, 2);
                     lampu.position.set(0, 2.66, 0);
@@ -3947,16 +3955,47 @@
                     } else { hole.moveTo(opStart, e); hole.lineTo(opEnd, e); hole.lineTo(opEnd, e + h); hole.lineTo(opStart, e + h); hole.lineTo(opStart, e); }
                     
                     if (op.type === 'door') { 
+                        /* Pintu ayun bawaannya tergambar terbuka, pintu geser tertutup.
+                           Begitu pengguna menekannya di mode jalan, keadaannya disimpan
+                           eksplisit di op.tutup. */
+                        const tutup = (op.tutup === undefined) ? (op.variant === 2) : !!op.tutup;
+                        const tandai = (mesh, jenis, extra) => {
+                            mesh.userData.pintu = Object.assign({ id: op.id, lantai: indexLantai, jenis: jenis }, extra || {});
+                            return mesh;
+                        };
                         if (op.variant === 1) { 
-                            const lW = opW / 2; const geom1 = new THREE.BoxGeometry(lW, h, 0.04); geom1.translate(lW/2, h/2, 0); const door1 = new THREE.Mesh(geom1, matDoor); door1.position.set(opStart - length/2, e, 0); door1.rotation.y = THREE.MathUtils.degToRad(op.swing);
-                            const geom2 = new THREE.BoxGeometry(lW, h, 0.04); geom2.translate(-lW/2, h/2, 0); const door2 = new THREE.Mesh(geom2, matDoor); door2.position.set(opEnd - length/2, e, 0); door2.rotation.y = THREE.MathUtils.degToRad(-op.swing);
-                            wallObj.add(door1); wallObj.add(door2);
+                            const lW = opW / 2;
+                            const geom1 = new THREE.BoxGeometry(lW, h, 0.04); geom1.translate(lW/2, h/2, 0);
+                            const door1 = new THREE.Mesh(geom1, matDoor); door1.position.set(opStart - length/2, e, 0);
+                            const s1 = THREE.MathUtils.degToRad(op.swing);
+                            door1.rotation.y = tutup ? 0 : s1;
+                            const geom2 = new THREE.BoxGeometry(lW, h, 0.04); geom2.translate(-lW/2, h/2, 0);
+                            const door2 = new THREE.Mesh(geom2, matDoor); door2.position.set(opEnd - length/2, e, 0);
+                            const s2 = THREE.MathUtils.degToRad(-op.swing);
+                            door2.rotation.y = tutup ? 0 : s2;
+                            wallObj.add(tandai(door1, 'ayun', { buka: s1 })); wallObj.add(tandai(door2, 'ayun', { buka: s2 }));
                         } else if (op.variant === 2) { 
-                            const geom1 = new THREE.BoxGeometry(opW/2, h, 0.04); geom1.translate(0, h/2, 0); const door1 = new THREE.Mesh(geom1, matDoor); door1.position.set(opCenter - length/2 - opW/4, e, -0.025); const door2 = new THREE.Mesh(geom1, matDoor); door2.position.set(opCenter - length/2 + opW/4, e, 0.025); wallObj.add(door1); wallObj.add(door2);
+                            const geom1 = new THREE.BoxGeometry(opW/2, h, 0.04); geom1.translate(0, h/2, 0);
+                            const xT1 = opCenter - length/2 - opW/4, xT2 = opCenter - length/2 + opW/4;
+                            const door1 = new THREE.Mesh(geom1, matDoor); door1.position.set(tutup ? xT1 : xT1 - opW/2, e, -0.025);
+                            const door2 = new THREE.Mesh(geom1, matDoor); door2.position.set(tutup ? xT2 : xT2 + opW/2, e, 0.025);
+                            wallObj.add(tandai(door1, 'geser', { tutupX: xT1, bukaX: xT1 - opW/2 }));
+                            wallObj.add(tandai(door2, 'geser', { tutupX: xT2, bukaX: xT2 + opW/2 }));
                         } else { 
                             const leafGeom = new THREE.BoxGeometry(opW, h, 0.04); 
-                            if (op.flipHinge) { leafGeom.translate(-opW/2, h/2, 0); const doorMesh = new THREE.Mesh(leafGeom, matDoor); doorMesh.position.set((opEnd) - length/2, e, 0); doorMesh.rotation.y = THREE.MathUtils.degToRad(-op.swing); wallObj.add(doorMesh); } 
-                            else { leafGeom.translate(opW/2, h/2, 0); const doorMesh = new THREE.Mesh(leafGeom, matDoor); doorMesh.position.set((opStart) - length/2, e, 0); doorMesh.rotation.y = THREE.MathUtils.degToRad(op.swing); wallObj.add(doorMesh); } 
+                            if (op.flipHinge) {
+                                leafGeom.translate(-opW/2, h/2, 0);
+                                const doorMesh = new THREE.Mesh(leafGeom, matDoor); doorMesh.position.set((opEnd) - length/2, e, 0);
+                                const sd = THREE.MathUtils.degToRad(-op.swing);
+                                doorMesh.rotation.y = tutup ? 0 : sd;
+                                wallObj.add(tandai(doorMesh, 'ayun', { buka: sd }));
+                            } else {
+                                leafGeom.translate(opW/2, h/2, 0);
+                                const doorMesh = new THREE.Mesh(leafGeom, matDoor); doorMesh.position.set((opStart) - length/2, e, 0);
+                                const sd = THREE.MathUtils.degToRad(op.swing);
+                                doorMesh.rotation.y = tutup ? 0 : sd;
+                                wallObj.add(tandai(doorMesh, 'ayun', { buka: sd }));
+                            }
                         }
                     } 
                     else if (op.type === 'window') { 
@@ -4560,6 +4599,9 @@
             document.getElementById('btnWalk').style.background = '#10b981';
             document.getElementById('btnWalk').innerText = 'Walk';
             POV.tombol = {}; POV.joy.x = POV.joy.y = 0; POV.lihat = null;
+            POV.sasaran = null; animasiPintu.length = 0;
+            document.getElementById('walkAim').style.display = 'none';
+            document.getElementById('walkCross').classList.remove('bisa');
             geserKnob(0, 0);
             if (s) {
                 floorViewMode = s.mode;
@@ -4603,6 +4645,118 @@
             mintaLayarPenuh(!(document.fullscreenElement || document.webkitFullscreenElement));
         };
         document.addEventListener('fullscreenchange', () => { fitAppToViewport(); resizeViewports(); });
+
+        /* ---------- OBJEK INTERAKTIF DI MODE JALAN ----------
+           Sinar dari tengah layar mencari benda yang bisa dipakai dalam jangkauan
+           tangan. Ketuk layar (atau tekan E) untuk memakainya. */
+        const _rcBidik = new THREE.Raycaster();
+        const _arahBidik = new THREE.Vector3();
+        const JANGKAUAN = 3.2;
+        const TIPE_LAMPU = ['spot_light', 'area_light', 'standing_lamp', 'pendant_lamp'];
+        const animasiPintu = [];
+
+        function cariObjekBebas(grup) {
+            const f = floors[grup.userData.floorIndex];
+            if (!f) return null;
+            return f.freeObjects.find(o => o.id === grup.userData.id) || null;
+        }
+
+        function bidikSasaran() {
+            POV.sasaran = null;
+            if (!POV.penghalang.length) return;
+            camera.getWorldDirection(_arahBidik);
+            _rcBidik.set(camera.position, _arahBidik);
+            _rcBidik.far = JANGKAUAN;
+            const kena = _rcBidik.intersectObjects(POV.penghalang, false);
+            if (!kena.length) return;
+            let n = kena[0].object;
+            while (n && n !== modelGroup) {
+                if (n.userData.pintu) {
+                    const f = floors[n.userData.pintu.lantai];
+                    const op = f && f.openings.find(o => o.id === n.userData.pintu.id);
+                    if (op) {
+                        const tutup = (op.tutup === undefined) ? (op.variant === 2) : !!op.tutup;
+                        POV.sasaran = { jenis: 'pintu', op: op, tutup: tutup, lantai: n.userData.pintu.lantai };
+                        return;
+                    }
+                }
+                if (n.userData.isFreeObject) {
+                    const o = cariObjekBebas(n);
+                    if (o && TIPE_LAMPU.indexOf(o.type) >= 0) { POV.sasaran = { jenis: 'lampu', obj: o, grup: n }; return; }
+                    if (o && o.type === 'curtain') { POV.sasaran = { jenis: 'tirai', obj: o, grup: n }; return; }
+                    return;
+                }
+                n = n.parent;
+            }
+        }
+
+        function perbaruiPetunjukSasaran() {
+            const el = document.getElementById('walkAim');
+            const cross = document.getElementById('walkCross');
+            if (!el) return;
+            const s = POV.sasaran, t = texts[currentLang];
+            if (!s) { el.style.display = 'none'; if (cross) cross.classList.remove('bisa'); return; }
+            let teks = '';
+            if (s.jenis === 'lampu') teks = t.aksiLampu.replace('{a}', '<b>' + (s.obj.lightOn === false ? t.aksiNyalakan : t.aksiMatikan) + '</b>');
+            else if (s.jenis === 'pintu') teks = t.aksiPintu.replace('{a}', '<b>' + (s.tutup ? t.aksiBuka : t.aksiTutup) + '</b>');
+            else if (s.jenis === 'tirai') teks = t.aksiTirai.replace('{a}', '<b>' + (s.obj.variant === 1 ? t.aksiBuka : t.aksiTutup) + '</b>');
+            el.innerHTML = teks;
+            el.style.display = 'block';
+            if (cross) cross.classList.add('bisa');
+        }
+
+        /* Lampu dimatikan langsung pada objek cahayanya, tanpa membangun ulang
+           seluruh adegan - supaya tidak ada hentakan saat sedang berjalan. */
+        function saklarLampu(grup, obj) {
+            const nyala = obj.lightOn !== false;
+            const kuat = (obj.lightIntensity !== undefined) ? obj.lightIntensity : 2;
+            grup.traverse(o => {
+                if (o.isLight) { o.visible = nyala && kuat > 0; o.intensity = nyala ? kuat : 0; }
+                if (o.isMesh && o.userData.kacaLampu && o.material && o.material.color)
+                    o.material.color.copy(sRGB(nyala ? 0xfff0c8 : 0x555555));
+            });
+        }
+
+        function gerakkanPintu(op, lantai) {
+            const grup = floorGroups[lantai];
+            if (!grup) return;
+            const tutup = !!op.tutup;
+            grup.traverse(o => {
+                if (!o.isMesh || !o.userData.pintu || o.userData.pintu.id !== op.id) return;
+                const d = o.userData.pintu;
+                if (d.jenis === 'ayun') animasiPintu.push({ mesh: o, sifat: 'rotY', dari: o.rotation.y, ke: tutup ? 0 : d.buka, t: 0 });
+                else animasiPintu.push({ mesh: o, sifat: 'posX', dari: o.position.x, ke: tutup ? d.tutupX : d.bukaX, t: 0 });
+            });
+        }
+
+        function majukanAnimasiPintu(dt) {
+            for (let i = animasiPintu.length - 1; i >= 0; i--) {
+                const a = animasiPintu[i];
+                a.t = Math.min(1, a.t + dt / 0.45);
+                const e = a.t < 0.5 ? 2 * a.t * a.t : 1 - Math.pow(-2 * a.t + 2, 2) / 2;
+                const nilai = a.dari + (a.ke - a.dari) * e;
+                if (a.sifat === 'rotY') a.mesh.rotation.y = nilai; else a.mesh.position.x = nilai;
+                if (a.t >= 1) animasiPintu.splice(i, 1);
+            }
+        }
+
+        function pakaiSasaran() {
+            const s = POV.sasaran;
+            if (!s) return;
+            if (s.jenis === 'lampu') {
+                s.obj.lightOn = (s.obj.lightOn === false);
+                saklarLampu(s.grup, s.obj);
+            } else if (s.jenis === 'pintu') {
+                s.op.tutup = !s.tutup;
+                gerakkanPintu(s.op, s.lantai);
+            } else if (s.jenis === 'tirai') {
+                s.obj.variant = (s.obj.variant === 1) ? 0 : 1;
+                update3D();
+            }
+            triggerAutosave();
+            bidikSasaran();
+            perbaruiPetunjukSasaran();
+        }
 
         function perbaruiInfoJalan() {
             const el = document.getElementById('walkInfo');
@@ -4672,6 +4826,9 @@
 
             camera.position.set(POV.pos.x, POV.pos.y + POV.tinggiMata, POV.pos.z);
             camera.rotation.set(POV.pitch, POV.yaw, 0);
+            majukanAnimasiPintu(dt);
+            POV.hitungBidik = (POV.hitungBidik || 0) + 1;
+            if (POV.hitungBidik % 4 === 0) { camera.updateMatrixWorld(); bidikSasaran(); perbaruiPetunjukSasaran(); }
             if ((POV.jam.elapsedTime | 0) % 2 === 0) perbaruiInfoJalan();
         }
 
@@ -4712,7 +4869,7 @@
         /* Seret di mana pun pada tampilan 3D untuk menoleh. */
         renderer.domElement.addEventListener('pointerdown', (e) => {
             if (!POV.aktif) return;
-            POV.lihat = { id: e.pointerId, x: e.clientX, y: e.clientY };
+            POV.lihat = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY };
         });
         renderer.domElement.addEventListener('pointermove', (e) => {
             if (!POV.aktif || !POV.lihat || e.pointerId !== POV.lihat.id) return;
@@ -4721,7 +4878,17 @@
             POV.yaw -= dx * 0.0032;
             POV.pitch = Math.max(-1.35, Math.min(1.35, POV.pitch - dy * 0.0032));
         });
-        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+        renderer.domElement.addEventListener('pointerup', (e) => {
+            if (!POV.aktif) return;
+            const l = POV.lihat;
+            POV.lihat = null;
+            /* Ketukan singkat tanpa geser = memakai objek; kalau digeser, itu menoleh. */
+            if (l && Math.hypot(e.clientX - l.x0, e.clientY - l.y0) < 8) {
+                camera.updateMatrixWorld(); bidikSasaran();
+                if (POV.sasaran) pakaiSasaran();
+            }
+        });
+        ['pointercancel', 'pointerleave'].forEach(ev =>
             renderer.domElement.addEventListener(ev, () => { POV.lihat = null; }));
 
         window.addEventListener('keydown', (e) => {
@@ -4729,6 +4896,7 @@
             if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
             POV.tombol[e.key.toLowerCase()] = true;
             if (e.key === 'Escape') hentikanJalan();
+            if (e.key.toLowerCase() === 'e' || e.key === 'Enter') { camera.updateMatrixWorld(); bidikSasaran(); pakaiSasaran(); }
             if (['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
         });
         window.addEventListener('keyup', (e) => { POV.tombol[e.key.toLowerCase()] = false; });
