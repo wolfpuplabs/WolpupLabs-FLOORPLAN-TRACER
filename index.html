@@ -385,6 +385,15 @@
                         </div>
                         <button id="btnWallReset" class="edit-btn-secondary" style="margin-top:6px;">Reset H/T to Global</button>
                         <div style="text-align:left; margin-top:6px;">
+                            <label id="txtLblWallType">Type:</label>
+                            <select id="editWallType" style="margin-bottom:8px;">
+                                <option value="">Wall</option>
+                                <option value="kaca">Railing - Glass</option>
+                                <option value="besi">Railing - Steel</option>
+                                <option value="kayu">Railing - Wood</option>
+                            </select>
+                        </div>
+                        <div style="text-align:left; margin-top:6px;">
                             <label id="txtLblWallMat">Wall Finish:</label>
                             <select id="editWallMat" style="margin-bottom:8px;"></select>
                         </div>
@@ -414,6 +423,12 @@
                             <label><span id="txtLblSwing">Rotation:</span> <span id="valSwing">45</span>°</label>
                             <input type="range" id="editSwing" min="-180" max="180" step="5" value="45">
                             <button id="flipHingeBtn" class="edit-btn-secondary">Flip Hinge</button>
+                        </div>
+                        <div id="windowControls" style="display:none; text-align:left; margin-top:6px;">
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:6px;"><input type="checkbox" id="chkWinCurtain" style="margin:0; width:14px; height:14px; cursor:pointer;"><span id="txtLblWinCurtain">Curtain</span></label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:6px;"><input type="checkbox" id="chkWinCurtainClosed" style="margin:0; width:14px; height:14px; cursor:pointer;"><span id="txtLblWinCurtainClosed">Curtain closed</span></label>
+                            <label id="rowWinOpen" style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:6px;"><input type="checkbox" id="chkWinOpen" style="margin:0; width:14px; height:14px; cursor:pointer;"><span id="txtLblWinOpen">Window open</span></label>
+                            <button id="flipWinBtn" class="edit-btn-secondary">Swap inside / outside</button>
                         </div>
                     </div>
 
@@ -476,6 +491,11 @@
                                 <div><label id="txtLblVoidW">Width (m)</label><input type="number" id="editVoidW" step="0.1" min="0.3" value="2"></div>
                                 <div><label id="txtLblVoidD">Depth (m)</label><input type="number" id="editVoidD" step="0.1" min="0.3" value="2"></div>
                             </div>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:6px 0;">
+                                <input type="checkbox" id="chkVoidRailing" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
+                                <span id="txtLblVoidRailing">Railing around the void</span>
+                            </label>
+                            <select id="editVoidRailing" style="margin-bottom:8px;"><option value="kaca">Glass</option><option value="besi">Steel</option><option value="kayu">Wood</option></select>
                             <div id="voidHint" style="font-size:10px; color:#71717a; margin:6px 0 4px 0; line-height:1.35; text-align:left;">This opening cuts a hole in the floor slab of the level it sits on.</div>
                         </div>
 
@@ -484,6 +504,11 @@
                                 <input type="checkbox" id="chkStairVoid" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
                                 <span id="txtLblStairVoid">Cut opening above</span>
                             </label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:6px;">
+                                <input type="checkbox" id="chkStairRailing" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
+                                <span id="txtLblStairRailing">Railing around the opening</span>
+                            </label>
+                            <select id="editStairRailing" style="margin-bottom:8px;"><option value="kaca">Glass</option><option value="besi">Steel</option><option value="kayu">Wood</option></select>
                             <div id="stairInfo" style="font-size:10px; line-height:1.4; margin-bottom:8px; padding:6px; border-radius:5px; background:#eef2ff; color:#3730a3;"></div>
                             <label><span id="txtLblSteps">Steps:</span> <span id="valSteps">14</span></label>
                             <input type="range" id="editSteps" min="5" max="25" step="1" value="14">
@@ -521,7 +546,7 @@
                         <li id="txtGuide2"><b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.</li>
                         <li id="txtGuide3"><b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.</li>
                         <li id="txtGuide4"><b>Floors:</b> Add / copy levels in the "Floors" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.</li>
-                        <li id="txtGuide7"><b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, a door or a curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it.</li>
+                        <li id="txtGuide7"><b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, TV, door, window or curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it. Window curtains are added from the window panel; for a balcony railing, draw a line and set its <b>Type</b> to Railing.</li>
                         <li id="txtGuide6"><b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; use the <b>Void</b> tool: activate the floor that should have the hole, drop a void on it, then set its Width and Depth.</li>
                         <li id="txtGuide5"><b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.</li>
                     </ul>
@@ -760,8 +785,8 @@
         const variantData = {
             door: { id: ["Single (Biasa)", "Double (Kupu-kupu)", "Sliding (Geser)"], en: ["Single", "Double", "Sliding"] },
             window: { id: ["Standar", "Kaca Full", "Bergaris (Mullions)", "Melengkung Atas"], en: ["Standard", "Full Glass", "Mullions", "Arched Top"] },
-            table: { id: ["Persegi", "Bundar"], en: ["Rectangular", "Round"] },
-            chair: { id: ["Standar", "Bangku (Stool)", "Armchair"], en: ["Standard", "Stool", "Armchair"] },
+            table: { id: ["Persegi", "Bundar", "Meja Makan + 4 Kursi"], en: ["Rectangular", "Round", "Dining Set (4 Chairs)"] },
+            chair: { id: ["Kursi Makan", "Bangku Bar (Stool)", "Armchair", "Kursi Kantor"], en: ["Dining Chair", "Bar Stool", "Armchair", "Office Chair"] },
             sofa: { id: ["2 Dudukan", "Bentuk L"], en: ["2-Seater", "L-Shape"] },
             tree: { id: ["Pohon Rindang", "Pohon Pinus", "Palem", "Bonsai"], en: ["Leafy Tree", "Pine Tree", "Palm", "Bonsai"] },
             plant: { id: ["Pot Standar", "Kaktus", "Monstera", "Palem Kecil", "Sukulen", "Gantung"], en: ["Standard Pot", "Cactus", "Monstera", "Small Palm", "Succulent", "Hanging"] },
@@ -809,12 +834,14 @@
                 lamp: "Lampu Lantai", grp5: "Pencahayaan", spot: "Lampu Sorot", area: "Panel Area", secLight: "Pencahayaan", lblShadow: "Aktifkan Bayangan", lblSun: "Matahari", lblSunInt: "Kekuatan Matahari:", lblSunAzim: "Arah Matahari:", lblSunElev: "Ketinggian Matahari:", lblLightOn: "Lampu Nyala", lblLightShadow: "Hasilkan Bayangan", lblLightInt: "Terang:", lblLightRange: "Jangkauan:", lblColorA: "Warna Sisi A:", lblColorB: "Warna Sisi B:", lblObjColor: "Warna:", carpet: "Karpet", curtain: "Tirai", plant: "Tanaman Dalam", tree: "Pohon",
                 lblWallH: "Tinggi Tembok (m)", lblWallT: "Tebal Tembok (m)", lblRoof: "Tampilkan Atap", emptyMsg: "Pilih objek di kanvas.",
                 lblVariant: "Tipe / Varian:", lblPos: "Geser Posisi:", lblWidth: "Lebar:", lblHeight: "Tinggi:", lblElev: "Elevasi (Tinggi dr Lantai):",
-                lblSwing: "Rotasi Pintu:", flipBtn: "Balik Engsel", lblSteps: "Anak Tangga:", lblStairW: "Lebar Tangga:", lblWallLen: "Panjang Tembok:",
+                lblSwing: "Rotasi Pintu:", flipBtn: "Balik Engsel", lblWinCurtain: "Pasang tirai (korden)", lblWinCurtainClosed: "Tirai tertutup", lblWinOpen: "Jendela terbuka", flipWinBtn: "Tukar sisi dalam / luar",
+                lblWallType: "Jenis:", optWall: "Tembok", optRailKaca: "Railing - Kaca", optRailBesi: "Railing - Besi", optRailKayu: "Railing - Kayu",
+                lblVoidRailing: "Railing keliling void", lblStairRailing: "Railing keliling lubang tangga", gayaKaca: "Kaca", gayaBesi: "Besi", gayaKayu: "Kayu", lblSteps: "Anak Tangga:", lblStairW: "Lebar Tangga:", lblWallLen: "Panjang Tembok:",
                 delBtn: "Hapus", arBtn: "View AR", exportBtn: "Export GLB", exportObjBtn: "Export OBJ",
                 gTitle: "Panduan Singkat", g1: "<b>Free Draw:</b> Mulai gambar langsung! Tiap kotak (grid) = 1 meter.",
                 g2: "<b>Tembok:</b> Tap 1x titik awal, tap posisi lain. Tap 2x (atau ESC) untuk mengakhiri garis tembok.",
                 g3: "<b>Edit & Hapus Tembok:</b> Gunakan Mode 'Pilih/Edit', klik garis tembok untuk menggeser posisinya atau menghapusnya.",
-                g7: "<b>Jalan (POV):</b> Tekan <b>Walk</b> di atas tampilan 3D untuk berdiri di dalam denah. Seret layar untuk menoleh, pakai joystick atau WASD untuk berjalan, dan tangga otomatis dinaiki &mdash; jadi bisa naik ke lantai berikutnya. Arahkan ke lampu, pintu, atau tirai sampai crosshair menguning: ketuk (atau tekan E) untuk menyalakan/mematikan dan membuka/menutup.",
+                g7: "<b>Jalan (POV):</b> Tekan <b>Walk</b> di atas tampilan 3D untuk berdiri di dalam denah. Seret layar untuk menoleh, pakai joystick atau WASD untuk berjalan, dan tangga otomatis dinaiki &mdash; jadi bisa naik ke lantai berikutnya. Arahkan ke lampu, TV, pintu, jendela, atau tirai sampai crosshair menguning: ketuk (atau tekan E) untuk menyalakan/mematikan dan membuka/menutup. Tirai jendela dipasang lewat panel jendela; railing balkon dibuat dengan menggambar garis lalu mengganti <b>Jenis</b>-nya menjadi Railing.",
                 g6: "<b>Void / Lubang Lantai:</b> Tangga otomatis melubangi lantai di atasnya. Untuk lubang lain &mdash; void ruang tinggi atau mezzanine &mdash; aktifkan dulu lantai yang mau dilubangi, lalu pakai <b>Void (Kotak)</b> dan atur Lebar/Dalam-nya, atau <b>Void (Trace)</b> untuk menggambar bentuk bebas: ketuk tiap sudut, lalu ketuk lagi titik pertama (atau ESC) untuk menutup.",
                 g4: "<b>Lantai Bertingkat:</b> Tambah / salin level di panel \"Lantai\". Lantai aktif adalah yang sedang digambar; lantai lain tampil transparan di 3D dan garis putus-putus di 2D.",
                 g5: "<b>Transform Tembok (3D):</b> Klik tembok di tampilan 3D untuk memegangnya dengan gizmo &mdash; Move, Rotate, Scale (X = panjang, Y = tinggi, Z = tebal), atau ketik angka pastinya di panel Properti.",
@@ -838,7 +865,7 @@
                 lblFloorMat: "Finishing Lantai (level aktif):",
                 btnWalk: "Jalan", btnWalkExit: "Keluar", btnWalkFull: "Layar Penuh",
                 walkHint: "Seret untuk menoleh &middot; joystick / WASD untuk jalan &middot; ketuk objek untuk memakainya &middot; ESC keluar",
-                aksiLampu: "Lampu &mdash; ketuk untuk {a}", aksiPintu: "Pintu &mdash; ketuk untuk {a}", aksiTirai: "Tirai &mdash; ketuk untuk {a}",
+                aksiLampu: "Lampu &mdash; ketuk untuk {a}", aksiPintu: "Pintu &mdash; ketuk untuk {a}", aksiTirai: "Tirai &mdash; ketuk untuk {a}", aksiTV: "TV &mdash; ketuk untuk {a}", aksiJendela: "Jendela &mdash; ketuk untuk {a}",
                 aksiNyalakan: "nyalakan", aksiMatikan: "matikan", aksiBuka: "buka", aksiTutup: "tutup",
                 bahan: { bawaan: "Bawaan", cat: "Cat Polos", plester: "Plester", bata: "Bata Ekspos", beton: "Beton", keramik: "Keramik", marmer: "Marmer", granit: "Granit", kayu: "Kayu", parket: "Parket", batu: "Batu Alam", kain: "Kain", karpet: "Karpet", logam: "Logam", daun: "Daun" },
                 lblVoidW: "Lebar (m)", lblVoidD: "Dalam (m)",
@@ -858,12 +885,14 @@
                 lamp: "Standing Lamp", grp5: "Lighting", spot: "Spotlight", area: "Area Panel", secLight: "Lighting", lblShadow: "Enable Shadows", lblSun: "Sun", lblSunInt: "Sun Intensity:", lblSunAzim: "Sun Direction:", lblSunElev: "Sun Height:", lblLightOn: "Light On", lblLightShadow: "Cast Shadow", lblLightInt: "Brightness:", lblLightRange: "Reach:", lblColorA: "Wall Side A:", lblColorB: "Wall Side B:", lblObjColor: "Color:", carpet: "Carpet", curtain: "Curtain", plant: "Indoor Plant", tree: "Tree",
                 lblWallH: "Wall Height (m)", lblWallT: "Wall Thick (m)", lblRoof: "Show Roof", emptyMsg: "Select object on canvas.",
                 lblVariant: "Style / Variant:", lblPos: "Slide Pos:", lblWidth: "Width:", lblHeight: "Height:", lblElev: "Elevation (from floor):",
-                lblSwing: "Door Swing:", flipBtn: "Flip Hinge", lblSteps: "Steps:", lblStairW: "Stairs W:", lblWallLen: "Wall Length:",
+                lblSwing: "Door Swing:", flipBtn: "Flip Hinge", lblWinCurtain: "Add curtain", lblWinCurtainClosed: "Curtain closed", lblWinOpen: "Window open", flipWinBtn: "Swap inside / outside",
+                lblWallType: "Type:", optWall: "Wall", optRailKaca: "Railing - Glass", optRailBesi: "Railing - Steel", optRailKayu: "Railing - Wood",
+                lblVoidRailing: "Railing around the void", lblStairRailing: "Railing around the stair opening", gayaKaca: "Glass", gayaBesi: "Steel", gayaKayu: "Wood", lblSteps: "Steps:", lblStairW: "Stairs W:", lblWallLen: "Wall Length:",
                 delBtn: "Delete", arBtn: "View AR", exportBtn: "Export GLB", exportObjBtn: "Export OBJ",
                 gTitle: "Quick Guide", g1: "<b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.",
                 g2: "<b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.",
                 g3: "<b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.",
-                g7: "<b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, a door or a curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it.",
+                g7: "<b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, TV, door, window or curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it. Window curtains are added from the window panel; for a balcony railing, draw a line and set its <b>Type</b> to Railing.",
                 g6: "<b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; activate the floor that should have the hole, then use <b>Void (Box)</b> and set its Width/Depth, or <b>Void (Trace)</b> to draw a free shape: tap each corner, then tap the first point again (or press ESC) to close it.",
                 g4: "<b>Floors:</b> Add / copy levels in the \"Floors\" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.",
                 g5: "<b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.",
@@ -887,7 +916,7 @@
                 lblFloorMat: "Floor Finish (active level):",
                 btnWalk: "Walk", btnWalkExit: "Exit", btnWalkFull: "Fullscreen",
                 walkHint: "Drag to look &middot; joystick / WASD to move &middot; tap an object to use it &middot; ESC to exit",
-                aksiLampu: "Lamp &mdash; tap to {a}", aksiPintu: "Door &mdash; tap to {a}", aksiTirai: "Curtain &mdash; tap to {a}",
+                aksiLampu: "Lamp &mdash; tap to {a}", aksiPintu: "Door &mdash; tap to {a}", aksiTirai: "Curtain &mdash; tap to {a}", aksiTV: "TV &mdash; tap to {a}", aksiJendela: "Window &mdash; tap to {a}",
                 aksiNyalakan: "switch on", aksiMatikan: "switch off", aksiBuka: "open", aksiTutup: "close",
                 bahan: { bawaan: "Default", cat: "Flat Paint", plester: "Plaster", bata: "Exposed Brick", beton: "Concrete", keramik: "Ceramic Tile", marmer: "Marble", granit: "Granite", kayu: "Wood", parket: "Parquet", batu: "Natural Stone", kain: "Fabric", karpet: "Carpet", logam: "Metal", daun: "Foliage" },
                 lblVoidW: "Width (m)", lblVoidD: "Depth (m)",
@@ -945,6 +974,12 @@
             document.getElementById('txtLblPos').innerText = t.lblPos; document.getElementById('txtLblWidth').innerText = t.lblWidth; 
             document.getElementById('txtLblHeight').innerText = t.lblHeight; document.getElementById('txtLblElev').innerText = t.lblElev;
             document.getElementById('txtLblSwing').innerText = t.lblSwing; document.getElementById('flipHingeBtn').innerText = t.flipBtn; 
+            document.getElementById('txtLblWinCurtain').innerText = t.lblWinCurtain; document.getElementById('txtLblWinCurtainClosed').innerText = t.lblWinCurtainClosed;
+            document.getElementById('txtLblWinOpen').innerText = t.lblWinOpen; document.getElementById('flipWinBtn').innerText = t.flipWinBtn;
+            document.getElementById('txtLblWallType').innerText = t.lblWallType;
+            ['optWall', 'optRailKaca', 'optRailBesi', 'optRailKayu'].forEach((k, i) => { document.getElementById('editWallType').options[i].text = t[k]; });
+            document.getElementById('txtLblVoidRailing').innerText = t.lblVoidRailing; document.getElementById('txtLblStairRailing').innerText = t.lblStairRailing;
+            ['editVoidRailing', 'editStairRailing'].forEach(id => ['gayaKaca', 'gayaBesi', 'gayaKayu'].forEach((k, i) => { document.getElementById(id).options[i].text = t[k]; }));
             document.getElementById('txtLblSteps').innerText = t.lblSteps; document.getElementById('txtLblStairW').innerText = t.lblStairW; document.getElementById('delObjBtn').innerText = t.delBtn;
             document.getElementById('arBtn').innerText = t.arBtn; document.getElementById('exportBtn').innerText = t.exportBtn;
             if (document.getElementById('exportObjBtn')) document.getElementById('exportObjBtn').innerText = t.exportObjBtn;
@@ -1136,6 +1171,13 @@
             isi(document.getElementById('editObjMat'), ['bawaan'].concat(BAHAN_TEMBOK.filter(b => b !== 'cat')).concat(['kain', 'karpet', 'logam', 'parket', 'granit']));
         }
 
+        document.getElementById('editWallType').addEventListener('change', (e) => {
+            if (!selectedItem || !selectedItem.isWall) return;
+            const l = lines[selectedItem.index]; if (!l) return;
+            saveState();
+            if (e.target.value) l.railing = e.target.value; else delete l.railing;
+            releaseGizmo(); update3D(); draw2D();
+        });
         document.getElementById('editWallMat').addEventListener('change', (e) => {
             if (!selectedItem || !selectedItem.isWall) return;
             const garis = lines[selectedItem.index]; if (!garis) return;
@@ -1473,6 +1515,7 @@
                 heightElevControls.style.display = 'block'; editHeight.value = item.height3D; document.getElementById('valHeight').innerText = item.height3D;
                 editElev.value = item.elevation; document.getElementById('valElev').innerText = item.elevation;
                 if (item.type === 'door' && (!item.variant || item.variant != 2)) { document.getElementById('doorControls').style.display = 'block'; editSwing.value = item.swing; document.getElementById('valSwing').innerText = item.swing; } else { document.getElementById('doorControls').style.display = 'none'; }
+                isiKontrolJendela(item);
             } else { 
                 wallLineControls.style.display = 'none'; wallObjectControls.style.display = 'none'; freeObjectControls.style.display = 'block';
                 editObjElev.value = item.elevation || 0; document.getElementById('valObjElev').innerText = item.elevation || 0;
@@ -1521,7 +1564,10 @@
                     document.getElementById('editVoidD').disabled = ditrace;
                     document.getElementById('voidHint').innerText = ditrace ? texts[currentLang].voidTracePoly : texts[currentLang].voidHint;
                 }
-                if (item.type === 'stairs') { stairsControls.style.display = 'block'; perbaruiInfoTangga(item); document.getElementById('chkStairVoid').checked = item.bikinVoid !== false; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } else { stairsControls.style.display = 'none'; }
+                if (item.type === 'void') { document.getElementById('chkVoidRailing').checked = item.railing !== false; document.getElementById('editVoidRailing').value = item.gayaRailing || 'kaca'; document.getElementById('editVoidRailing').disabled = item.railing === false; }
+                if (item.type === 'stairs') { stairsControls.style.display = 'block'; perbaruiInfoTangga(item); document.getElementById('chkStairVoid').checked = item.bikinVoid !== false;
+                    document.getElementById('chkStairRailing').checked = item.railingVoid !== false; document.getElementById('editStairRailing').value = item.gayaRailing || 'kaca';
+                    document.getElementById('chkStairRailing').disabled = item.bikinVoid === false; document.getElementById('editStairRailing').disabled = item.bikinVoid === false || item.railingVoid === false; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } else { stairsControls.style.display = 'none'; }
             }
         }
 
@@ -1559,6 +1605,7 @@
             isi('editWallAng', (Math.atan2(dy, dx) * 180 / Math.PI).toFixed(1));
             isi('editWallH', tinggiTembokEfektif(l).toFixed(2));
             isi('editWallT', tebalTembokEfektif(l).toFixed(2));
+            isi('editWallType', l.railing || '');
         }
 
         function terapkanNilaiTembok() {
@@ -1595,7 +1642,22 @@
         uiSliders.forEach(slider => { if (slider) slider.addEventListener('pointerdown', () => beginUndoStep()); });
 
         editVariant.addEventListener('pointerdown', () => beginUndoStep());
-        editVariant.addEventListener('change', (e) => { if (selectedItem) { selectedItem.variant = parseInt(e.target.value); if(selectedItem.type === 'door') document.getElementById('doorControls').style.display = (selectedItem.variant === 2) ? 'none' : 'block'; update3D(); draw2D(); } });
+        editVariant.addEventListener('change', (e) => { if (selectedItem) { selectedItem.variant = parseInt(e.target.value); if(selectedItem.type === 'door') document.getElementById('doorControls').style.display = (selectedItem.variant === 2) ? 'none' : 'block'; if (selectedItem.lineIndex !== undefined) isiKontrolJendela(selectedItem); update3D(); draw2D(); } });
+        function isiKontrolJendela(item) {
+            const el = document.getElementById('windowControls');
+            if (!item || item.type !== 'window') { el.style.display = 'none'; return; }
+            el.style.display = 'block';
+            document.getElementById('chkWinCurtain').checked = !!item.tirai;
+            document.getElementById('chkWinCurtainClosed').checked = !!item.tiraiTutup;
+            document.getElementById('chkWinCurtainClosed').disabled = !item.tirai;
+            document.getElementById('rowWinOpen').style.display = item.variant === 3 ? 'none' : 'flex';
+            document.getElementById('chkWinOpen').checked = !bukaanTertutup(item);
+        }
+        const ubahJendela = (fn) => { if (!selectedItem || selectedItem.type !== 'window') return; saveState(); fn(selectedItem); isiKontrolJendela(selectedItem); update3D(); draw2D(); };
+        document.getElementById('chkWinCurtain').addEventListener('change', (e) => ubahJendela(it => { it.tirai = e.target.checked; }));
+        document.getElementById('chkWinCurtainClosed').addEventListener('change', (e) => ubahJendela(it => { it.tiraiTutup = e.target.checked; }));
+        document.getElementById('chkWinOpen').addEventListener('change', (e) => ubahJendela(it => { it.tutup = !e.target.checked; }));
+        document.getElementById('flipWinBtn').addEventListener('click', () => ubahJendela(it => { it.swing = -((it.swing === undefined) ? 85 : it.swing) || -85; }));
         
         editPos.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.ratio = parseFloat(e.target.value) / 100; document.getElementById('valPos').innerText = e.target.value; update3D(); draw2D(); } }); 
         editWidth.addEventListener('input', (e) => { if (selectedItem && selectedItem.lineIndex !== undefined) { selectedItem.width3D = parseFloat(e.target.value); document.getElementById('valWidth').innerText = selectedItem.width3D; update3D(); draw2D(); } }); 
@@ -1646,7 +1708,14 @@
         document.getElementById('chkStairVoid').addEventListener('change', (e) => {
             if (!selectedItem || selectedItem.type !== 'stairs') return;
             saveState(); selectedItem.bikinVoid = e.target.checked; update3D(); draw2D();
+            document.getElementById('chkStairRailing').disabled = !e.target.checked;
+            document.getElementById('editStairRailing').disabled = !e.target.checked || selectedItem.railingVoid === false;
         });
+        const ubahRailing = (tipe, fn) => { if (!selectedItem || selectedItem.type !== tipe) return; saveState(); fn(selectedItem); update3D(); draw2D(); };
+        document.getElementById('chkStairRailing').addEventListener('change', (e) => ubahRailing('stairs', it => { it.railingVoid = e.target.checked; document.getElementById('editStairRailing').disabled = !e.target.checked; }));
+        document.getElementById('editStairRailing').addEventListener('change', (e) => ubahRailing('stairs', it => { it.gayaRailing = e.target.value; }));
+        document.getElementById('chkVoidRailing').addEventListener('change', (e) => ubahRailing('void', it => { it.railing = e.target.checked; document.getElementById('editVoidRailing').disabled = !e.target.checked; }));
+        document.getElementById('editVoidRailing').addEventListener('change', (e) => ubahRailing('void', it => { it.gayaRailing = e.target.value; }));
         editSteps.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.steps = parseInt(e.target.value); document.getElementById('valSteps').innerText = selectedItem.steps; perbaruiInfoTangga(selectedItem); update3D(); draw2D(); } }); 
         editStairW.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.width3D = parseFloat(e.target.value); document.getElementById('valStairW').innerText = selectedItem.width3D; update3D(); draw2D(); } }); 
 
@@ -1783,10 +1852,10 @@
                 kotak(-W / 2 - n2 * d - cx, n1 * d - cz, -W / 2 - cx, n1 * d + W - cz, n2, false);
             } else if (v === 3) {
                 const n1 = Math.max(1, Math.floor((n - 1) / 2)), n2 = Math.max(1, n - 1 - n1);
-                const jarak = W / 2 + U_SUMUR / 2, cz = (n1 * d + W) / 2;
-                kotak(-jarak - W / 2, -cz, -jarak + W / 2, n1 * d - cz, n1, true);
-                kotak(-W - U_SUMUR / 2, n1 * d - cz, W + U_SUMUR / 2, n1 * d + W - cz, 1, true);
-                kotak(jarak - W / 2, n1 * d + W - n2 * d - cz, jarak + W / 2, n1 * d + W - cz, n2, true);
+                const jarak = W / 2 + U_SUMUR / 2, cz = (n2 * d + W) / 2;
+                kotak(-jarak - W / 2, (n2 - n1) * d - cz, -jarak + W / 2, n2 * d - cz, n1, true);
+                kotak(-W - U_SUMUR / 2, n2 * d - cz, W + U_SUMUR / 2, n2 * d + W - cz, 1, true);
+                kotak(jarak - W / 2, -cz, jarak + W / 2, n2 * d - cz, n2, true);
             } else if (v === 4) {
                 const R = Math.max(0.8, W) * k;
                 ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -1818,8 +1887,8 @@
                 jalur = [[0 - cx, 0.1 - cz], [0 - cx, n1 * d + W / 2 - cz], [-W / 2 - n2 * d + 0.1 - cx, n1 * d + W / 2 - cz]];
             } else if (v === 3) {
                 const n1 = Math.max(1, Math.floor((n - 1) / 2)), n2 = Math.max(1, n - 1 - n1);
-                const jarak = W / 2 + U_SUMUR / 2, cz = (n1 * d + W) / 2;
-                jalur = [[-jarak, 0.1 - cz], [-jarak, n1 * d + W / 2 - cz], [jarak, n1 * d + W / 2 - cz], [jarak, n1 * d + W - n2 * d + 0.1 - cz]];
+                const jarak = W / 2 + U_SUMUR / 2, cz = (n2 * d + W) / 2;
+                jalur = [[-jarak, (n2 - n1) * d + 0.1 - cz], [-jarak, n2 * d + W / 2 - cz], [jarak, n2 * d + W / 2 - cz], [jarak, 0.1 - cz]];
             } else {
                 const D = n * d;
                 jalur = [[0, -D / 2 + 0.1], [0, D / 2 - 0.1]];
@@ -1906,7 +1975,9 @@
             lines.forEach((l, idx) => { 
                 ctx.beginPath(); ctx.moveTo(l.start.x, l.start.y); ctx.lineTo(l.end.x, l.end.y); 
                 if (selectedItem && selectedItem.isWall && selectedItem.index === idx) { ctx.strokeStyle = '#2563eb'; ctx.shadowColor = '#2563eb'; ctx.shadowBlur = 15; } else { ctx.strokeStyle = 'rgba(37, 99, 235, 0.45)'; ctx.shadowBlur = 0; }
-                ctx.stroke(); const dx = l.end.x - l.start.x; const dy = l.end.y - l.start.y; drawLineLengthLabel(l.start, l.end, `${(Math.hypot(dx, dy) * scale3D).toFixed(2)} m`, selectedItem && selectedItem.isWall && selectedItem.index === idx ? '#2563eb' : '#475569');
+                if (l.railing) { ctx.save(); ctx.setLineDash([8 / Math.max(0.2, scale), 5 / Math.max(0.2, scale)]); ctx.lineWidth *= 0.4; ctx.stroke(); ctx.restore(); }
+                else ctx.stroke();
+                const dx = l.end.x - l.start.x; const dy = l.end.y - l.start.y; drawLineLengthLabel(l.start, l.end, `${(Math.hypot(dx, dy) * scale3D).toFixed(2)} m`, selectedItem && selectedItem.isWall && selectedItem.index === idx ? '#2563eb' : '#475569');
             });
             ctx.shadowBlur = 0; 
             if (isDrawing && currentLine) { ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)'; ctx.beginPath(); ctx.moveTo(currentLine.start.x, currentLine.start.y); ctx.lineTo(currentLine.end.x, currentLine.end.y); ctx.stroke(); const dx = currentLine.end.x - currentLine.start.x; const dy = currentLine.end.y - currentLine.start.y; drawLineLengthLabel(currentLine.start, currentLine.end, `${(Math.hypot(dx, dy) * scale3D).toFixed(2)} m`, '#dc2626'); }
@@ -2244,7 +2315,7 @@
             const v = obj.variant || 0;
             const D = n * STEP_DEPTH;
             if (v === 2) { const n1 = Math.max(1, Math.floor(n / 2)); const n2 = Math.max(1, n - n1 - 1); return { w: W + n2 * STEP_DEPTH, d: n1 * STEP_DEPTH + W }; }
-            if (v === 3) { const n1 = Math.max(1, Math.floor((n - 1) / 2)); return { w: W * 2 + U_SUMUR, d: n1 * STEP_DEPTH + W }; }
+            if (v === 3) { const n1 = Math.max(1, Math.floor((n - 1) / 2)); const n2 = Math.max(1, n - 1 - n1); return { w: W * 2 + U_SUMUR, d: n2 * STEP_DEPTH + W }; }
             if (v === 4) { const R = Math.max(0.8, W); return { w: R * 2, d: R * 2 }; }
             return { w: W, d: D };
         }
@@ -2260,6 +2331,51 @@
             const hStep = totalHeight / n;
             const dStep = STEP_DEPTH;
             const sub = new THREE.Group();
+
+            /* Badan tabrakan tak terlihat untuk mode jalan. Tangga visual (pijakan,
+               riser, stringer) tidak dipakai sebagai penghalang mendatar karena riser
+               yang tegak selalu salah dikira dinding; sebagai gantinya tiap larik
+               punya sisi, punggung dan pagar yang padat, sedangkan pijakan tetap
+               diambil dari anak tangga asli. Tidak dibuat saat ekspor. */
+            const matTabrak = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, visible: false });
+            const bidangTabrak = (segi4) => {
+                if (modeEkspor) return null;
+                const pos = [];
+                for (const [a, b, c, d] of segi4) pos.push(...a, ...b, ...c, ...a, ...c, ...d);
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+                geo.computeVertexNormals();
+                const m = new THREE.Mesh(geo, matTabrak);
+                m.visible = false; m.userData.hanyaTabrak = true;
+                return m;
+            };
+            /* Larik lurus naik ke +Z dari (z0,y0) ke (zAkhir,yAkhir). Sisi tanpa pagar
+               berhenti di bawah garis anak tangga, sisi berpagar naik setinggi pegangan. */
+            const bajiTabrak = (x0, y0, z0, lebar, zAkhir, yAkhir, railing) => {
+                const segi = [];
+                const puncak = yAkhir - 0.06;
+                for (const [sisi, xs] of [['kiri', x0 - lebar / 2], ['kanan', x0 + lebar / 2]]) {
+                    const pagar = railing === true || railing === sisi;
+                    const tA = pagar ? y0 + 1.0 : y0, tB = pagar ? yAkhir + 1.0 : puncak;
+                    segi.push([[xs, y0, z0], [xs, y0, zAkhir], [xs, tB, zAkhir], [xs, tA, z0]]);
+                }
+                /* Punggung setinggi anak tangga kedua dari atas, supaya riser curam
+                   pun masih bisa dilangkahi ke pijakan terakhir. */
+                const pgg = Math.max(y0 + 0.05, yAkhir - hStep - 0.06);
+                segi.push([[x0 - lebar / 2, y0, zAkhir], [x0 + lebar / 2, y0, zAkhir], [x0 + lebar / 2, pgg, zAkhir], [x0 - lebar / 2, pgg, zAkhir]]);
+                return bidangTabrak(segi);
+            };
+            /* Bordes: empat sisi dari lantai sampai di bawah anak tangga terakhir sebelum bordes. */
+            const kotakTabrak = (x, z, lebar, dalam, yAtas) => {
+                const a = x - lebar / 2, b = x + lebar / 2, c = z - dalam / 2, d = z + dalam / 2;
+                return bidangTabrak([
+                    [[a, 0, c], [b, 0, c], [b, yAtas, c], [a, yAtas, c]],
+                    [[a, 0, d], [b, 0, d], [b, yAtas, d], [a, yAtas, d]],
+                    [[a, 0, c], [a, 0, d], [a, yAtas, d], [a, yAtas, c]],
+                    [[b, 0, c], [b, 0, d], [b, yAtas, d], [b, yAtas, c]]
+                ]);
+            };
+            const tambah = (grup, m) => { if (m) grup.add(m); };
 
             /* batang miring (untuk pegangan / stringer) dari (zA,yA) ke (zB,yB) pada sumbu X tertentu */
             const barMiring = (x, zA, yA, zB, yB, tebal, mat, sumbuX) => {
@@ -2313,6 +2429,7 @@
                         }
                     }
                 }
+                tambah(g, bajiTabrak(x0, y0, z0, lebar, zAkhir, yAkhir, adaRailing));
                 return { grup: g, zAkhir, yAkhir };
             };
 
@@ -2331,6 +2448,7 @@
                 const r1 = larikLurus(n1, 0, 0, 0, W, true, 'kanan', false);
                 sub.add(r1.grup);
                 sub.add(bikinBordes(0, r1.yAkhir + hStep, r1.zAkhir + W / 2, W, W, matStairs, matGelap));
+                tambah(sub, kotakTabrak(0, r1.zAkhir + W / 2, W, W, r1.yAkhir - 0.06));
                 const r2 = larikLurus(n2, 0, 0, 0, W, true, 'kiri', false);
                 r2.grup.rotation.y = -Math.PI / 2;
                 r2.grup.position.set(-W / 2, r1.yAkhir + hStep, r1.zAkhir + W / 2);
@@ -2341,12 +2459,17 @@
                 const n2 = Math.max(1, n - 1 - n1);
                 const sumur = U_SUMUR;
                 const jarak = W / 2 + sumur / 2;
-                const r1 = larikLurus(n1, -jarak, 0, 0, W, true, 'kiri', false);
+                /* Larik ke-2 naik kembali ke -Z mulai dari tepi DEKAT bordes, sejajar
+                   larik pertama. Sebelumnya larik ke-2 berpangkal di tepi jauh bordes,
+                   sehingga empat anak tangga pertamanya menumpuk di atas bordes. Larik
+                   pertama digeser supaya larik yang lebih panjang tetap pas di denah. */
+                const r1 = larikLurus(n1, -jarak, 0, (n2 - n1) * dStep, W, true, 'kiri', false);
                 sub.add(r1.grup);
                 sub.add(bikinBordes(0, r1.yAkhir + hStep, r1.zAkhir + W / 2, W * 2 + sumur, W, matStairs, matGelap));
+                tambah(sub, kotakTabrak(0, r1.zAkhir + W / 2, W * 2 + sumur, W, r1.yAkhir - 0.06));
                 const r2 = larikLurus(n2, 0, 0, 0, W, true, 'kiri', false);
                 r2.grup.rotation.y = Math.PI;
-                r2.grup.position.set(jarak, r1.yAkhir + hStep, r1.zAkhir + W);
+                r2.grup.position.set(jarak, r1.yAkhir + hStep, r1.zAkhir);
                 sub.add(r2.grup);
             }
             else if (variant === 4) {
@@ -2380,6 +2503,7 @@
                 }
             }
             else if (variant === 6) {
+                tambah(sub, bajiTabrak(0, 0, -n * dStep / 2, W, n * dStep / 2, n * hStep, false));
                 for (let i = 0; i < n; i++) {
                     const mesh = new THREE.Mesh(new THREE.BoxGeometry(W, hStep + 0.006, dStep * (n - i)), matStairs);
                     mesh.position.set(0, (i * hStep) + (hStep / 2) - 0.003, (i * dStep) / 2);
@@ -2400,6 +2524,7 @@
             else {
                 /* Balok ditumpuk saling melesak 6 mm; kalau hanya bersentuhan,
                    bidang atas balok bawah dan bidang bawah balok atas berimpit. */
+                tambah(sub, bajiTabrak(0, 0, -n * dStep / 2, W, n * dStep / 2, n * hStep, false));
                 for (let i = 0; i < n; i++) {
                     const mesh = new THREE.Mesh(new THREE.BoxGeometry(W, hStep + 0.006, dStep * (n - i)), matStairs);
                     mesh.position.set(0, (i * hStep) + (hStep / 2) - 0.003, (i * dStep) / 2);
@@ -2414,6 +2539,8 @@
                 sub.position.x -= tengah.x; sub.position.z -= tengah.z;
             }
             stairsGroup.add(sub);
+            /* Tangga putar tidak punya badan tabrakan; geometrinya sendiri yang menghalangi. */
+            stairsGroup.userData.adaProksi = variant !== 4;
             return stairsGroup;
         }
 
@@ -2507,7 +2634,7 @@
         function matPolos(warna, extra, jenis) {
             const opt = Object.assign({}, extra || {});
             opt.color = sRGB(warna);
-            if (!pbrAktif) return new THREE.MeshLambertMaterial(opt);
+            if (!pbrAktif) { delete opt.roughness; delete opt.metalness; return new THREE.MeshLambertMaterial(opt); }
             const sifat = PBR_SIFAT[jenis || 'polos'] || PBR_SIFAT.polos;
             if (opt.roughness === undefined) opt.roughness = sifat.roughness;
             if (opt.metalness === undefined) opt.metalness = sifat.metalness;
@@ -2944,6 +3071,72 @@
             const matGlass = matPolos(0x87CEEB, { transparent: true, opacity: 0.4 });
             let matGreen = matTeks('daun', 0x2e8b57, 2);
 
+            /* Kursi dengan rangka lengkap, dipakai sendiri maupun dalam set meja makan.
+               Muka kursi menghadap +Z, sandaran di -Z. */
+            const bikinKursi = (v) => {
+                const k = new THREE.Group();
+                const tambah = (geo, mat, x, y, z, rx) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (rx) m.rotation.x = rx; k.add(m); return m; };
+                if (v === 1) {
+                    /* Bangku bar: dudukan berbusa, tiang, cincin pijakan, kaki piring. */
+                    tambah(new THREE.CylinderGeometry(0.19, 0.175, 0.07, 28), matFabric, 0, 0.745, 0);
+                    tambah(new THREE.CylinderGeometry(0.15, 0.15, 0.02, 24), matMetal, 0, 0.70, 0);
+                    tambah(new THREE.CylinderGeometry(0.024, 0.024, 0.68, 12), matMetal, 0, 0.35, 0);
+                    tambah(new THREE.CylinderGeometry(0.04, 0.05, 0.12, 12), matMetal, 0, 0.62, 0);
+                    const cincin = tambah(new THREE.TorusGeometry(0.17, 0.011, 8, 36), matMetal, 0, 0.28, 0); cincin.rotation.x = Math.PI / 2;
+                    for (let i = 0; i < 3; i++) {
+                        const a = i * Math.PI * 2 / 3;
+                        const jari = tambah(new THREE.BoxGeometry(0.16, 0.012, 0.012), matMetal, Math.cos(a) * 0.09, 0.28, Math.sin(a) * 0.09); jari.rotation.y = -a;
+                    }
+                    tambah(new THREE.CylinderGeometry(0.2, 0.22, 0.022, 32), matMetal, 0, 0.011, 0);
+                } else if (v === 2) {
+                    /* Kursi berlengan berjok: kaki kayu meruncing, bantal dudukan dan sandaran terpisah. */
+                    for (const x of [-0.31, 0.31]) for (const z of [-0.29, 0.29]) tambah(new THREE.CylinderGeometry(0.02, 0.013, 0.14, 10), matWoodDark, x, 0.07, z);
+                    tambah(new THREE.BoxGeometry(0.72, 0.16, 0.7), matFabric, 0, 0.22, 0);
+                    tambah(new THREE.BoxGeometry(0.52, 0.11, 0.58), matFabric, 0, 0.355, 0.04);
+                    tambah(new THREE.BoxGeometry(0.72, 0.52, 0.13), matFabric, 0, 0.56, -0.29, -0.1);
+                    tambah(new THREE.BoxGeometry(0.52, 0.38, 0.09), matFabric, 0, 0.6, -0.195, -0.14);
+                    for (const x of [-0.305, 0.305]) {
+                        tambah(new THREE.BoxGeometry(0.11, 0.25, 0.66), matFabric, x, 0.425, 0.01);
+                        const lengan = tambah(new THREE.CylinderGeometry(0.056, 0.056, 0.66, 16), matFabric, x, 0.55, 0.01); lengan.rotation.x = Math.PI / 2;
+                    }
+                } else if (v === 3) {
+                    /* Kursi kantor: kaki bintang lima beroda, tabung gas, jok dan sandaran jaring. */
+                    for (let i = 0; i < 5; i++) {
+                        const a = i * Math.PI * 2 / 5;
+                        const lengan = tambah(new THREE.BoxGeometry(0.3, 0.03, 0.045), matBlack, Math.cos(a) * 0.15, 0.075, Math.sin(a) * 0.15); lengan.rotation.y = -a;
+                        const roda = tambah(new THREE.CylinderGeometry(0.028, 0.028, 0.03, 14), matBlack, Math.cos(a) * 0.29, 0.03, Math.sin(a) * 0.29);
+                        roda.rotation.z = Math.PI / 2; roda.rotation.y = -a;
+                    }
+                    tambah(new THREE.CylinderGeometry(0.035, 0.035, 0.08, 14), matBlack, 0, 0.1, 0);
+                    tambah(new THREE.CylinderGeometry(0.022, 0.022, 0.24, 12), matMetal, 0, 0.26, 0);
+                    tambah(new THREE.BoxGeometry(0.2, 0.04, 0.2), matBlack, 0, 0.39, 0);
+                    tambah(new THREE.BoxGeometry(0.5, 0.07, 0.48), matFabric, 0, 0.445, 0.02);
+                    tambah(new THREE.BoxGeometry(0.06, 0.3, 0.03), matBlack, 0, 0.56, -0.25, -0.08);
+                    tambah(new THREE.BoxGeometry(0.46, 0.5, 0.035), matFabric, 0, 0.87, -0.28, -0.12);
+                    for (const x of [-0.26, 0.26]) {
+                        tambah(new THREE.BoxGeometry(0.03, 0.2, 0.03), matBlack, x, 0.55, -0.02);
+                        tambah(new THREE.BoxGeometry(0.06, 0.025, 0.24), matBlack, x, 0.66, 0.0);
+                    }
+                } else {
+                    /* Kursi makan: kaki persegi, ambang keliling, papan dudukan + jok tipis,
+                       tiang sandaran sedikit condong ke belakang dengan tiga bilah. */
+                    const tS = 0.45, a = 0.19;
+                    for (const x of [-a, a]) {
+                        tambah(new THREE.BoxGeometry(0.036, tS, 0.036), matWood, x, tS / 2, a);
+                        tambah(new THREE.BoxGeometry(0.036, tS, 0.036), matWood, x, tS / 2, -a);
+                        tambah(new THREE.BoxGeometry(0.032, 0.5, 0.032), matWood, x, tS + 0.24, -a - 0.02, -0.08);
+                        tambah(new THREE.BoxGeometry(0.02, 0.02, 2 * a), matWood, x, 0.14, 0);
+                    }
+                    for (const z of [-a, a]) tambah(new THREE.BoxGeometry(2 * a - 0.03, 0.06, 0.02), matWood, 0, tS - 0.055, z);
+                    for (const x of [-a, a]) tambah(new THREE.BoxGeometry(0.02, 0.06, 2 * a - 0.03), matWood, x, tS - 0.055, 0);
+                    tambah(new THREE.BoxGeometry(0.45, 0.024, 0.45), matWood, 0, tS - 0.012, 0);
+                    tambah(new THREE.BoxGeometry(0.41, 0.035, 0.39), matFabric, 0, tS + 0.017, 0.015);
+                    tambah(new THREE.BoxGeometry(0.4, 0.075, 0.024), matWood, 0, tS + 0.45, -a - 0.04, -0.08);
+                    for (const x of [-0.1, 0, 0.1]) tambah(new THREE.BoxGeometry(0.04, 0.3, 0.016), matWood, x, tS + 0.24, -a - 0.02, -0.08);
+                }
+                return k;
+            };
+
             /* Warna dan tekstur objek: slot bahan utamanya tetap, tapi jenis tekstur
                bisa diganti pengguna lewat "Material / Texture". */
             if (obj && (obj.warna || obj.bahan) && MATERIAL_UTAMA[type]) {
@@ -3009,8 +3202,30 @@
                 }
             } 
             else if (type === 'sofa') { const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, 0.8), matFabric); base.position.y = 0.25; group.add(base); const back = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 0.2), matFabric); back.position.set(0, 0.6, -0.3); group.add(back); if (variant === 1) { const lBase = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 1.2), matFabric); lBase.position.set(-0.5, 0.25, 1.0); group.add(lBase); } } 
-            else if (type === 'table') { if (variant === 1) { const top = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.05, 32), matWood); top.position.y = 0.75; group.add(top); const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.72, 16), matWood); leg.position.y = 0.36; group.add(leg); const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 32), matWood); foot.position.y = 0.025; group.add(foot); } else { const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.8), matWood); top.position.y = 0.75; group.add(top); for(let x of [-0.5, 0.5]) { for(let z of [-0.3, 0.3]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.72, 0.06), matWood); leg.position.set(x, 0.36, z); group.add(leg); } } } } 
-            else if (type === 'chair') { if (variant === 1) { const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16), matWood); seat.position.y = 0.75; group.add(seat); const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.7, 8), matMetal); leg.position.y = 0.35; group.add(leg); } else if (variant === 2) { const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.6), matFabric); seat.position.y = 0.3; group.add(seat); const back = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.15), matFabric); back.position.set(0, 0.65, -0.225); group.add(back); for(let x of [-0.25, 0.25]){ const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.6), matFabric); arm.position.set(x, 0.5, 0); group.add(arm); } } else { const seat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.04, 0.45), matWood); seat.position.y = 0.45; group.add(seat); const back = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.04), matWood); back.position.set(0, 0.68, -0.2); group.add(back); } } 
+            else if (type === 'table') {
+                if (variant === 1) {
+                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.04, 40), matWood); top.position.y = 0.75; group.add(top);
+                    const bibir = new THREE.Mesh(new THREE.CylinderGeometry(0.59, 0.56, 0.03, 40), matWood); bibir.position.y = 0.715; group.add(bibir);
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.68, 16), matWood); leg.position.y = 0.36; group.add(leg);
+                    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.04, 32), matWoodDark); foot.position.y = 0.02; group.add(foot);
+                } else {
+                    /* Meja persegi: daun meja, ambang (apron) keliling dan kaki meruncing.
+                       Varian 2 = satu set meja makan dengan empat kursi. */
+                    const W = variant === 2 ? 1.5 : 1.2, D = variant === 2 ? 0.9 : 0.8;
+                    const top = new THREE.Mesh(new THREE.BoxGeometry(W, 0.04, D), matWood); top.position.y = 0.75; group.add(top);
+                    for (const z of [-D / 2 + 0.06, D / 2 - 0.06]) { const a = new THREE.Mesh(new THREE.BoxGeometry(W - 0.2, 0.08, 0.022), matWoodDark); a.position.set(0, 0.69, z); group.add(a); }
+                    for (const x of [-W / 2 + 0.06, W / 2 - 0.06]) { const a = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.08, D - 0.2), matWoodDark); a.position.set(x, 0.69, 0); group.add(a); }
+                    for (const x of [-W / 2 + 0.07, W / 2 - 0.07]) for (const z of [-D / 2 + 0.07, D / 2 - 0.07]) {
+                        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.018, 0.73, 10), matWood); leg.position.set(x, 0.365, z); group.add(leg);
+                    }
+                    if (variant === 2) {
+                        for (const [x, z, r] of [[-0.35, D / 2 + 0.12, Math.PI], [0.35, D / 2 + 0.12, Math.PI], [-0.35, -D / 2 - 0.12, 0], [0.35, -D / 2 - 0.12, 0]]) {
+                            const k = bikinKursi(0); k.position.set(x, 0, z); k.rotation.y = r; group.add(k);
+                        }
+                    }
+                }
+            }
+            else if (type === 'chair') { group.add(bikinKursi(variant)); }
             else if (type === 'carpet') {
                 let carpet;
                 if (variant === 1) carpet = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.02, 32), matCarpet);
@@ -3045,15 +3260,18 @@
                 if (variant === 1) {
                     const braket = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.06), matMetal); braket.position.set(0, 1.35, -0.05); group.add(braket);
                     const screen = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.8, 0.05), matBlack); screen.position.set(0, 1.35, 0); group.add(screen);
+                    pasangLayarTV(group, 1.4, 0.8, 0, 1.35, 0, obj);
                 } else if (variant === 2) {
                     const rak = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.45, 0.4), matWood); rak.position.y = 0.225; group.add(rak);
                     for (const x of [-0.4, 0.4]) { const laci = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.3, 0.02), matWoodDark); laci.position.set(x, 0.24, 0.21); group.add(laci); }
                     const screen = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.75, 0.05), matBlack); screen.position.set(0, 0.87, 0); group.add(screen);
+                    pasangLayarTV(group, 1.3, 0.75, 0, 0.87, 0, obj);
                     const kaki = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.16), matBlack); kaki.position.set(0, 0.48, 0); group.add(kaki);
                 } else {
                     const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 0.2), matBlack); base.position.y = 0.02; group.add(base);
                     const pole = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.05), matBlack); pole.position.y = 0.12; group.add(pole);
                     const screen = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.05), matBlack); screen.position.set(0, 0.55, 0); group.add(screen);
+                    pasangLayarTV(group, 1.2, 0.7, 0, 0.55, 0, obj);
                 }
             }
             else if (type === 'buffet') {
@@ -3760,12 +3978,12 @@
             if (v === 3) {
                 const n1 = Math.max(1, Math.floor((n - 1) / 2)), n2 = Math.max(1, n - 1 - n1);
                 const jarak = W / 2 + U_SUMUR / 2;
-                const cz = (n1 * d + W) / 2;
+                const cz = (n2 * d + W) / 2;
                 const A = -jarak - W / 2 - pad, B = -jarak + W / 2 + pad;
                 const C = jarak - W / 2 - pad, D2 = jarak + W / 2 + pad;
-                const z0 = -pad, zL0 = n1 * d + pad, zL1 = n1 * d + W + pad;
-                /* Larik ke-2 menanjak ke arah -Z, jadi ujung atasnya dipotong di sisi z kecil. */
-                const zT = Math.max(z0, Math.min(zL0, n1 * d + W - n2 * d + potong));
+                const z0 = (n2 - n1) * d - pad, zL0 = n2 * d + pad, zL1 = n2 * d + W + pad;
+                /* Larik ke-2 menanjak ke arah -Z dan tiba di z = 0, jadi ujung atasnya dipotong di sisi z kecil. */
+                const zT = Math.max(-pad, Math.min(zL0, potong));
                 return [[A, z0], [B, z0], [B, zL0], [C, zL0], [C, zT], [D2, zT], [D2, zL1], [A, zL1]]
                     .map(([x, z]) => ({ x: x, z: z - cz }));
             }
@@ -3797,6 +4015,161 @@
 
         function poligonTangga(o, pad, tinggiLantai) { return poligonKeDunia(o, denahLokalTangga(o, pad, tinggiLantai)); }
         function poligonVoid(o) { return poligonKeDunia(o, denahLokalVoid(o)); }
+
+        /* ---------- RAILING ---------- */
+        var TINGGI_RAILING = 1.0;
+        const GAYA_RAILING = ['kaca', 'besi', 'kayu'];
+
+        function titikDalamPoligon(x, z, poly) {
+            let dalam = false;
+            for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                const a = poly[i], b = poly[j];
+                if ((a.z > z) !== (b.z > z) && x < (b.x - a.x) * (z - a.z) / (b.z - a.z) + a.x) dalam = !dalam;
+            }
+            return dalam;
+        }
+        function jarakTitikRuas(x, z, r) {
+            const dx = r.bx - r.ax, dz = r.bz - r.az, l2 = dx * dx + dz * dz;
+            const t = l2 ? Math.max(0, Math.min(1, ((x - r.ax) * dx + (z - r.az) * dz) / l2)) : 0;
+            return Math.hypot(x - (r.ax + dx * t), z - (r.az + dz * t));
+        }
+
+        /* Railing setinggi 1 m di sepanjang ruas-ruas [a, b] (koordinat x/z, alas y = 0).
+           Gaya: kaca (panel kaca + pegangan krom), besi (jeruji rapat), kayu (balustrade).
+           Tiap ruas juga diberi bidang tabrak tak terlihat, karena di sela jeruji
+           sinar pengendali jalan bisa lolos. */
+        function bikinRailing(ruas, gaya) {
+            const g = new THREE.Group();
+            const H = TINGGI_RAILING;
+            const kayu = gaya === 'kayu', kaca = gaya === 'kaca';
+            const mRangka = kayu ? matTeks('kayu', 0x7a5230, 2) : matPolos(kaca ? 0xc9ccd1 : 0x2b2d31, null, 'logam');
+            const mKaca = matPolos(0xcfe8f2, { transparent: true, opacity: 0.3, side: THREE.DoubleSide }, 'keramik');
+            const mTabrak = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+            const tiang = (x, z) => {
+                const m = kaca ? new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, H, 12), mRangka)
+                               : new THREE.Mesh(new THREE.BoxGeometry(kayu ? 0.08 : 0.045, H, kayu ? 0.08 : 0.045), mRangka);
+                m.position.set(x, H / 2, z); g.add(m);
+            };
+            ruas.forEach(([a, b]) => {
+                const dx = b.x - a.x, dz = b.z - a.z, pjg = Math.hypot(dx, dz);
+                if (pjg < 0.05) return;
+                const sisi = new THREE.Group();
+                sisi.position.set((a.x + b.x) / 2, 0, (a.z + b.z) / 2);
+                sisi.rotation.y = -Math.atan2(dz, dx);
+                g.add(sisi);
+                const kotak = (w, h, d, y, mat, x) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x || 0, y, 0); sisi.add(m); return m; };
+                if (kaca) {
+                    const pegangan = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, pjg + 0.02, 14), mRangka);
+                    pegangan.rotation.z = Math.PI / 2; pegangan.position.y = H; sisi.add(pegangan);
+                    const nPanel = Math.max(1, Math.ceil(pjg / 1.2)), lp = pjg / nPanel;
+                    for (let i = 0; i < nPanel; i++) {
+                        const xp = -pjg / 2 + lp * (i + 0.5);
+                        kotak(Math.max(0.02, lp - 0.07), H - 0.16, 0.012, 0.07 + (H - 0.16) / 2, mKaca, xp);
+                        for (const sx of [-1, 1]) for (const y of [0.18, H - 0.2]) kotak(0.035, 0.05, 0.03, y, mRangka, xp + sx * (lp / 2 - 0.055));
+                    }
+                } else {
+                    kotak(pjg + (kayu ? 0.08 : 0.045), kayu ? 0.05 : 0.04, kayu ? 0.09 : 0.05, H - 0.02, mRangka);
+                    kotak(pjg, 0.035, kayu ? 0.05 : 0.03, 0.09, mRangka);
+                    const jarak = kayu ? 0.13 : 0.11, n = Math.max(1, Math.round(pjg / jarak));
+                    const tb = H - 0.145;
+                    for (let i = 1; i < n; i++) kotak(kayu ? 0.035 : 0.016, tb, kayu ? 0.035 : 0.016, 0.105 + tb / 2, mRangka, -pjg / 2 + (pjg / n) * i);
+                }
+                const nT = Math.max(1, Math.ceil(pjg / 1.2));
+                for (let i = 0; i <= nT; i++) tiang(a.x + dx * i / nT, a.z + dz * i / nT);
+                if (!modeEkspor) {
+                    const tabrak = new THREE.Mesh(new THREE.BoxGeometry(pjg, H + 0.05, 0.03), mTabrak);
+                    tabrak.position.y = (H + 0.05) / 2; tabrak.visible = false; tabrak.userData.hanyaTabrak = true;
+                    sisi.add(tabrak);
+                }
+            });
+            return g;
+        }
+
+        /* Tempat pejalan tiba dari tangga di pelat atas (koordinat dunia), dipakai
+           supaya mulut tangga tidak ikut dipagari. */
+        function titikTibaTangga(o) {
+            const n = Math.max(3, parseInt(o.steps) || 14), W = o.width3D || 1.0, v = o.variant || 0, d = STEP_DEPTH;
+            let p;
+            if (v === 2) {
+                const n1 = Math.max(1, Math.floor(n / 2)), n2 = Math.max(1, n - n1 - 1);
+                p = { x: -W / 2 - n2 * d + n2 * d / 2, z: n1 * d + W / 2 - (n1 * d + W) / 2 };
+            } else if (v === 3) {
+                const n1 = Math.max(1, Math.floor((n - 1) / 2)), n2 = Math.max(1, n - 1 - n1);
+                p = { x: W / 2 + U_SUMUR / 2, z: -(n2 * d + W) / 2 };
+            } else if (v === 4) {
+                const R = Math.max(0.8, W), a = (n - 1) * (Math.PI * 2 / 12) + Math.PI / 12;
+                p = { x: Math.sin(a) * R, z: Math.cos(a) * R };
+            } else p = { x: 0, z: n * d / 2 };
+            const s = Math.abs(parseFloat(o.scaleX)) || 1;
+            return { titik: poligonKeDunia(o, [p])[0], lebar: (v === 4 ? Math.max(0.8, W) : W) * s };
+        }
+
+        /* Railing di tepi lubang pelat lantai ke-i. Lubang yang digabung ikut dipagari bila
+           salah satu sumbernya mau. Bagian tepi yang menempel tembok dan mulut tangga
+           (tempat tiba dari bawah) dibiarkan terbuka. */
+        function railingLubang(iLantai) {
+            const sumber = [];
+            const bawah = floors[iLantai - 1];
+            if (bawah) bawah.freeObjects.forEach(o => {
+                if (o.type !== 'stairs' || o.bikinVoid === false) return;
+                sumber.push({ poly: poligonTangga(o, 0.12, floorHeight(iLantai - 1)), mau: o.railingVoid !== false, gaya: o.gayaRailing, tiba: titikTibaTangga(o) });
+            });
+            const ini = floors[iLantai];
+            if (ini) ini.freeObjects.forEach(o => { if (o.type === 'void') sumber.push({ poly: poligonVoid(o), mau: o.railing !== false, gaya: o.gayaRailing, tiba: null }); });
+            if (!sumber.some(s => s.mau)) return null;
+            const tebalBawaan = parseFloat(inputWallT.value) || 0.15;
+            const tembok = (ini ? ini.lines : []).filter(l => !l.railing).map(l => ({
+                ax: (l.start.x - center2DX) * scale3D, az: (l.start.y - center2DY) * scale3D,
+                bx: (l.end.x - center2DX) * scale3D, bz: (l.end.y - center2DY) * scale3D,
+                t: (parseFloat(l.thick) > 0.02) ? parseFloat(l.thick) : tebalBawaan
+            }));
+            const OFF = 0.04;
+            const ruas = {};
+            gabungLubang(sumber.map(s => s.poly)).forEach(poly => {
+                const bb = bboxPoligon(poly);
+                const kontrib = sumber.filter(s => { const b = bboxPoligon(s.poly); return b.x0 < bb.x1 + 0.01 && b.x1 > bb.x0 - 0.01 && b.z0 < bb.z1 + 0.01 && b.z1 > bb.z0 - 0.01; });
+                const mau = kontrib.filter(s => s.mau);
+                if (!mau.length) return;
+                const gaya = GAYA_RAILING.indexOf(mau[0].gaya) >= 0 ? mau[0].gaya : 'kaca';
+                const tiba = kontrib.filter(s => s.tiba).map(s => s.tiba);
+                for (let i = 0; i < poly.length; i++) {
+                    const a = poly[i], b = poly[(i + 1) % poly.length];
+                    const dx = b.x - a.x, dz = b.z - a.z, pjg = Math.hypot(dx, dz);
+                    if (pjg < 0.05) continue;
+                    const ux = dx / pjg, uz = dz / pjg;
+                    let nx = -uz, nz = ux;   /* normal ke arah pelat, menjauhi lubang */
+                    if (titikDalamPoligon(a.x + dx / 2 + nx * 0.02, a.z + dz / 2 + nz * 0.02, poly)) { nx = -nx; nz = -nz; }
+                    const n = Math.max(1, Math.ceil(pjg / 0.1));
+                    const pakai = [];
+                    for (let k = 0; k < n; k++) {
+                        const tm = (k + 0.5) / n;
+                        const mx = a.x + dx * tm + nx * OFF, mz = a.z + dz * tm + nz * OFF;
+                        let buang = tiba.some(p => {
+                            const rx = p.titik.x - a.x, rz = p.titik.z - a.z;
+                            return Math.abs(rx * nx + rz * nz) < 0.45 && Math.abs(pjg * tm - (rx * ux + rz * uz)) <= p.lebar / 2 + 0.14;
+                        });
+                        if (!buang) buang = tembok.some(w => jarakTitikRuas(mx, mz, w) < w.t / 2 + 0.06);
+                        pakai.push(!buang);
+                    }
+                    for (let k = 0; k < n; ) {
+                        if (!pakai[k]) { k++; continue; }
+                        let e = k; while (e + 1 < n && pakai[e + 1]) e++;
+                        const t0 = k / n, t1 = (e + 1) / n;
+                        const x0 = k === 0 ? OFF : 0, x1 = e === n - 1 ? OFF : 0;   /* sambung rapat di sudut */
+                        (ruas[gaya] = ruas[gaya] || []).push([
+                            { x: a.x + dx * t0 - ux * x0 + nx * OFF, z: a.z + dz * t0 - uz * x0 + nz * OFF },
+                            { x: a.x + dx * t1 + ux * x1 + nx * OFF, z: a.z + dz * t1 + uz * x1 + nz * OFF }
+                        ]);
+                        k = e + 1;
+                    }
+                }
+            });
+            const gayaAda = Object.keys(ruas);
+            if (!gayaAda.length) return null;
+            const g = new THREE.Group();
+            gayaAda.forEach(gy => g.add(bikinRailing(ruas[gy], gy)));
+            return g;
+        }
 
         const bboxPoligon = (poly) => poly.reduce((a, p) => ({
             x0: Math.min(a.x0, p.x), x1: Math.max(a.x1, p.x), z0: Math.min(a.z0, p.z), z1: Math.max(a.z1, p.z)
@@ -3911,6 +4284,61 @@
             const matDoor = matPolos(0x5c4033, null, 'kayu');
             const matWindow = matPolos(0x87CEEB, { transparent: true, opacity: 0.45, roughness: 0.05, metalness: 0.0 }, 'keramik');
             const matFrame = matPolos(0x3f3f46, null, 'logam');
+            const matGagang = matPolos(0xd4d4d8, null, 'logam');
+            const matTirai = matTeks('kain', 0xe9e2d3, 3, { side: THREE.DoubleSide });
+
+            /* Gagang tuas pintu di kedua muka daun: roset, leher, tuas yang menunjuk ke
+               arah engsel, dan silinder kunci di bawahnya. Ditempel sebagai anak daun
+               pintu supaya ikut berayun. */
+            const pasangGagangPintu = (daun, xG, yG, arahTuas, tebalDaun) => {
+                for (const sz of [1, -1]) {
+                    const muka = sz * tebalDaun / 2;
+                    const roset = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.027, 0.012, 18), matGagang);
+                    roset.rotation.x = Math.PI / 2; roset.position.set(xG, yG, muka + sz * 0.006); daun.add(roset);
+                    const leher = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.05, 10), matGagang);
+                    leher.rotation.x = Math.PI / 2; leher.position.set(xG, yG, muka + sz * 0.03); daun.add(leher);
+                    const tuas = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.017, 0.022), matGagang);
+                    tuas.position.set(xG + arahTuas * 0.062, yG, muka + sz * 0.055); daun.add(tuas);
+                    const kunci = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.01, 14), matGagang);
+                    kunci.rotation.x = Math.PI / 2; kunci.position.set(xG, yG - 0.075, muka + sz * 0.005); daun.add(kunci);
+                }
+            };
+            /* Tarikan tegak (pintu / jendela geser), di kedua muka. */
+            const pasangTarikan = (daun, xG, yG, panjang, tebalDaun) => {
+                for (const sz of [1, -1]) {
+                    const batang = new THREE.Mesh(new THREE.BoxGeometry(0.02, panjang, 0.018), matGagang);
+                    batang.position.set(xG, yG, sz * (tebalDaun / 2 + 0.03)); daun.add(batang);
+                    for (const dy of [-panjang / 2 + 0.03, panjang / 2 - 0.03]) {
+                        const kaki = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.03), matGagang);
+                        kaki.position.set(xG, yG + dy, sz * (tebalDaun / 2 + 0.015)); daun.add(kaki);
+                    }
+                }
+            };
+            /* Daun jendela: kusen daun + kaca (+ jalusi kaca bila bergaris), berpangkal
+               di tepi engsel. arahX = +1 daun membentang ke +X, -1 ke -X, 0 berpusat. */
+            const daunJendela = (w, t, arahX, bergaris, sisiGagang, gagang) => {
+                const g = new THREE.Group();
+                const ox = arahX * w / 2, b = 0.045, d = 0.04;
+                const kusen = (gw, gh, x, y) => { const m = new THREE.Mesh(new THREE.BoxGeometry(gw, gh, d), matFrame); m.position.set(ox + x, y, 0); g.add(m); };
+                kusen(w, b, 0, b / 2); kusen(w, b, 0, t - b / 2);
+                kusen(b, t - 2 * b, -w / 2 + b / 2, t / 2); kusen(b, t - 2 * b, w / 2 - b / 2, t / 2);
+                const kaca = new THREE.Mesh(new THREE.BoxGeometry(w - 2 * b + 0.01, t - 2 * b + 0.01, 0.008), matWindow);
+                kaca.position.set(ox, t / 2, 0); g.add(kaca);
+                if (bergaris) {
+                    const nV = Math.max(0, Math.round((w - 2 * b) / 0.42) - 1), nH = Math.max(1, Math.round((t - 2 * b) / 0.45) - 1);
+                    for (let i = 1; i <= nV; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.022, t - 2 * b, 0.02), matFrame); m.position.set(ox - w / 2 + b + ((w - 2 * b) / (nV + 1)) * i, t / 2, 0); g.add(m); }
+                    for (let i = 1; i <= nH; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(w - 2 * b, 0.022, 0.02), matFrame); m.position.set(ox, b + ((t - 2 * b) / (nH + 1)) * i, 0); g.add(m); }
+                }
+                if (gagang === 'tuas') {
+                    /* Gagang jendela casement: pelat dasar + tuas menggantung ke bawah, di sisi dalam. */
+                    const xG = ox + arahX * (w / 2 - b / 2), yG = Math.min(t * 0.5, 0.75), z = sisiGagang * (d / 2 + 0.006);
+                    const pelat = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.085, 0.012), matGagang); pelat.position.set(xG, yG, z); g.add(pelat);
+                    const tuas = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.1, 0.018), matGagang); tuas.position.set(xG, yG - 0.045, z + sisiGagang * 0.02); g.add(tuas);
+                } else if (gagang === 'tarik') {
+                    pasangTarikan(g, ox + (w / 2 - 0.05) * (arahX || 1), t / 2, Math.min(0.5, t * 0.3), d);
+                }
+                return g;
+            };
             const matFloor = bahanPelat(dataLantai.lantaiBahan, dataLantai.lantaiWarna);
             const matRoof = matPolos(0xe4e4e7, { side: THREE.DoubleSide }, 'plester');
             
@@ -3927,6 +4355,8 @@
                     Z0 = Math.min(Z0, pt.z - 0.3); Z1 = Math.max(Z1, pt.z + 0.3);
                 }));
                 grup.add(bikinPelat(X0, Z0, X1, Z1, voidLantai, matFloor, 0.001));
+                const pagarLubang = railingLubang(indexLantai);
+                if (pagarLubang) grup.add(pagarLubang);
                 if (lantaiTeratas && document.getElementById('chkShowRoof').checked) {
                     const roofMesh = bikinPelat(X0, Z0, X1, Z1, voidAtap, matRoof, heightWall);
                     roofMesh.userData.atap = true;
@@ -3938,6 +4368,15 @@
                 const dx = line.end.x - line.start.x; const dy = line.end.y - line.start.y; const length = Math.sqrt(dx*dx + dy*dy) * scale3D; const angle = Math.atan2(dy, dx); const midX = (line.start.x + line.end.x) / 2; const midY = (line.start.y + line.end.y) / 2; const posX = (midX - center2DX) * scale3D; const posZ = (midY - center2DY) * scale3D;
                 const hW = (parseFloat(line.height) > 0.2) ? parseFloat(line.height) : heightWall;
                 const tW = (parseFloat(line.thick) > 0.02) ? parseFloat(line.thick) : thickWall;
+                if (line.railing) {
+                    /* Garis ini railing (balkon / pagar), bukan tembok: tanpa badan tembok dan bukaan. */
+                    const pagar = new THREE.Group();
+                    pagar.add(bikinRailing([[{ x: -length / 2, z: 0 }, { x: length / 2, z: 0 }]], line.railing));
+                    pagar.position.set(posX, 0, posZ); pagar.rotation.y = -angle;
+                    Object.assign(pagar.userData, { isWall: true, wallIndex: index, floorIndex: indexLantai, len2D: Math.hypot(dx, dy), h0: TINGGI_RAILING, t0: 0.05, railing: true });
+                    grup.add(pagar);
+                    return;
+                }
                 const wallObj = new THREE.Group(); const wallShape = new THREE.Shape(); wallShape.moveTo(0, 0); wallShape.lineTo(length, 0); wallShape.lineTo(length, hW); wallShape.lineTo(0, hW); wallShape.lineTo(0, 0);
                 let ops = openings.filter(o => o.lineIndex === index).sort((a,b) => a.ratio - b.ratio);
                 
@@ -3958,7 +4397,7 @@
                         /* Pintu ayun bawaannya tergambar terbuka, pintu geser tertutup.
                            Begitu pengguna menekannya di mode jalan, keadaannya disimpan
                            eksplisit di op.tutup. */
-                        const tutup = (op.tutup === undefined) ? (op.variant === 2) : !!op.tutup;
+                        const tutup = bukaanTertutup(op);
                         const tandai = (mesh, jenis, extra) => {
                             mesh.userData.pintu = Object.assign({ id: op.id, lantai: indexLantai, jenis: jenis }, extra || {});
                             return mesh;
@@ -3973,12 +4412,16 @@
                             const door2 = new THREE.Mesh(geom2, matDoor); door2.position.set(opEnd - length/2, e, 0);
                             const s2 = THREE.MathUtils.degToRad(-op.swing);
                             door2.rotation.y = tutup ? 0 : s2;
+                            const yG = Math.min(1.0, h * 0.5);
+                            pasangGagangPintu(door1, lW - 0.07, yG, -1, 0.04); pasangGagangPintu(door2, -lW + 0.07, yG, 1, 0.04);
                             wallObj.add(tandai(door1, 'ayun', { buka: s1 })); wallObj.add(tandai(door2, 'ayun', { buka: s2 }));
                         } else if (op.variant === 2) { 
                             const geom1 = new THREE.BoxGeometry(opW/2, h, 0.04); geom1.translate(0, h/2, 0);
                             const xT1 = opCenter - length/2 - opW/4, xT2 = opCenter - length/2 + opW/4;
                             const door1 = new THREE.Mesh(geom1, matDoor); door1.position.set(tutup ? xT1 : xT1 - opW/2, e, -0.025);
                             const door2 = new THREE.Mesh(geom1, matDoor); door2.position.set(tutup ? xT2 : xT2 + opW/2, e, 0.025);
+                            pasangTarikan(door1, opW / 4 - 0.06, Math.min(1.0, h * 0.5), 0.34, 0.04);
+                            pasangTarikan(door2, -opW / 4 + 0.06, Math.min(1.0, h * 0.5), 0.34, 0.04);
                             wallObj.add(tandai(door1, 'geser', { tutupX: xT1, bukaX: xT1 - opW/2 }));
                             wallObj.add(tandai(door2, 'geser', { tutupX: xT2, bukaX: xT2 + opW/2 }));
                         } else { 
@@ -3986,12 +4429,14 @@
                             if (op.flipHinge) {
                                 leafGeom.translate(-opW/2, h/2, 0);
                                 const doorMesh = new THREE.Mesh(leafGeom, matDoor); doorMesh.position.set((opEnd) - length/2, e, 0);
+                                pasangGagangPintu(doorMesh, -opW + 0.07, Math.min(1.0, h * 0.5), 1, 0.04);
                                 const sd = THREE.MathUtils.degToRad(-op.swing);
                                 doorMesh.rotation.y = tutup ? 0 : sd;
                                 wallObj.add(tandai(doorMesh, 'ayun', { buka: sd }));
                             } else {
                                 leafGeom.translate(opW/2, h/2, 0);
                                 const doorMesh = new THREE.Mesh(leafGeom, matDoor); doorMesh.position.set((opStart) - length/2, e, 0);
+                                pasangGagangPintu(doorMesh, opW - 0.07, Math.min(1.0, h * 0.5), -1, 0.04);
                                 const sd = THREE.MathUtils.degToRad(op.swing);
                                 doorMesh.rotation.y = tutup ? 0 : sd;
                                 wallObj.add(tandai(doorMesh, 'ayun', { buka: sd }));
@@ -4006,9 +4451,64 @@
                             const frameThickness = tW + 0.02; const baseF = new THREE.Mesh(new THREE.BoxGeometry(opW, 0.05, frameThickness), matFrame); baseF.position.set(opCenter - length/2, e + 0.025, 0); wallObj.add(baseF);
                             if(straightH > 0) { const sideL = new THREE.Mesh(new THREE.BoxGeometry(0.05, straightH, frameThickness), matFrame); sideL.position.set(opCenter - length/2 - opW/2 + 0.025, e + straightH/2, 0); wallObj.add(sideL); const sideR = new THREE.Mesh(new THREE.BoxGeometry(0.05, straightH, frameThickness), matFrame); sideR.position.set(opCenter - length/2 + opW/2 - 0.025, e + straightH/2, 0); wallObj.add(sideR); const archShape = new THREE.Shape(); archShape.absarc(0, 0, archR, 0, Math.PI, false); archShape.absarc(0, 0, archR - 0.05, Math.PI, 0, true); const archF = new THREE.Mesh(new THREE.ExtrudeGeometry(archShape, { depth: frameThickness, bevelEnabled: false }), matFrame); archF.position.set(opCenter - length/2, e + straightH, -frameThickness/2); wallObj.add(archF); }
                         } else {
-                            const winMesh = new THREE.Mesh(new THREE.BoxGeometry(opW, h, 0.02), matWindow); winMesh.position.set(opCenter - length/2, e + h/2, 0); wallObj.add(winMesh); 
                             const frameThickness = tW + 0.02; const frame1 = new THREE.Mesh(new THREE.BoxGeometry(opW, 0.05, frameThickness), matFrame); frame1.position.set(opCenter - length/2, e + 0.025, 0); const frame2 = frame1.clone(); frame2.position.set(opCenter - length/2, e + h - 0.025, 0); const frame3 = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, frameThickness), matFrame); frame3.position.set(opCenter - length/2 - opW/2 + 0.025, e + h/2, 0); const frame4 = frame3.clone(); frame4.position.set(opCenter - length/2 + opW/2 - 0.025, e + h/2, 0); wallObj.add(frame1); wallObj.add(frame2); wallObj.add(frame3); wallObj.add(frame4);
-                            if (op.variant === 2) { const numV = Math.max(1, Math.floor(opW / 0.6)); const spaceV = opW / (numV + 1); for(let i = 1; i <= numV; i++) { const mulV = new THREE.Mesh(new THREE.BoxGeometry(0.04, h, 0.03), matFrame); mulV.position.set(opCenter - length/2 + (-opW/2 + (i * spaceV)), e + h/2, 0); wallObj.add(mulV); } const numH = Math.max(1, Math.floor(h / 0.6)); const spaceH = h / (numH + 1); for(let i = 1; i <= numH; i++) { const mulH = new THREE.Mesh(new THREE.BoxGeometry(opW, 0.04, 0.03), matFrame); mulH.position.set(opCenter - length/2, e + (i * spaceH), 0); wallObj.add(mulH); } }
+                            /* Daun jendela yang bisa dibuka. Sisi dalam ruangan mengikuti tanda
+                               "Rotasi": positif = daun berayun ke -Z, jadi tirai dan gagang di +Z. */
+                            const cxJ = opCenter - length/2;
+                            const arahJ = (op.swing === undefined || op.swing >= 0) ? 1 : -1;
+                            const tutupJ = bukaanTertutup(op);
+                            const tandaiJ = (m, jenis, extra) => { m.userData.pintu = Object.assign({ id: op.id, lantai: indexLantai, jenis: jenis, jendela: true }, extra || {}); return m; };
+                            const wi = Math.max(0.2, opW - 0.1), hi = Math.max(0.2, h - 0.1);
+                            if (op.variant === 1) {
+                                /* Kaca penuh = pintu kaca geser: panel dalam bergeser menumpuk ke panel luar. */
+                                const lebarP = wi / 2 + 0.03;
+                                const xKiri = cxJ - wi / 2 + lebarP / 2, xKanan = cxJ + wi / 2 - lebarP / 2;
+                                const tetap = daunJendela(lebarP, hi, 0, false, -arahJ, null);
+                                tetap.position.set(xKanan, e + 0.05, -arahJ * 0.024); wallObj.add(tetap);
+                                tetap.userData.ikutBukaan = { id: op.id, lantai: indexLantai };
+                                const geser = daunJendela(lebarP, hi, 0, false, arahJ, 'tarik');
+                                const bukaX = xKanan - 0.04;
+                                geser.position.set(tutupJ ? xKiri : bukaX, e + 0.05, arahJ * 0.024);
+                                wallObj.add(tandaiJ(geser, 'geser', { tutupX: xKiri, bukaX: bukaX }));
+                            } else {
+                                const jml = wi >= 0.85 ? 2 : 1, ws = wi / jml;
+                                const sudut = THREE.MathUtils.degToRad(72) * arahJ;
+                                const kiri = daunJendela(ws, hi, 1, op.variant === 2, arahJ, 'tuas');
+                                kiri.position.set(cxJ - wi / 2, e + 0.05, 0); kiri.rotation.y = tutupJ ? 0 : sudut;
+                                wallObj.add(tandaiJ(kiri, 'ayun', { buka: sudut }));
+                                if (jml === 2) {
+                                    const kanan = daunJendela(ws, hi, -1, op.variant === 2, arahJ, 'tuas');
+                                    kanan.position.set(cxJ + wi / 2, e + 0.05, 0); kanan.rotation.y = tutupJ ? 0 : -sudut;
+                                    wallObj.add(tandaiJ(kanan, 'ayun', { buka: -sudut }));
+                                }
+                            }
+                        }
+                        if (op.tirai) {
+                            /* Tirai berlipit dengan rel, di sisi dalam, menjuntai sampai lantai. */
+                            const cxT = opCenter - length/2;
+                            const sisi = (op.swing === undefined || op.swing >= 0) ? 1 : -1;
+                            const zT = sisi * (tW / 2 + 0.1);
+                            const yRel = Math.min(hW - 0.05, e + h + 0.18);
+                            const lebarRel = opW + 0.5;
+                            const rel = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, lebarRel, 10), matGagang);
+                            rel.rotation.z = Math.PI / 2; rel.position.set(cxT, yRel, zT); wallObj.add(rel);
+                            for (const sx of [-1, 1]) {
+                                const ujung = new THREE.Mesh(new THREE.SphereGeometry(0.024, 12, 8), matGagang);
+                                ujung.position.set(cxT + sx * lebarRel / 2, yRel, zT); wallObj.add(ujung);
+                                const siku = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.018, 0.1), matGagang);
+                                siku.position.set(cxT + sx * (lebarRel / 2 - 0.06), yRel, sisi * (tW / 2 + 0.05)); wallObj.add(siku);
+                            }
+                            const tinggiKain = Math.max(0.3, yRel - 0.045);
+                            const lebarKain = lebarRel / 2 + 0.03;
+                            const tutupT = !!op.tiraiTutup;
+                            for (const sx of [-1, 1]) {
+                                const kain = new THREE.Mesh(geoTiraiLipit(lebarKain, tinggiKain, 0.035), matTirai);
+                                /* Pangkal kain di ujung rel; skala X meringkasnya ke ujung itu. */
+                                kain.position.set(cxT + sx * lebarRel / 2, 0.015 + tinggiKain / 2, zT - sisi * 0.02);
+                                kain.scale.x = -sx * (tutupT ? 1 : TIRAI_TERBUKA);
+                                kain.userData.tirai = { id: op.id, lantai: indexLantai, arah: -sx };
+                                wallObj.add(kain);
+                            }
                         }
                     } wallShape.holes.push(hole);
                 });
@@ -4032,6 +4532,7 @@
             
             const uniqueVertices = [];
             lines.forEach((l, li) => {
+                if (l.railing) return;
                 const hh = (parseFloat(l.height) > 0.2) ? parseFloat(l.height) : heightWall;
                 const tt = (parseFloat(l.thick) > 0.02) ? parseFloat(l.thick) : thickWall;
                 [['start', l.start], ['end', l.end]].forEach(([ujung, pt]) => {
@@ -4079,7 +4580,14 @@
                     innerMesh = bikinPenandaVoid(obj);
                 } else {
                     innerMesh = (obj.type === 'stairs') ? createStairsMesh(obj.steps || 14, obj.width3D || 1.0, heightWall, obj.variant || 0, obj) : createFurnitureMesh(obj.type, obj.variant || 0, obj); 
-                    if (obj.type === 'stairs') innerMesh.traverse(o => { if (o.isMesh) o.userData.tangga = true; });
+                    if (obj.type === 'stairs') {
+                        const proksi = !!innerMesh.userData.adaProksi;
+                        innerMesh.traverse(o => {
+                            if (!o.isMesh || o.userData.hanyaTabrak) return;
+                            o.userData.tangga = true;
+                            if (proksi) o.userData.lewatiTabrak = true;
+                        });
+                    }
                 }
                 
                 let meshGroup = new THREE.Group();
@@ -4467,6 +4975,83 @@
            spiral - tanpa logika khusus per bentuk. Sinar ke bawah menentukan lantai
            pijakan, jadi naik ke lantai berikutnya lewat void tangga bekerja sendiri.
            =================================================================== */
+        /* Kain berlipit: bidang bergelombang dengan tepi kiri di x = 0, supaya bisa
+           diringkas ke tepi itu lewat scale.x dan lipitannya ikut merapat. Tipenya
+           sengaja bukan PlaneGeometry supaya tetap melempar bayangan: tirai yang
+           ditutup memang harus menghalangi sinar matahari. */
+        function geoTiraiLipit(lebar, tinggi, dalam) {
+            const lipit = Math.max(3, Math.round(lebar / 0.11));
+            const bidang = new THREE.PlaneGeometry(lebar, tinggi, lipit * 6, 1);
+            const pos = bidang.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                const x = pos.getX(i) + lebar / 2;
+                pos.setXYZ(i, x, pos.getY(i), Math.sin((x / lebar) * lipit * Math.PI * 2) * dalam);
+            }
+            const geo = new THREE.BufferGeometry().copy(bidang);
+            geo.computeVertexNormals();
+            return geo;
+        }
+
+        /* Gambar siaran di layar TV yang menyala. Dibuat sekali lalu dipakai bersama. */
+        var _teksturTV = null;
+        function teksturLayarTV() {
+            if (_teksturTV) return _teksturTV;
+            const c = document.createElement('canvas'); c.width = 512; c.height = 288;
+            const g = c.getContext('2d');
+            let gr = g.createLinearGradient(0, 0, 0, 190);
+            gr.addColorStop(0, '#1e3a8a'); gr.addColorStop(0.55, '#f97316'); gr.addColorStop(1, '#fde68a');
+            g.fillStyle = gr; g.fillRect(0, 0, 512, 190);
+            g.fillStyle = '#fff7d6'; g.beginPath(); g.arc(330, 172, 34, 0, Math.PI * 2); g.fill();
+            g.fillStyle = '#3b2f5c'; g.beginPath(); g.moveTo(0, 190);
+            [[90, 118], [170, 176], [260, 108], [380, 186], [450, 140], [512, 168], [512, 190]].forEach(([x, y]) => g.lineTo(x, y));
+            g.fill();
+            gr = g.createLinearGradient(0, 190, 0, 288); gr.addColorStop(0, '#f59e0b'); gr.addColorStop(1, '#1e293b');
+            g.fillStyle = gr; g.fillRect(0, 190, 512, 98);
+            g.fillStyle = 'rgba(255,247,214,0.55)';
+            for (let i = 0; i < 9; i++) g.fillRect(302 - i * 4, 198 + i * 9, 56 + i * 8, 2);
+            g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(16, 14, 64, 26);
+            g.fillStyle = '#ffffff'; g.font = 'bold 16px sans-serif'; g.fillText('HD 1', 28, 33);
+            _teksturTV = new THREE.CanvasTexture(c);
+            _teksturTV.encoding = THREE.sRGBEncoding;
+            return _teksturTV;
+        }
+
+        /* Layar TV: panel tipis di muka layar, ditukar materialnya saat dinyalakan.
+           Nyala juga memberi cahaya kebiruan lemah ke ruangan. */
+        function pasangLayarTV(group, lebar, tinggi, x, y, z, obj) {
+            const geo = new THREE.PlaneGeometry(lebar - 0.04, tinggi - 0.04);
+            geo.userData.uvMeter = true;   /* gambar siaran memakai UV aslinya */
+            const layar = new THREE.Mesh(geo, matPolos(0x000000));
+            layar.position.set(x, y, z + 0.027);
+            layar.userData.layarTV = true;
+            group.add(layar);
+            const cahaya = new THREE.PointLight(0xa8c4ff, 0, 3.5, 2);
+            cahaya.position.set(x, y, z + 0.5);
+            cahaya.castShadow = false; cahaya.userData.mauBayangan = false; cahaya.userData.cahayaTV = true;
+            group.add(cahaya);
+            aturLayarTV(group, !!(obj && obj.tvNyala));
+        }
+        function aturLayarTV(grup, nyala) {
+            grup.traverse(o => {
+                if (o.userData.layarTV) {
+                    if (o.material) o.material.dispose();
+                    o.material = nyala
+                        ? new THREE.MeshBasicMaterial({ map: teksturLayarTV() })
+                        : matPolos(0x07080a, null, 'keramik');
+                }
+                if (o.isLight && o.userData.cahayaTV) { o.intensity = nyala ? 0.9 : 0; o.visible = nyala; }
+            });
+        }
+
+        var TIRAI_TERBUKA = 0.22;     /* lebar kain tirai yang diringkas, relatif lebar penuhnya */
+
+        /* Keadaan bukaan: pintu ayun bawaannya terbuka dan pintu geser tertutup (seperti
+           gambar lama); jendela bawaannya tertutup. */
+        function bukaanTertutup(op) {
+            if (op.tutup !== undefined) return !!op.tutup;
+            return op.type === 'window' ? true : (op.variant === 2);
+        }
+
         var POV = {   /* var, bukan const: setLanguage() berjalan sebelum blok ini */
             aktif: false,
             pos: new THREE.Vector3(),
@@ -4474,15 +5059,22 @@
             tinggiMata: 1.62, radius: 0.30, naikMaks: 0.46, naikTangga: 0.85,
             laju: 2.4, lajuLari: 4.4, lari: false,
             tombol: {}, joy: { x: 0, y: 0 },
-            lihat: null, simpan: null, penghalang: [], jam: null
+            lihat: null, simpan: null, penghalang: [], padat: [], jam: null
         };
         const _rcJalan = new THREE.Raycaster();
         const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3();
 
+        /* Dua daftar: `padat` = semua benda yang tampak (untuk mencari pijakan dan
+           membidik), `penghalang` = yang menahan langkah mendatar. Anak tangga
+           bukan penghalang mendatar; badan tabrakan tangga yang menggantikannya. */
         function kumpulkanPenghalang() {
-            POV.penghalang = [];
+            POV.penghalang = []; POV.padat = [];
             modelGroup.traverse(o => {
-                if (o.isMesh && !o.userData.penanda && o.visible) POV.penghalang.push(o);
+                if (!o.isMesh || o.userData.penanda) return;
+                if (o.userData.hanyaTabrak) { POV.penghalang.push(o); return; }
+                if (!o.visible) return;
+                POV.padat.push(o);
+                if (!o.userData.lewatiTabrak) POV.penghalang.push(o);
             });
         }
 
@@ -4493,7 +5085,7 @@
         function tanahInfo(x, z, kakiY) {
             _rcJalan.set(_v1.set(x, kakiY + POV.naikTangga + 0.05, z), _v2.set(0, -1, 0));
             _rcJalan.far = POV.naikTangga + 0.05 + 60;
-            const kena = _rcJalan.intersectObjects(POV.penghalang, false);
+            const kena = _rcJalan.intersectObjects(POV.padat, false);
             for (const k of kena) {
                 const n = k.face ? k.face.normal.clone().transformDirection(k.object.matrixWorld) : null;
                 if (n && Math.abs(n.y) < 0.5) continue;     /* bidang tegak, bukan lantai */
@@ -4508,23 +5100,18 @@
 
         /* Bisa bergerak sejauh (dx,dz)? Hanya bidang tegak yang menghalangi, dan
            hanya yang lebih tinggi dari batas langkah. */
-        /* Sinar paling bawah (setinggi lutut) hanya diberi jarak aman tipis, bukan
-           selebar badan. Kalau selebar badan, riser anak tangga BERIKUTNYA sudah
-           masuk jangkauan sinar sebelum kaki sempat naik ke anak tangga sekarang,
-           dan pejalan tertahan di depan tangga. Dinding tetap aman karena sinar
-           dada dan kepala yang memakai jarak selebar badan. */
-        const SKIN_KAKI = 0.10;
-        function jalanBebas(dx, dz, abaikanKaki) {
+        /* Jalur bebas dari posisi kaki + angkat, diuji pada tiga ketinggian badan.
+           Semua sinar memakai jarak selebar badan: tidak ada lagi sinar yang
+           dilonggarkan, karena melonggarkan sinar membuat pejalan bisa menembus
+           sisi tangga. */
+        const TINGGI_UJI = [0.35, 1.05, 1.52];
+        function jalanBebasPada(dx, dz, angkat, jangkau) {
             const jarak = Math.hypot(dx, dz);
             if (jarak < 1e-5) return true;
             _v2.set(dx / jarak, 0, dz / jarak);
-            const tinggiUji = [POV.naikMaks + 0.12, 1.05, POV.tinggiMata - 0.05];
-            /* Saat menaiki tangga curam, riser anak tangga berikutnya sudah setinggi
-               dada. Hanya sinar setinggi kepala yang tetap menjaga - cukup untuk
-               tidak menembus dinding, tapi tangga apa pun tetap bisa dinaiki. */
-            for (let i = abaikanKaki ? 2 : 0; i < tinggiUji.length; i++) {
-                _rcJalan.set(_v1.set(POV.pos.x, POV.pos.y + tinggiUji[i], POV.pos.z), _v2);
-                _rcJalan.far = jarak + (i === 0 ? SKIN_KAKI : POV.radius);
+            for (let i = 0; i < TINGGI_UJI.length; i++) {
+                _rcJalan.set(_v1.set(POV.pos.x, POV.pos.y + angkat + TINGGI_UJI[i], POV.pos.z), _v2);
+                _rcJalan.far = jarak + (jangkau === undefined ? POV.radius : jangkau);
                 const kena = _rcJalan.intersectObjects(POV.penghalang, false);
                 for (const k of kena) {
                     const n = k.face ? k.face.normal.clone().transformDirection(k.object.matrixWorld) : null;
@@ -4533,6 +5120,30 @@
                 }
             }
             return true;
+        }
+        function jalanBebas(dx, dz) { return jalanBebasPada(dx, dz, 0); }
+
+        /* Algoritma step-up pengendali karakter yang lazim dipakai: coba melangkah
+           lurus dulu; kalau terhalang, ulangi pengujian dari ketinggian anak tangga
+           di depan. Tangga lolos karena di atas risernya kosong, sedangkan dinding
+           dan sisi badan tangga tetap menghalang karena di atasnya pun masih padat.
+           Ini menggantikan cara lama yang sekadar mematikan sinar bawah - cara itu
+           membuat pejalan bisa menembus tangga dari samping. */
+        function langkahSumbu(d, sumbuX) {
+            if (d === 0) return;
+            const dx = sumbuX ? d : 0, dz = sumbuX ? 0 : d;
+            if (jalanBebasPada(dx, dz, 0)) { POV.pos.x += dx; POV.pos.z += dz; return; }
+            const depan = tanahInfo(POV.pos.x + dx, POV.pos.z + dz, POV.pos.y);
+            if (!depan) return;
+            const angkat = depan.y - POV.pos.y;
+            const batas = depan.tangga ? POV.naikTangga : POV.naikMaks;
+            if (angkat <= 0.01 || angkat > batas) return;
+            /* Uji step-up hanya menanyakan "muat berdiri di anak tangga di depan?",
+               bukan "lorong di depan lapang?". Karena itu jangkauannya tipis: pada
+               tangga curam, riser BERIKUTNYA selalu berada sejarak selebar badan dan
+               akan salah menolak langkah yang sebenarnya sah. */
+            if (!jalanBebasPada(dx, dz, angkat + 0.03, 0.10)) return;
+            POV.pos.x += dx; POV.pos.z += dz; POV.pos.y = depan.y;
         }
 
         function titikMulaiJalan() {
@@ -4663,20 +5274,25 @@
 
         function bidikSasaran() {
             POV.sasaran = null;
-            if (!POV.penghalang.length) return;
+            if (!POV.padat.length) return;
             camera.getWorldDirection(_arahBidik);
             _rcBidik.set(camera.position, _arahBidik);
             _rcBidik.far = JANGKAUAN;
-            const kena = _rcBidik.intersectObjects(POV.penghalang, false);
+            const kena = _rcBidik.intersectObjects(POV.padat, false);
             if (!kena.length) return;
             let n = kena[0].object;
             while (n && n !== modelGroup) {
-                if (n.userData.pintu) {
-                    const f = floors[n.userData.pintu.lantai];
-                    const op = f && f.openings.find(o => o.id === n.userData.pintu.id);
+                if (n.userData.tirai) {
+                    const f = floors[n.userData.tirai.lantai];
+                    const op = f && f.openings.find(o => o.id === n.userData.tirai.id);
+                    if (op) { POV.sasaran = { jenis: 'tiraiJendela', op: op, lantai: n.userData.tirai.lantai }; return; }
+                }
+                const tb = n.userData.pintu || n.userData.ikutBukaan;
+                if (tb) {
+                    const f = floors[tb.lantai];
+                    const op = f && f.openings.find(o => o.id === tb.id);
                     if (op) {
-                        const tutup = (op.tutup === undefined) ? (op.variant === 2) : !!op.tutup;
-                        POV.sasaran = { jenis: 'pintu', op: op, tutup: tutup, lantai: n.userData.pintu.lantai };
+                        POV.sasaran = { jenis: op.type === 'window' ? 'jendela' : 'pintu', op: op, tutup: bukaanTertutup(op), lantai: tb.lantai };
                         return;
                     }
                 }
@@ -4684,6 +5300,7 @@
                     const o = cariObjekBebas(n);
                     if (o && TIPE_LAMPU.indexOf(o.type) >= 0) { POV.sasaran = { jenis: 'lampu', obj: o, grup: n }; return; }
                     if (o && o.type === 'curtain') { POV.sasaran = { jenis: 'tirai', obj: o, grup: n }; return; }
+                    if (o && o.type === 'tv') { POV.sasaran = { jenis: 'tv', obj: o, grup: n }; return; }
                     return;
                 }
                 n = n.parent;
@@ -4699,6 +5316,9 @@
             let teks = '';
             if (s.jenis === 'lampu') teks = t.aksiLampu.replace('{a}', '<b>' + (s.obj.lightOn === false ? t.aksiNyalakan : t.aksiMatikan) + '</b>');
             else if (s.jenis === 'pintu') teks = t.aksiPintu.replace('{a}', '<b>' + (s.tutup ? t.aksiBuka : t.aksiTutup) + '</b>');
+            else if (s.jenis === 'jendela') teks = t.aksiJendela.replace('{a}', '<b>' + (s.tutup ? t.aksiBuka : t.aksiTutup) + '</b>');
+            else if (s.jenis === 'tiraiJendela') teks = t.aksiTirai.replace('{a}', '<b>' + (s.op.tiraiTutup ? t.aksiBuka : t.aksiTutup) + '</b>');
+            else if (s.jenis === 'tv') teks = t.aksiTV.replace('{a}', '<b>' + (s.obj.tvNyala ? t.aksiMatikan : t.aksiNyalakan) + '</b>');
             else if (s.jenis === 'tirai') teks = t.aksiTirai.replace('{a}', '<b>' + (s.obj.variant === 1 ? t.aksiBuka : t.aksiTutup) + '</b>');
             el.innerHTML = teks;
             el.style.display = 'block';
@@ -4720,12 +5340,22 @@
         function gerakkanPintu(op, lantai) {
             const grup = floorGroups[lantai];
             if (!grup) return;
-            const tutup = !!op.tutup;
+            const tutup = bukaanTertutup(op);
             grup.traverse(o => {
-                if (!o.isMesh || !o.userData.pintu || o.userData.pintu.id !== op.id) return;
+                if (!o.userData.pintu || o.userData.pintu.id !== op.id) return;
                 const d = o.userData.pintu;
                 if (d.jenis === 'ayun') animasiPintu.push({ mesh: o, sifat: 'rotY', dari: o.rotation.y, ke: tutup ? 0 : d.buka, t: 0 });
                 else animasiPintu.push({ mesh: o, sifat: 'posX', dari: o.position.x, ke: tutup ? d.tutupX : d.bukaX, t: 0 });
+            });
+        }
+
+        function gerakkanTirai(op, lantai) {
+            const grup = floorGroups[lantai];
+            if (!grup) return;
+            const skala = op.tiraiTutup ? 1 : TIRAI_TERBUKA;
+            grup.traverse(o => {
+                if (!o.userData.tirai || o.userData.tirai.id !== op.id) return;
+                animasiPintu.push({ mesh: o, sifat: 'skalaX', dari: o.scale.x, ke: o.userData.tirai.arah * skala, t: 0 });
             });
         }
 
@@ -4735,7 +5365,9 @@
                 a.t = Math.min(1, a.t + dt / 0.45);
                 const e = a.t < 0.5 ? 2 * a.t * a.t : 1 - Math.pow(-2 * a.t + 2, 2) / 2;
                 const nilai = a.dari + (a.ke - a.dari) * e;
-                if (a.sifat === 'rotY') a.mesh.rotation.y = nilai; else a.mesh.position.x = nilai;
+                if (a.sifat === 'rotY') a.mesh.rotation.y = nilai;
+                else if (a.sifat === 'skalaX') a.mesh.scale.x = nilai;
+                else a.mesh.position.x = nilai;
                 if (a.t >= 1) animasiPintu.splice(i, 1);
             }
         }
@@ -4746,9 +5378,15 @@
             if (s.jenis === 'lampu') {
                 s.obj.lightOn = (s.obj.lightOn === false);
                 saklarLampu(s.grup, s.obj);
-            } else if (s.jenis === 'pintu') {
+            } else if (s.jenis === 'pintu' || s.jenis === 'jendela') {
                 s.op.tutup = !s.tutup;
                 gerakkanPintu(s.op, s.lantai);
+            } else if (s.jenis === 'tiraiJendela') {
+                s.op.tiraiTutup = !s.op.tiraiTutup;
+                gerakkanTirai(s.op, s.lantai);
+            } else if (s.jenis === 'tv') {
+                s.obj.tvNyala = !s.obj.tvNyala;
+                aturLayarTV(s.grup, s.obj.tvNyala);
             } else if (s.jenis === 'tirai') {
                 s.obj.variant = (s.obj.variant === 1) ? 0 : 1;
                 update3D();
@@ -4801,13 +5439,8 @@
             const bagian = Math.max(1, Math.ceil(jarakTotal / 0.10));
             const dx = dxTotal / bagian, dz = dzTotal / bagian;
             for (let i = 0; i < bagian; i++) {
-                /* Kalau tepat di depan ada permukaan tangga yang masih terjangkau,
-                   sinar setinggi lutut diabaikan - riser di depan bukan penghalang,
-                   melainkan anak tangga yang memang akan dinaiki. */
-                const depan = tanahInfo(POV.pos.x + dx, POV.pos.z + dz, POV.pos.y);
-                const naikiTangga = !!(depan && depan.tangga && depan.y > POV.pos.y - 0.05);
-                if (dx !== 0 && jalanBebas(dx, 0, naikiTangga)) POV.pos.x += dx;
-                if (dz !== 0 && jalanBebas(0, dz, naikiTangga)) POV.pos.z += dz;
+                langkahSumbu(dx, true);
+                langkahSumbu(dz, false);
                 const naik = tanahInfo(POV.pos.x, POV.pos.z, POV.pos.y);
                 if (naik && naik.y > POV.pos.y) POV.pos.y = naik.y;
             }
