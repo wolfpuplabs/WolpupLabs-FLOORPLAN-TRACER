@@ -481,6 +481,7 @@
                                 <input type="checkbox" id="chkStairVoid" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
                                 <span id="txtLblStairVoid">Cut opening above</span>
                             </label>
+                            <div id="stairInfo" style="font-size:10px; line-height:1.4; margin-bottom:8px; padding:6px; border-radius:5px; background:#eef2ff; color:#3730a3;"></div>
                             <label><span id="txtLblSteps">Steps:</span> <span id="valSteps">14</span></label>
                             <input type="range" id="editSteps" min="5" max="25" step="1" value="14">
                             <label><span id="txtLblStairW">Stairs W:</span> <span id="valStairW">1.0</span> m</label>
@@ -820,6 +821,8 @@
                 desk: "Meja Kerja", washbasin: "Wastafel", washingMachine: "Mesin Cuci", acUnit: "AC / Pendingin",
                 painting: "Lukisan / Hiasan Dinding", mirror: "Cermin", wallClock: "Jam Dinding", vase: "Vas Bunga",
                 fireplace: "Perapian", pendantLamp: "Lampu Gantung",
+                stairRiser: "Tinggi injakan", stairTread: "Lebar pijakan",
+                stairWarn: "Di luar rentang nyaman 0,14&ndash;0,21 m. Coba {n} anak tangga.",
                 lblStairVoid: "Bolongi Lantai Atas", modeVoid: "Void (Kotak)", modeVoidTrace: "Void (Trace)",
                 voidTraceHint: "Trace: ketuk tiap sudut lubang, lalu ketuk lagi titik pertama (atau tekan ESC) untuk menutup bentuknya.",
                 voidTracePoly: "Bentuknya hasil trace, jadi Lebar/Dalam tidak dipakai. Rotasi dan skala tetap bisa.",
@@ -865,6 +868,8 @@
                 desk: "Desk / Work Table", washbasin: "Washbasin / Sink", washingMachine: "Washing Machine", acUnit: "Air Conditioner",
                 painting: "Painting / Wall Art", mirror: "Mirror", wallClock: "Wall Clock", vase: "Vase",
                 fireplace: "Fireplace", pendantLamp: "Pendant Lamp",
+                stairRiser: "Riser", stairTread: "Tread",
+                stairWarn: "Outside the comfortable 0.14&ndash;0.21 m range. Try {n} steps.",
                 lblStairVoid: "Cut Opening Above", modeVoid: "Void (Box)", modeVoidTrace: "Void (Trace)",
                 voidTraceHint: "Trace: tap each corner of the opening, then tap the first point again (or press ESC) to close the shape.",
                 voidTracePoly: "This shape was traced, so Width/Depth do not apply. Rotation and scale still work.",
@@ -971,6 +976,7 @@
             if (document.getElementById('txtGuide6')) document.getElementById('txtGuide6').innerHTML = t.g6;
             if (document.getElementById('txtGuide7')) document.getElementById('txtGuide7').innerHTML = t.g7;
             if (typeof selectedItem !== 'undefined' && selectedItem !== null) { openEditPanel(selectedItem); }
+            if (typeof selectedItem !== 'undefined' && selectedItem && selectedItem.type === 'stairs') perbaruiInfoTangga(selectedItem);
         }
 
         setLanguage('en'); document.getElementById('btnLangID').addEventListener('click', () => setLanguage('id')); document.getElementById('btnLangEN').addEventListener('click', () => setLanguage('en'));
@@ -1507,8 +1513,25 @@
                     document.getElementById('editVoidD').disabled = ditrace;
                     document.getElementById('voidHint').innerText = ditrace ? texts[currentLang].voidTracePoly : texts[currentLang].voidHint;
                 }
-                if (item.type === 'stairs') { stairsControls.style.display = 'block'; document.getElementById('chkStairVoid').checked = item.bikinVoid !== false; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } else { stairsControls.style.display = 'none'; }
+                if (item.type === 'stairs') { stairsControls.style.display = 'block'; perbaruiInfoTangga(item); document.getElementById('chkStairVoid').checked = item.bikinVoid !== false; editSteps.value = item.steps || 14; document.getElementById('valSteps').innerText = item.steps || 14; editStairW.value = item.width3D || 1.0; document.getElementById('valStairW').innerText = item.width3D || 1.0; } else { stairsControls.style.display = 'none'; }
             }
+        }
+
+        /* Tinggi injakan (riser) dan lebar pijakan, plus peringatan kalau di luar
+           rentang nyaman. Riser 0,60 m memang tidak bisa dinaiki siapa pun. */
+        function perbaruiInfoTangga(item) {
+            const el = document.getElementById('stairInfo');
+            if (!el || !item || item.type !== 'stairs') return;
+            const n = Math.max(3, parseInt(item.steps) || 14);
+            const riser = floorHeight(currentFloor) / n;
+            const t = texts[currentLang];
+            const nyaman = riser >= 0.14 && riser <= 0.21;
+            const saran = Math.max(3, Math.round(floorHeight(currentFloor) / 0.18));
+            el.innerHTML = t.stairRiser + ' <b>' + riser.toFixed(2) + ' m</b> &middot; ' +
+                t.stairTread + ' <b>' + STEP_DEPTH.toFixed(2) + ' m</b>' +
+                (nyaman ? '' : '<br>' + t.stairWarn.replace('{n}', saran));
+            el.style.background = nyaman ? '#eef2ff' : '#fef3c7';
+            el.style.color = nyaman ? '#3730a3' : '#92400e';
         }
 
         function closeEditPanel() { emptySelectionMsg.style.display = 'block'; editPanelContent.style.display = 'none'; selectedItem = null; }
@@ -1616,7 +1639,7 @@
             if (!selectedItem || selectedItem.type !== 'stairs') return;
             saveState(); selectedItem.bikinVoid = e.target.checked; update3D(); draw2D();
         });
-        editSteps.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.steps = parseInt(e.target.value); document.getElementById('valSteps').innerText = selectedItem.steps; update3D(); draw2D(); } }); 
+        editSteps.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.steps = parseInt(e.target.value); document.getElementById('valSteps').innerText = selectedItem.steps; perbaruiInfoTangga(selectedItem); update3D(); draw2D(); } }); 
         editStairW.addEventListener('input', (e) => { if (selectedItem && selectedItem.type === 'stairs') { selectedItem.width3D = parseFloat(e.target.value); document.getElementById('valStairW').innerText = selectedItem.width3D; update3D(); draw2D(); } }); 
 
         ['editColorA', 'editColorB'].forEach(id => {
@@ -2127,7 +2150,7 @@
             modelGroup.traverse(o => {
                 if (!o.isMesh) return;
                 if (o.userData.ghost || o.userData.penanda) { o.castShadow = false; o.receiveShadow = false; return; }
-                const datar = o.userData.datar || (o.geometry && o.geometry.type === 'PlaneGeometry');
+                const datar = o.userData.datar || (o.geometry && (o.geometry.type === 'PlaneGeometry' || o.userData.tipeAsli === 'PlaneGeometry'));
                 const tembusPandang = o.material && o.material.transparent;
                 const atap = o.userData && o.userData.atap;
                 o.castShadow = aktif && !tembusPandang && (atap || !datar);
@@ -2195,12 +2218,13 @@
             const tebal = 0.12;
             const pelat = new THREE.Mesh(new THREE.BoxGeometry(lebar, tebal, dalam), matAtas);
             pelat.position.set(0, -tebal / 2, 0); g.add(pelat);
+            /* Balok penopang dinaikkan 1 cm masuk ke pelat supaya tidak sebidang. */
             for (const sx of [-lebar / 2 + 0.06, lebar / 2 - 0.06]) {
-                const balok = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, dalam), matBawah);
-                balok.position.set(sx, -tebal - 0.08, 0); g.add(balok);
+                const balok = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, dalam - 0.02), matBawah);
+                balok.position.set(sx, -tebal - 0.07, 0); g.add(balok);
             }
-            const tepi = new THREE.Mesh(new THREE.BoxGeometry(lebar, 0.16, 0.08), matBawah);
-            tepi.position.set(0, -tebal - 0.08, dalam / 2 - 0.04); g.add(tepi);
+            const tepi = new THREE.Mesh(new THREE.BoxGeometry(lebar - 0.02, 0.16, 0.08), matBawah);
+            tepi.position.set(0, -tebal - 0.07, dalam / 2 - 0.05); g.add(tepi);
             g.position.set(x, yAtas, z);
             return g;
         }
@@ -2247,11 +2271,18 @@
                 for (let i = 0; i < jml; i++) {
                     const y = y0 + (i + 1) * hStep;
                     const z = z0 + i * dStep + dStep / 2;
-                    const pijakan = new THREE.Mesh(new THREE.BoxGeometry(lebar, 0.06, dStep + 0.03), matStairs);
+                    /* Pijakan sedikit lebih sempit dari lebar larik supaya sisinya
+                       tidak sebidang dengan papan samping (stringer). */
+                    const pijakan = new THREE.Mesh(new THREE.BoxGeometry(lebar - 0.06, 0.06, dStep + 0.03), matStairs);
                     pijakan.position.set(x0, y - 0.03, z); g.add(pijakan);
                     if (adaRiser) {
-                        const riser = new THREE.Mesh(new THREE.BoxGeometry(lebar, hStep, 0.03), matGelap);
-                        riser.position.set(x0, y - hStep / 2, z - dStep / 2); g.add(riser);
+                        /* Riser berhenti tepat di bawah pijakan dan mundur 2 cm dari
+                           hidung anak tangga. Sebelumnya kotak riser dan kotak pijakan
+                           berbagi bidang atas dan bidang depan yang sama persis, dan
+                           dua permukaan sebidang itulah yang membuat shading robek. */
+                        const tinggiRiser = Math.max(0.04, hStep - 0.06);
+                        const riser = new THREE.Mesh(new THREE.BoxGeometry(lebar - 0.06, tinggiRiser, 0.03), matGelap);
+                        riser.position.set(x0, y - 0.06 - tinggiRiser / 2, z - dStep / 2 + 0.02); g.add(riser);
                     }
                 }
                 const zAkhir = z0 + jml * dStep;
@@ -2342,8 +2373,8 @@
             }
             else if (variant === 6) {
                 for (let i = 0; i < n; i++) {
-                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(W, hStep, dStep * (n - i)), matStairs);
-                    mesh.position.set(0, (i * hStep) + (hStep / 2), (i * dStep) / 2);
+                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(W, hStep + 0.006, dStep * (n - i)), matStairs);
+                    mesh.position.set(0, (i * hStep) + (hStep / 2) - 0.003, (i * dStep) / 2);
                     sub.add(mesh);
                 }
                 const jmlLaci = Math.min(5, Math.max(2, Math.round(n / 3)));
@@ -2359,9 +2390,11 @@
                 }
             }
             else {
+                /* Balok ditumpuk saling melesak 6 mm; kalau hanya bersentuhan,
+                   bidang atas balok bawah dan bidang bawah balok atas berimpit. */
                 for (let i = 0; i < n; i++) {
-                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(W, hStep, dStep * (n - i)), matStairs);
-                    mesh.position.set(0, (i * hStep) + (hStep / 2), (i * dStep) / 2);
+                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(W, hStep + 0.006, dStep * (n - i)), matStairs);
+                    mesh.position.set(0, (i * hStep) + (hStep / 2) - 0.003, (i * dStep) / 2);
                     sub.add(mesh);
                 }
             }
@@ -2496,25 +2529,49 @@
            Ini menyamakan konvensi UV antara tembok (ExtrudeGeometry), pelat
            (ShapeGeometry), dan perabot (BoxGeometry) yang sebelumnya berbeda-beda. */
         const _skalaDunia = new THREE.Vector3();
+        const _pA = new THREE.Vector3(), _pB = new THREE.Vector3(), _pC = new THREE.Vector3();
+        const _eAB = new THREE.Vector3(), _eAC = new THREE.Vector3(), _nF = new THREE.Vector3();
+
+        /* Sumbu proyeksi dipilih PER SEGITIGA, bukan per titik. Kalau dipilih per
+           titik, permukaan lengkung (tiang railing, kaki meja bulat, tangga spiral)
+           punya titik-titik bertetangga yang jatuh ke sumbu berbeda, dan UV-nya
+           putus di tengah segitiga - itulah yang membuat shading terlihat pecah.
+           Geometri diubah ke non-indexed dulu supaya tiap segitiga punya titik
+           sendiri dan bisa dipetakan secara konsisten. */
         function proyeksiUV(mesh) {
-            const geo = mesh.geometry;
+            let geo = mesh.geometry;
             if (!geo || !geo.attributes || !geo.attributes.position) return;
             if (geo.userData.uvMeter) return;
-            let nor = geo.attributes.normal;
-            if (!nor) { geo.computeVertexNormals(); nor = geo.attributes.normal; }
-            if (!nor) return;
+            if (geo.index) {
+                const lepas = geo.toNonIndexed();
+                /* toNonIndexed() membuang .parameters dan mengganti .type menjadi
+                   BufferGeometry; keduanya masih dibaca di tempat lain, jadi disalin. */
+                lepas.userData = geo.userData;
+                lepas.parameters = geo.parameters;
+                lepas.userData.tipeAsli = geo.type;
+                mesh.geometry = lepas;
+                geo = lepas;
+            }
             const pos = geo.attributes.position;
+            if (pos.count % 3 !== 0) { geo.userData.uvMeter = true; return; }
             mesh.getWorldScale(_skalaDunia);
             const sx = Math.abs(_skalaDunia.x) || 1, sy = Math.abs(_skalaDunia.y) || 1, sz = Math.abs(_skalaDunia.z) || 1;
             const uv = new Float32Array(pos.count * 2);
-            for (let i = 0; i < pos.count; i++) {
-                const x = pos.getX(i) * sx, y = pos.getY(i) * sy, z = pos.getZ(i) * sz;
-                const nx = Math.abs(nor.getX(i)), ny = Math.abs(nor.getY(i)), nz = Math.abs(nor.getZ(i));
-                let u, v;
-                if (ny >= nx && ny >= nz) { u = x; v = z; }          /* bidang datar */
-                else if (nx >= nz) { u = z; v = y; }                  /* menghadap X */
-                else { u = x; v = y; }                                /* menghadap Z */
-                uv[i * 2] = u; uv[i * 2 + 1] = v;
+            const amb = (i, out) => out.set(pos.getX(i) * sx, pos.getY(i) * sy, pos.getZ(i) * sz);
+            for (let t = 0; t < pos.count; t += 3) {
+                amb(t, _pA); amb(t + 1, _pB); amb(t + 2, _pC);
+                _eAB.subVectors(_pB, _pA); _eAC.subVectors(_pC, _pA);
+                _nF.crossVectors(_eAB, _eAC);
+                const nx = Math.abs(_nF.x), ny = Math.abs(_nF.y), nz = Math.abs(_nF.z);
+                const sumbu = (ny >= nx && ny >= nz) ? 0 : (nx >= nz ? 1 : 2);
+                for (let k = 0; k < 3; k++) {
+                    const v3 = k === 0 ? _pA : (k === 1 ? _pB : _pC);
+                    let u, v;
+                    if (sumbu === 0) { u = v3.x; v = v3.z; }          /* bidang datar */
+                    else if (sumbu === 1) { u = v3.z; v = v3.y; }     /* menghadap X */
+                    else { u = v3.x; v = v3.y; }                      /* menghadap Z */
+                    uv[(t + k) * 2] = u; uv[(t + k) * 2 + 1] = v;
+                }
             }
             geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
             geo.userData.uvMeter = true;
@@ -3983,6 +4040,7 @@
                     innerMesh = bikinPenandaVoid(obj);
                 } else {
                     innerMesh = (obj.type === 'stairs') ? createStairsMesh(obj.steps || 14, obj.width3D || 1.0, heightWall, obj.variant || 0, obj) : createFurnitureMesh(obj.type, obj.variant || 0, obj); 
+                    if (obj.type === 'stairs') innerMesh.traverse(o => { if (o.isMesh) o.userData.tangga = true; });
                 }
                 
                 let meshGroup = new THREE.Group();
@@ -4374,7 +4432,7 @@
             aktif: false,
             pos: new THREE.Vector3(),
             yaw: 0, pitch: 0, vy: 0,
-            tinggiMata: 1.62, radius: 0.30, naikMaks: 0.46,
+            tinggiMata: 1.62, radius: 0.30, naikMaks: 0.46, naikTangga: 0.85,
             laju: 2.4, lajuLari: 4.4, lari: false,
             tombol: {}, joy: { x: 0, y: 0 },
             lihat: null, simpan: null, penghalang: [], jam: null
@@ -4389,28 +4447,45 @@
             });
         }
 
-        /* Permukaan pijakan tertinggi di bawah kaki, dalam jangkauan langkah. */
-        function tanahDiBawah(x, z, kakiY) {
-            _rcJalan.set(_v1.set(x, kakiY + POV.naikMaks + 0.05, z), _v2.set(0, -1, 0));
-            _rcJalan.far = POV.naikMaks + 0.05 + 40;
+        /* Permukaan pijakan tertinggi yang masih bisa dinaiki. Anak tangga boleh
+           lebih tinggi dari batas langkah biasa: denah dengan sedikit anak tangga
+           untuk lantai yang tinggi menghasilkan riser besar, dan pengguna tetap
+           harus bisa naik memeriksa rancangannya. */
+        function tanahInfo(x, z, kakiY) {
+            _rcJalan.set(_v1.set(x, kakiY + POV.naikTangga + 0.05, z), _v2.set(0, -1, 0));
+            _rcJalan.far = POV.naikTangga + 0.05 + 60;
             const kena = _rcJalan.intersectObjects(POV.penghalang, false);
             for (const k of kena) {
                 const n = k.face ? k.face.normal.clone().transformDirection(k.object.matrixWorld) : null;
                 if (n && Math.abs(n.y) < 0.5) continue;     /* bidang tegak, bukan lantai */
-                return k.point.y;
+                const tangga = !!k.object.userData.tangga;
+                const batas = tangga ? POV.naikTangga : POV.naikMaks;
+                if (k.point.y > kakiY + batas) continue;    /* terlalu tinggi: cari yang di bawahnya */
+                return { y: k.point.y, tangga: tangga };
             }
             return null;
         }
+        function tanahDiBawah(x, z, kakiY) { const i = tanahInfo(x, z, kakiY); return i ? i.y : null; }
 
         /* Bisa bergerak sejauh (dx,dz)? Hanya bidang tegak yang menghalangi, dan
            hanya yang lebih tinggi dari batas langkah. */
-        function jalanBebas(dx, dz) {
+        /* Sinar paling bawah (setinggi lutut) hanya diberi jarak aman tipis, bukan
+           selebar badan. Kalau selebar badan, riser anak tangga BERIKUTNYA sudah
+           masuk jangkauan sinar sebelum kaki sempat naik ke anak tangga sekarang,
+           dan pejalan tertahan di depan tangga. Dinding tetap aman karena sinar
+           dada dan kepala yang memakai jarak selebar badan. */
+        const SKIN_KAKI = 0.10;
+        function jalanBebas(dx, dz, abaikanKaki) {
             const jarak = Math.hypot(dx, dz);
             if (jarak < 1e-5) return true;
             _v2.set(dx / jarak, 0, dz / jarak);
-            for (const tinggi of [POV.naikMaks + 0.12, 1.05, POV.tinggiMata - 0.05]) {
-                _rcJalan.set(_v1.set(POV.pos.x, POV.pos.y + tinggi, POV.pos.z), _v2);
-                _rcJalan.far = jarak + POV.radius;
+            const tinggiUji = [POV.naikMaks + 0.12, 1.05, POV.tinggiMata - 0.05];
+            /* Saat menaiki tangga curam, riser anak tangga berikutnya sudah setinggi
+               dada. Hanya sinar setinggi kepala yang tetap menjaga - cukup untuk
+               tidak menembus dinding, tapi tangga apa pun tetap bisa dinaiki. */
+            for (let i = abaikanKaki ? 2 : 0; i < tinggiUji.length; i++) {
+                _rcJalan.set(_v1.set(POV.pos.x, POV.pos.y + tinggiUji[i], POV.pos.z), _v2);
+                _rcJalan.far = jarak + (i === 0 ? SKIN_KAKI : POV.radius);
                 const kena = _rcJalan.intersectObjects(POV.penghalang, false);
                 for (const k of kena) {
                     const n = k.face ? k.face.normal.clone().transformDirection(k.object.matrixWorld) : null;
@@ -4561,14 +4636,30 @@
             const laju = (POV.lari || t['shift']) ? POV.lajuLari : POV.laju;
             const sin = Math.sin(POV.yaw), cos = Math.cos(POV.yaw);
             /* yaw 0 menghadap -Z, sama seperti kamera three.js */
-            let dx = (-sin * maju + cos * samping) * laju * dt;
-            let dz = (-cos * maju - sin * samping) * laju * dt;
+            const dxTotal = (-sin * maju + cos * samping) * laju * dt;
+            const dzTotal = (-cos * maju - sin * samping) * laju * dt;
 
-            if (dx !== 0 && jalanBebas(dx, 0)) POV.pos.x += dx;
-            if (dz !== 0 && jalanBebas(0, dz)) POV.pos.z += dz;
+            /* Langkah dipecah maksimal 10 cm per sub-langkah. Di perangkat dengan
+               frame rate rendah satu frame bisa memindahkan lebih jauh dari satu
+               anak tangga sekaligus, sehingga kenaikan terlewat dan pejalan
+               menembus atau tersangkut. */
+            const jarakTotal = Math.hypot(dxTotal, dzTotal);
+            const bagian = Math.max(1, Math.ceil(jarakTotal / 0.10));
+            const dx = dxTotal / bagian, dz = dzTotal / bagian;
+            for (let i = 0; i < bagian; i++) {
+                /* Kalau tepat di depan ada permukaan tangga yang masih terjangkau,
+                   sinar setinggi lutut diabaikan - riser di depan bukan penghalang,
+                   melainkan anak tangga yang memang akan dinaiki. */
+                const depan = tanahInfo(POV.pos.x + dx, POV.pos.z + dz, POV.pos.y);
+                const naikiTangga = !!(depan && depan.tangga && depan.y > POV.pos.y - 0.05);
+                if (dx !== 0 && jalanBebas(dx, 0, naikiTangga)) POV.pos.x += dx;
+                if (dz !== 0 && jalanBebas(0, dz, naikiTangga)) POV.pos.z += dz;
+                const naik = tanahInfo(POV.pos.x, POV.pos.z, POV.pos.y);
+                if (naik && naik.y > POV.pos.y) POV.pos.y = naik.y;
+            }
 
             const tanah = tanahDiBawah(POV.pos.x, POV.pos.z, POV.pos.y);
-            if (tanah !== null && tanah <= POV.pos.y + POV.naikMaks && tanah >= POV.pos.y - 0.08) {
+            if (tanah !== null && tanah <= POV.pos.y + POV.naikTangga && tanah >= POV.pos.y - 0.08) {
                 POV.pos.y += (tanah - POV.pos.y) * Math.min(1, dt * 16);
                 POV.vy = 0;
             } else {
