@@ -71,6 +71,20 @@
         #emptySelectionMsg { font-size: 11px; color: #71717a; text-align: center; padding: 10px 0; font-style: italic; }
         #wallLineControls { background: #f4f4f5; padding: 8px; border-radius: 6px; margin-bottom: 10px; border: 1px dashed #a1a1aa; text-align: center; }
 
+        /* --- MODE JALAN (POV) --- */
+        #walkUI { display: none; position: absolute; inset: 0; z-index: 14; pointer-events: none; touch-action: none; }
+        #walkCross { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; opacity: 0.75; }
+        #walkCross::before, #walkCross::after { content: ''; position: absolute; background: #fff; box-shadow: 0 0 3px rgba(0,0,0,0.8); }
+        #walkCross::before { left: 50%; top: 4px; width: 2px; height: 14px; margin-left: -1px; }
+        #walkCross::after { top: 50%; left: 4px; height: 2px; width: 14px; margin-top: -1px; }
+        #walkJoy { position: absolute; left: 22px; bottom: 22px; width: 118px; height: 118px; border-radius: 50%; background: rgba(24,24,27,0.42); border: 2px solid rgba(255,255,255,0.35); pointer-events: auto; touch-action: none; }
+        #walkKnob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: rgba(255,255,255,0.8); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+        #walkExit { position: absolute; top: 12px; right: 12px; width: auto; padding: 8px 16px; background: rgba(239,68,68,0.92); color: #fff; border: none; border-radius: 20px; font-weight: 700; font-size: 13px; pointer-events: auto; cursor: pointer; }
+        #walkRun { position: absolute; right: 22px; bottom: 30px; width: 74px; height: 74px; border-radius: 50%; background: rgba(37,99,235,0.55); color: #fff; border: 2px solid rgba(255,255,255,0.35); font-weight: 700; font-size: 12px; pointer-events: auto; cursor: pointer; padding: 0; }
+        #walkRun.on { background: rgba(37,99,235,0.95); }
+        #walkInfo { position: absolute; top: 12px; left: 12px; padding: 6px 12px; background: rgba(24,24,27,0.72); color: #e4e4e7; border-radius: 8px; font-size: 11px; line-height: 1.5; max-width: 60%; }
+        #walkInfo b { color: #fff; }
+
         /* --- FLOOR (LANTAI) MANAGER --- */
         .floor-list { display: flex; flex-direction: column-reverse; gap: 4px; margin-bottom: 8px; max-height: 168px; overflow-y: auto; }
         .floor-item { display: flex; align-items: center; gap: 4px; padding: 5px 6px; border: 1px solid #d4d4d8; border-radius: 5px; background: #ffffff; cursor: pointer; font-size: 11px; color: #3f3f46; }
@@ -184,6 +198,9 @@
                     <button id="dupFloorBtn" style="flex:1;" title="Duplicate active floor"><span id="txtDupFloor">Copy</span></button>
                     <button id="delFloorBtn" class="btn-danger" style="flex:1;"><span id="txtDelFloor">Del</span></button>
                 </div>
+                <label id="txtLblFloorMat">Floor Finish (active level):</label>
+                <select id="floorMat" style="margin-bottom: 6px;"></select>
+                <input type="color" id="floorMatColor" value="#d4d4d8" style="width:100%; height:28px; padding:2px; margin-bottom:10px; cursor:pointer;">
                 <label id="txtLblFloorView">Other Floors (3D):</label>
                 <select id="floorViewMode" style="margin-bottom: 8px;">
                     <option value="ghost" id="optFvGhost">Ghost (transparent)</option>
@@ -261,6 +278,7 @@
                     <optgroup label="Lighting" id="optGrp5">
                         <option value="spot_light" id="optSpot">Spotlight</option>
                         <option value="area_light" id="optArea">Area Panel</option>
+                        <option value="pendant_lamp" id="optPendant">Pendant Lamp</option>
                     </optgroup>
                     <optgroup label="Decor & Plants" id="optGrp4">
                         <option value="standing_lamp" id="optLamp">Standing Lamp</option>
@@ -268,6 +286,11 @@
                         <option value="curtain" id="optCurtain">Curtain</option>
                         <option value="plant" id="optPlant">Indoor Plant</option>
                         <option value="tree" id="optTree">Tree</option>
+                        <option value="painting" id="optPainting">Painting / Wall Art</option>
+                        <option value="mirror" id="optMirror">Mirror</option>
+                        <option value="wall_clock" id="optClock">Wall Clock</option>
+                        <option value="vase" id="optVase">Vase</option>
+                        <option value="fireplace" id="optFireplace">Fireplace</option>
                     </optgroup>
                 </select>
 
@@ -309,6 +332,26 @@
                 <input type="range" id="sunAzim" min="0" max="360" step="5" value="45">
                 <label><span id="txtLblSunElev">Sun Height:</span> <span id="valSunElev">55</span>&deg;</label>
                 <input type="range" id="sunElev" min="5" max="90" step="1" value="55">
+                <label><span id="txtLblSunTemp">Sun Color:</span> <span id="valSunTemp">5200</span> K</label>
+                <input type="range" id="sunTemp" min="2000" max="10000" step="100" value="5200">
+                <label><span id="txtLblAmbient">Ambient / Sky:</span> <span id="valAmbient">0.45</span></label>
+                <input type="range" id="ambInt" min="0" max="2" step="0.05" value="0.45">
+                <label><span id="txtLblExposure">Exposure:</span> <span id="valExposure">1.00</span></label>
+                <input type="range" id="expo" min="0.3" max="2.5" step="0.05" value="1">
+                <label id="txtLblShadowQ">Shadow Quality:</label>
+                <select id="shadowQ" style="margin-bottom: 8px;">
+                    <option value="cepat" id="optSqFast">Fast</option>
+                    <option value="seimbang" id="optSqBal" selected>Balanced</option>
+                    <option value="halus" id="optSqHigh">High</option>
+                    <option value="lembut" id="optSqSoft">Very Soft (VSM)</option>
+                </select>
+                <label><span id="txtLblShadowSoft">Shadow Softness:</span> <span id="valShadowSoft">3</span></label>
+                <input type="range" id="shadowSoft" min="0" max="14" step="1" value="3">
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-top:4px;">
+                    <input type="checkbox" id="chkPBR" style="margin:0; width:14px; height:14px; cursor:pointer;">
+                    <span id="txtLblPBR">PBR Materials</span>
+                </label>
+                <div id="pbrHint" style="font-size:10px; color:#71717a; margin-top:4px; line-height:1.35;">Physically based surfaces: roughness, metalness, normal maps and environment reflections.</div>
             </div>
 
             <div class="sidebar-section">
@@ -331,6 +374,10 @@
                             <div><label id="txtLblWT2">Thick (m)</label><input type="number" id="editWallT" step="0.01" min="0.02" value="0.15"></div>
                         </div>
                         <button id="btnWallReset" class="edit-btn-secondary" style="margin-top:6px;">Reset H/T to Global</button>
+                        <div style="text-align:left; margin-top:6px;">
+                            <label id="txtLblWallMat">Wall Finish:</label>
+                            <select id="editWallMat" style="margin-bottom:8px;"></select>
+                        </div>
                         <div id="colorControls" style="display:none; margin-bottom:4px; text-align:left;">
                             <label id="txtLblColorA">Wall Side A:</label>
                             <input type="color" id="editColorA" value="#efefef" style="width:100%; height:30px; padding:2px; margin-bottom:8px; cursor:pointer;">
@@ -388,6 +435,10 @@
                         <label><span>Skala Z (Dalam):</span> <span id="valScaleZ">1.0</span>x</label>
                         <input type="range" id="editScaleZ" min="0.1" max="5.0" step="0.1" value="1.0">
 
+                        <div id="objMatControls" style="display:none; margin-bottom:10px;">
+                            <label id="txtLblObjMat">Material / Texture:</label>
+                            <select id="editObjMat"></select>
+                        </div>
                         <div id="objColorControls" style="display:none; margin-bottom:10px;">
                             <label id="txtLblObjColor">Color:</label>
                             <input type="color" id="editObjColor" value="#9b59b6" style="width:100%; height:30px; padding:2px; cursor:pointer;">
@@ -406,6 +457,8 @@
                             <input type="range" id="editLightInt" min="0" max="8" step="0.2" value="2.6">
                             <label><span id="txtLblLightRange">Reach:</span> <span id="valLightRange">20</span> m</label>
                             <input type="range" id="editLightRange" min="3" max="40" step="1" value="20">
+                            <label><span id="txtLblLightTemp">Light Color:</span> <span id="valLightTemp">2700</span> K</label>
+                            <input type="range" id="editLightTemp" min="1800" max="7000" step="100" value="2700">
                         </div>
 
                         <div id="voidControls" style="display:none;">
@@ -457,6 +510,7 @@
                         <li id="txtGuide2"><b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.</li>
                         <li id="txtGuide3"><b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.</li>
                         <li id="txtGuide4"><b>Floors:</b> Add / copy levels in the "Floors" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.</li>
+                        <li id="txtGuide7"><b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor.</li>
                         <li id="txtGuide6"><b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; use the <b>Void</b> tool: activate the floor that should have the hole, drop a void on it, then set its Width and Depth.</li>
                         <li id="txtGuide5"><b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.</li>
                     </ul>
@@ -474,6 +528,15 @@
                 <button id="btnPaint" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Ketuk permukaan di tampilan 3D untuk mengecat">Paint</button>
                 <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
                 <button id="btnTrSpace" style="width:auto; padding:6px 12px; background:#ca8a04; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Toggle Local/World Space">World</button>
+                <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
+                <button id="btnWalk" style="width:auto; padding:6px 12px; background:#10b981; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="First person walk">Walk</button>
+            </div>
+            <div id="walkUI">
+                <div id="walkInfo"></div>
+                <div id="walkCross"></div>
+                <div id="walkJoy"><div id="walkKnob"></div></div>
+                <button id="walkRun" type="button">RUN</button>
+                <button id="walkExit" type="button">&times; Exit</button>
             </div>
         </div>
     </div>
@@ -518,6 +581,7 @@
             return {
                 id: 'fl_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
                 name: null, height: tinggi || 3.0, visible: true,
+                lantaiBahan: 'keramik', lantaiWarna: '#d4d4d8',
                 lines: [], openings: [], freeObjects: []
             };
         }
@@ -561,6 +625,8 @@
                 name: f.name || null,
                 height: parseFloat(f.height) > 0 ? parseFloat(f.height) : 3.0,
                 visible: f.visible !== false,
+                lantaiBahan: f.lantaiBahan || 'keramik',
+                lantaiWarna: f.lantaiWarna || '#d4d4d8',
                 lines: f.lines || [], openings: f.openings || [], freeObjects: f.freeObjects || []
             }));
             return out.length ? out : [bikinLantai(3.0)];
@@ -639,7 +705,7 @@
                 if (kind === 'obj') {
                     const text = new TextDecoder().decode(new Uint8Array(buffer));
                     const obj = objLoader.parse(text);
-                    obj.traverse(c => { if (c.isMesh) c.material = new THREE.MeshLambertMaterial({ color: 0xcccccc }); });
+                    obj.traverse(c => { if (c.isMesh) c.material = matPolos(0xcccccc); });
                     onOk(normalizeModel(obj));
                 } else {
                     gltfLoader.parse(buffer, '', (gltf) => onOk(normalizeModel(gltf.scene)), () => onFail());
@@ -672,7 +738,7 @@
             clearTimeout(autosaveTimeout);
             autosaveTimeout = setTimeout(() => {
                 syncActiveFloor();
-                const base = { floors, currentFloor, wallHeight: inputWallH.value, wallThick: inputWallT.value };
+                const base = { floors, currentFloor, wallHeight: inputWallH.value, wallThick: inputWallT.value, render: ambilPengaturanRender() };
                 try { localStorage.setItem('floorplan_autosave', JSON.stringify(base)); } catch (err) {}
             }, 1500); 
         }
@@ -684,10 +750,16 @@
             table: { id: ["Persegi", "Bundar"], en: ["Rectangular", "Round"] },
             chair: { id: ["Standar", "Bangku (Stool)", "Armchair"], en: ["Standard", "Stool", "Armchair"] },
             sofa: { id: ["2 Dudukan", "Bentuk L"], en: ["2-Seater", "L-Shape"] },
-            tree: { id: ["Pohon Rindang", "Pohon Pinus"], en: ["Leafy Tree", "Pine Tree"] },
-            plant: { id: ["Pot Standar", "Kaktus"], en: ["Standard Pot", "Cactus"] },
-            carpet: { id: ["Persegi", "Bundar"], en: ["Rectangular", "Round"] },
-            curtain: { id: ["Terbuka", "Tertutup"], en: ["Open", "Closed"] },
+            tree: { id: ["Pohon Rindang", "Pohon Pinus", "Palem", "Bonsai"], en: ["Leafy Tree", "Pine Tree", "Palm", "Bonsai"] },
+            plant: { id: ["Pot Standar", "Kaktus", "Monstera", "Palem Kecil", "Sukulen", "Gantung"], en: ["Standard Pot", "Cactus", "Monstera", "Small Palm", "Succulent", "Hanging"] },
+            carpet: { id: ["Persegi", "Bundar", "Pelari (Runner)", "Bulu Tebal"], en: ["Rectangular", "Round", "Runner", "Shaggy"] },
+            curtain: { id: ["Terbuka", "Tertutup", "Tirai Lipat", "Vertical Blind"], en: ["Open", "Closed", "Roman Shade", "Vertical Blind"] },
+            painting: { id: ["Lanskap", "Abstrak", "Tiga Panel"], en: ["Landscape", "Abstract", "Triptych"] },
+            mirror: { id: ["Persegi Panjang", "Bundar", "Berdiri Penuh"], en: ["Rectangular", "Round", "Full Length"] },
+            wall_clock: { id: ["Bundar", "Kotak Minimalis"], en: ["Round", "Square Minimal"] },
+            vase: { id: ["Tinggi", "Bulat", "Set Tiga"], en: ["Tall", "Round", "Set of Three"] },
+            fireplace: { id: ["Dinding", "Berdiri"], en: ["Wall Mounted", "Free Standing"] },
+            pendant_lamp: { id: ["Kubah", "Tiga Bola", "Industrial"], en: ["Dome", "Three Globes", "Industrial"] },
             wardrobe: { id: ["Pintu Ayun 2", "Pintu Geser 3", "Sudut (L)"], en: ["2 Swing Doors", "3 Sliding Doors", "Corner (L)"] },
             bookshelf: { id: ["Rak Terbuka", "Partisi Ruang", "Rak Rendah"], en: ["Open Shelf", "Room Partition", "Low Shelf"] },
             head_cabinet: { id: ["Nakas Kecil", "Dua Laci", "Gantung"], en: ["Small Nightstand", "Two Drawers", "Wall-mounted"] },
@@ -729,6 +801,7 @@
                 gTitle: "Panduan Singkat", g1: "<b>Free Draw:</b> Mulai gambar langsung! Tiap kotak (grid) = 1 meter.",
                 g2: "<b>Tembok:</b> Tap 1x titik awal, tap posisi lain. Tap 2x (atau ESC) untuk mengakhiri garis tembok.",
                 g3: "<b>Edit & Hapus Tembok:</b> Gunakan Mode 'Pilih/Edit', klik garis tembok untuk menggeser posisinya atau menghapusnya.",
+                g7: "<b>Jalan (POV):</b> Tekan <b>Walk</b> di atas tampilan 3D untuk berdiri di dalam denah. Seret layar untuk menoleh, pakai joystick atau WASD untuk berjalan, dan tangga otomatis dinaiki &mdash; jadi bisa naik ke lantai berikutnya.",
                 g6: "<b>Void / Lubang Lantai:</b> Tangga otomatis melubangi lantai di atasnya. Untuk lubang lain &mdash; void ruang tinggi atau mezzanine &mdash; aktifkan dulu lantai yang mau dilubangi, lalu pakai <b>Void (Kotak)</b> dan atur Lebar/Dalam-nya, atau <b>Void (Trace)</b> untuk menggambar bentuk bebas: ketuk tiap sudut, lalu ketuk lagi titik pertama (atau ESC) untuk menutup.",
                 g4: "<b>Lantai Bertingkat:</b> Tambah / salin level di panel \"Lantai\". Lantai aktif adalah yang sedang digambar; lantai lain tampil transparan di 3D dan garis putus-putus di 2D.",
                 g5: "<b>Transform Tembok (3D):</b> Klik tembok di tampilan 3D untuk memegangnya dengan gizmo &mdash; Move, Rotate, Scale (X = panjang, Y = tinggi, Z = tebal), atau ketik angka pastinya di panel Properti.",
@@ -737,9 +810,20 @@
                 lblFloorView: "Lantai Lain (3D):", fvGhost: "Transparan (Ghost)", fvSolid: "Tampil Penuh", fvHidden: "Sembunyikan",
                 lblFloorRef: "Bayangan Denah 2D", grp6: "Utilitas",
                 desk: "Meja Kerja", washbasin: "Wastafel", washingMachine: "Mesin Cuci", acUnit: "AC / Pendingin",
+                painting: "Lukisan / Hiasan Dinding", mirror: "Cermin", wallClock: "Jam Dinding", vase: "Vas Bunga",
+                fireplace: "Perapian", pendantLamp: "Lampu Gantung",
                 lblStairVoid: "Bolongi Lantai Atas", modeVoid: "Void (Kotak)", modeVoidTrace: "Void (Trace)",
                 voidTraceHint: "Trace: ketuk tiap sudut lubang, lalu ketuk lagi titik pertama (atau tekan ESC) untuk menutup bentuknya.",
                 voidTracePoly: "Bentuknya hasil trace, jadi Lebar/Dalam tidak dipakai. Rotasi dan skala tetap bisa.",
+                lblSunTemp: "Warna Matahari:", lblAmbient: "Cahaya Langit:", lblExposure: "Exposure:",
+                lblShadowQ: "Mutu Bayangan:", sqFast: "Cepat", sqBal: "Seimbang", sqHigh: "Tinggi", sqSoft: "Sangat Halus (VSM)",
+                lblShadowSoft: "Kelembutan Bayangan:", lblPBR: "Material PBR",
+                pbrHint: "Permukaan berbasis fisika: roughness, metalness, peta normal, dan pantulan lingkungan.",
+                lblLightTemp: "Warna Lampu:", lblWallMat: "Finishing Tembok:", lblObjMat: "Material / Tekstur:",
+                lblFloorMat: "Finishing Lantai (level aktif):",
+                btnWalk: "Jalan", btnWalkExit: "Keluar",
+                walkHint: "Seret layar untuk menoleh &middot; joystick / WASD untuk jalan &middot; tangga otomatis kenaikan &middot; ESC keluar",
+                bahan: { bawaan: "Bawaan", cat: "Cat Polos", plester: "Plester", bata: "Bata Ekspos", beton: "Beton", keramik: "Keramik", marmer: "Marmer", granit: "Granit", kayu: "Kayu", parket: "Parket", batu: "Batu Alam", kain: "Kain", karpet: "Karpet", logam: "Logam", daun: "Daun" },
                 lblVoidW: "Lebar (m)", lblVoidD: "Dalam (m)",
                 voidHint: "Void ini melubangi pelat lantai tempat ia berada. Mau lubang di lantai 2? Aktifkan Lantai 2 dulu, baru pasang void-nya.",
                 lblWLen2: "Panjang (m)", lblWAng: "Sudut (\u00b0)", lblWH2: "Tinggi (m)", lblWT2: "Tebal (m)",
@@ -762,6 +846,7 @@
                 gTitle: "Quick Guide", g1: "<b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.",
                 g2: "<b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.",
                 g3: "<b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.",
+                g7: "<b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor.",
                 g6: "<b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; activate the floor that should have the hole, then use <b>Void (Box)</b> and set its Width/Depth, or <b>Void (Trace)</b> to draw a free shape: tap each corner, then tap the first point again (or press ESC) to close it.",
                 g4: "<b>Floors:</b> Add / copy levels in the \"Floors\" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.",
                 g5: "<b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.",
@@ -770,9 +855,20 @@
                 lblFloorView: "Other Floors (3D):", fvGhost: "Ghost (transparent)", fvSolid: "Solid", fvHidden: "Hidden",
                 lblFloorRef: "2D Underlay Ref", grp6: "Utility",
                 desk: "Desk / Work Table", washbasin: "Washbasin / Sink", washingMachine: "Washing Machine", acUnit: "Air Conditioner",
+                painting: "Painting / Wall Art", mirror: "Mirror", wallClock: "Wall Clock", vase: "Vase",
+                fireplace: "Fireplace", pendantLamp: "Pendant Lamp",
                 lblStairVoid: "Cut Opening Above", modeVoid: "Void (Box)", modeVoidTrace: "Void (Trace)",
                 voidTraceHint: "Trace: tap each corner of the opening, then tap the first point again (or press ESC) to close the shape.",
                 voidTracePoly: "This shape was traced, so Width/Depth do not apply. Rotation and scale still work.",
+                lblSunTemp: "Sun Color:", lblAmbient: "Ambient / Sky:", lblExposure: "Exposure:",
+                lblShadowQ: "Shadow Quality:", sqFast: "Fast", sqBal: "Balanced", sqHigh: "High", sqSoft: "Very Soft (VSM)",
+                lblShadowSoft: "Shadow Softness:", lblPBR: "PBR Materials",
+                pbrHint: "Physically based surfaces: roughness, metalness, normal maps and environment reflections.",
+                lblLightTemp: "Light Color:", lblWallMat: "Wall Finish:", lblObjMat: "Material / Texture:",
+                lblFloorMat: "Floor Finish (active level):",
+                btnWalk: "Walk", btnWalkExit: "Exit",
+                walkHint: "Drag to look &middot; joystick / WASD to move &middot; stairs are climbed automatically &middot; ESC to exit",
+                bahan: { bawaan: "Default", cat: "Flat Paint", plester: "Plaster", bata: "Exposed Brick", beton: "Concrete", keramik: "Ceramic Tile", marmer: "Marble", granit: "Granite", kayu: "Wood", parket: "Parquet", batu: "Natural Stone", kain: "Fabric", karpet: "Carpet", logam: "Metal", daun: "Foliage" },
                 lblVoidW: "Width (m)", lblVoidD: "Depth (m)",
                 voidHint: "This opening cuts a hole in the floor slab of the level it sits on. Want a hole in floor 2? Activate floor 2 first, then place the void there.",
                 lblWLen2: "Length (m)", lblWAng: "Angle (\u00b0)", lblWH2: "Height (m)", lblWT2: "Thick (m)",
@@ -781,6 +877,9 @@
                 floorEmptyDel: "At least one floor is required.", floorDelConfirm: "Delete this floor and everything on it?"
             }
         };
+
+        var bahanSiap = false;
+        const valSelect = (id) => { const el = document.getElementById(id); return el ? el.value : null; };
 
         function setLanguage(lang) {
             currentLang = lang; const t = texts[currentLang];
@@ -838,12 +937,30 @@
             setTxt('txtLblVoidW', t.lblVoidW); setTxt('txtLblVoidD', t.lblVoidD);
             if (selectedItem && selectedItem.type === 'void' && selectedItem.poly) setTxt('voidHint', t.voidTracePoly); else setTxt('voidHint', t.voidHint);
             setTxt('optDesk', t.desk); setTxt('optWashbasin', t.washbasin); setTxt('optWashing', t.washingMachine); setTxt('optAc', t.acUnit);
+            setTxt('optPainting', t.painting); setTxt('optMirror', t.mirror); setTxt('optClock', t.wallClock);
+            setTxt('optVase', t.vase); setTxt('optFireplace', t.fireplace); setTxt('optPendant', t.pendantLamp);
             if (document.getElementById('optGrp6')) document.getElementById('optGrp6').label = t.grp6;
+            setTxt('txtLblSunTemp', t.lblSunTemp); setTxt('txtLblAmbient', t.lblAmbient); setTxt('txtLblExposure', t.lblExposure);
+            setTxt('txtLblShadowQ', t.lblShadowQ); setTxt('optSqFast', t.sqFast); setTxt('optSqBal', t.sqBal);
+            setTxt('optSqHigh', t.sqHigh); setTxt('optSqSoft', t.sqSoft);
+            setTxt('txtLblShadowSoft', t.lblShadowSoft); setTxt('txtLblPBR', t.lblPBR); setTxt('pbrHint', t.pbrHint);
+            if (typeof POV !== 'undefined' && !POV.aktif) setTxt('btnWalk', t.btnWalk);
+            setTxt('walkExit', '\u00d7 ' + t.btnWalkExit);
+            setTxt('txtLblLightTemp', t.lblLightTemp); setTxt('txtLblWallMat', t.lblWallMat);
+            setTxt('txtLblObjMat', t.lblObjMat); setTxt('txtLblFloorMat', t.lblFloorMat);
+            if (bahanSiap) {
+                const simpan = { w: valSelect('editWallMat'), f: valSelect('floorMat'), o: valSelect('editObjMat') };
+                isiPilihanBahan();
+                if (simpan.w) document.getElementById('editWallMat').value = simpan.w;
+                if (simpan.f) document.getElementById('floorMat').value = simpan.f;
+                if (simpan.o) document.getElementById('editObjMat').value = simpan.o;
+            }
             if (typeof floors !== 'undefined' && floors.length) renderFloorList();
             document.getElementById('txtGuideTitle').innerText = t.gTitle; document.getElementById('txtGuide1').innerHTML = t.g1; document.getElementById('txtGuide2').innerHTML = t.g2; document.getElementById('txtGuide3').innerHTML = t.g3;
             if (document.getElementById('txtGuide4')) document.getElementById('txtGuide4').innerHTML = t.g4;
             if (document.getElementById('txtGuide5')) document.getElementById('txtGuide5').innerHTML = t.g5;
             if (document.getElementById('txtGuide6')) document.getElementById('txtGuide6').innerHTML = t.g6;
+            if (document.getElementById('txtGuide7')) document.getElementById('txtGuide7').innerHTML = t.g7;
             if (typeof selectedItem !== 'undefined' && selectedItem !== null) { openEditPanel(selectedItem); }
         }
 
@@ -906,6 +1023,10 @@
             const f = activeFloor();
             const el = document.getElementById('valWallH');
             if (f && el) el.value = f.height;
+            const bahan = document.getElementById('floorMat');
+            const warna = document.getElementById('floorMatColor');
+            if (f && bahan) bahan.value = f.lantaiBahan || 'keramik';
+            if (f && warna) warna.value = f.lantaiWarna || '#d4d4d8';
         }
 
         function setActiveFloor(i) {
@@ -960,15 +1081,65 @@
         document.getElementById('floorViewMode').addEventListener('change', (e) => { floorViewMode = e.target.value; update3D(); });
         document.getElementById('chkFloorRef').addEventListener('change', (e) => { showFloorRef = e.target.checked; draw2D(); });
 
-        ['sunInt', 'sunAzim', 'sunElev'].forEach(id => {
+        ['sunInt', 'sunAzim', 'sunElev', 'sunTemp', 'ambInt', 'expo'].forEach(id => {
             document.getElementById(id).addEventListener('input', (e) => {
-                const map = { sunInt: 'valSunInt', sunAzim: 'valSunAzim', sunElev: 'valSunElev' };
-                document.getElementById(map[id]).innerText = e.target.value;
+                const map = { sunInt: 'valSunInt', sunAzim: 'valSunAzim', sunElev: 'valSunElev', sunTemp: 'valSunTemp', ambInt: 'valAmbient', expo: 'valExposure' };
+                const nilai = parseFloat(e.target.value);
+                document.getElementById(map[id]).innerText = (id === 'expo') ? nilai.toFixed(2) : e.target.value;
                 updateSun();
             });
         });
         document.getElementById('chkSun').addEventListener('change', updateSun);
         document.getElementById('chkShadow').addEventListener('change', terapkanBayangan);
+        document.getElementById('shadowQ').addEventListener('change', (e) => { mutuBayangan = e.target.value; terapkanBayangan(); });
+        document.getElementById('shadowSoft').addEventListener('input', (e) => { document.getElementById('valShadowSoft').innerText = e.target.value; terapkanBayangan(); });
+        document.getElementById('chkPBR').addEventListener('change', (e) => {
+            pbrAktif = e.target.checked;
+            siapkanLingkungan();
+            update3D();
+        });
+
+        /* Isi dropdown finishing dari daftar bahan yang tersedia. */
+        function isiPilihanBahan() {
+            const nama = () => texts[currentLang].bahan;
+            const isi = (el, daftar, terpilih) => {
+                if (!el) return;
+                el.innerHTML = '';
+                daftar.forEach(b => { const o = document.createElement('option'); o.value = b; o.innerText = nama()[b] || b; el.appendChild(o); });
+                if (terpilih) el.value = terpilih;
+            };
+            isi(document.getElementById('editWallMat'), BAHAN_TEMBOK);
+            isi(document.getElementById('floorMat'), BAHAN_LANTAI);
+            isi(document.getElementById('editObjMat'), ['bawaan'].concat(BAHAN_TEMBOK.filter(b => b !== 'cat')).concat(['kain', 'karpet', 'logam', 'parket', 'granit']));
+        }
+
+        document.getElementById('editWallMat').addEventListener('change', (e) => {
+            if (!selectedItem || !selectedItem.isWall) return;
+            const garis = lines[selectedItem.index]; if (!garis) return;
+            saveState();
+            garis.bahanA = e.target.value; garis.bahanB = e.target.value;
+            update3D();
+        });
+        document.getElementById('floorMat').addEventListener('change', (e) => {
+            saveState(); activeFloor().lantaiBahan = e.target.value; update3D();
+        });
+        document.getElementById('floorMatColor').addEventListener('pointerdown', () => beginUndoStep());
+        document.getElementById('floorMatColor').addEventListener('input', (e) => {
+            activeFloor().lantaiWarna = e.target.value; update3D();
+        });
+        document.getElementById('editObjMat').addEventListener('change', (e) => {
+            if (!selectedItem || selectedItem.isWall) return;
+            saveState();
+            if (e.target.value === 'bawaan') delete selectedItem.bahan; else selectedItem.bahan = e.target.value;
+            update3D();
+        });
+        document.getElementById('editLightTemp').addEventListener('pointerdown', () => beginUndoStep());
+        document.getElementById('editLightTemp').addEventListener('input', (e) => {
+            if (!selectedItem) return;
+            selectedItem.lightTemp = parseFloat(e.target.value);
+            document.getElementById('valLightTemp').innerText = selectedItem.lightTemp;
+            update3D();
+        });
 
         let scale = 1; let panX = 0, panY = 0; let startPanX = 0, startPanY = 0;
 
@@ -998,6 +1169,7 @@
                         }]);
                         bindFloor(loadedData.currentFloor || 0);
                         if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
+                        terapkanPengaturanRender(loadedData.render);
                         syncFloorUI();
                     }
                     if (!sceneIsEmpty()) {
@@ -1260,12 +1432,14 @@
             document.getElementById('lightControls').style.display = 'none';
             document.getElementById('colorControls').style.display = 'none';
             document.getElementById('objColorControls').style.display = 'none';
+            document.getElementById('objMatControls').style.display = 'none';
             if (item.type && variantData[item.type]) { variantControls.style.display = 'block'; editVariant.innerHTML = ''; let options = variantData[item.type][currentLang]; options.forEach((optText, index) => { let opt = document.createElement('option'); opt.value = index; opt.innerText = optText; editVariant.appendChild(opt); }); editVariant.value = item.variant || 0; } else { variantControls.style.display = 'none'; }
             
             if (item.isWall) {
                 wallLineControls.style.display = 'block'; wallObjectControls.style.display = 'none'; freeObjectControls.style.display = 'none';
                 refreshWallPanel();
                 const garis = lines[item.index] || {};
+                document.getElementById('editWallMat').value = garis.bahanA || 'cat';
                 document.getElementById('colorControls').style.display = 'block';
                 document.getElementById('editColorA').value = garis.warnaA || '#efefef';
                 document.getElementById('editColorB').value = garis.warnaB || '#efefef';
@@ -1292,11 +1466,15 @@
                     const bawaanWarna = { kain: '#34495e', kayu: '#8b5a2b', karpet: '#9b59b6', logam: '#7f8c8d', putih: '#ecf0f1', hijau: '#2e8b57', hitam: '#111111' };
                     document.getElementById('objColorControls').style.display = 'block';
                     document.getElementById('editObjColor').value = item.warna || bawaanWarna[MATERIAL_UTAMA[item.type]];
+                    document.getElementById('objMatControls').style.display = 'block';
+                    document.getElementById('editObjMat').value = item.bahan || 'bawaan';
+                } else {
+                    document.getElementById('objMatControls').style.display = 'none';
                 }
-                const iniLampu = (item.type === 'spot_light' || item.type === 'area_light' || item.type === 'standing_lamp');
+                const iniLampu = (item.type === 'spot_light' || item.type === 'area_light' || item.type === 'standing_lamp' || item.type === 'pendant_lamp');
                 document.getElementById('lightControls').style.display = iniLampu ? 'block' : 'none';
                 if (iniLampu) {
-                    const lampuLantai = item.type === 'standing_lamp';
+                    const lampuLantai = (item.type === 'standing_lamp' || item.type === 'pendant_lamp');
                     const bawaan = lampuLantai ? 1.8 : ([1.6, 2.6, 3.6][item.variant || 0] || 1.6);
                     if (item.lightIntensity === undefined) item.lightIntensity = bawaan;
                     if (item.lightRange === undefined) item.lightRange = lampuLantai ? 9 : 20;
@@ -1306,6 +1484,9 @@
                     document.getElementById('valLightInt').innerText = item.lightIntensity;
                     document.getElementById('editLightRange').value = item.lightRange;
                     document.getElementById('valLightRange').innerText = item.lightRange;
+                    if (item.lightTemp === undefined) item.lightTemp = lampuLantai ? 2700 : 3000;
+                    document.getElementById('editLightTemp').value = item.lightTemp;
+                    document.getElementById('valLightTemp').innerText = item.lightTemp;
                 }
 
                 document.getElementById('voidControls').style.display = (item.type === 'void') ? 'block' : 'none';
@@ -1727,7 +1908,8 @@
                     if (['bed','sofa','table','chair','tv','buffet','wardrobe','bookshelf','head_cabinet','desk'].includes(obj.type)) color = '#f59e0b';
                     else if (['washing_machine','ac_unit'].includes(obj.type)) color = '#64748b';
                     else if (['kitchen_set','stove','fridge'].includes(obj.type)) color = '#ec4899';
-                    else if (['standing_lamp','spot_light','area_light'].includes(obj.type)) color = '#eab308';
+                    else if (['standing_lamp','spot_light','area_light','pendant_lamp'].includes(obj.type)) color = '#eab308';
+                    else if (['painting','mirror','wall_clock','vase','fireplace'].includes(obj.type)) color = '#a855f7';
                     else if (['plant','tree'].includes(obj.type)) color = '#22c55e';
                     else if (['carpet','curtain'].includes(obj.type)) color = '#a855f7';
                     else if (obj.type === 'custom_glb') color = '#8b5cf6';
@@ -1740,7 +1922,7 @@
                     
                     ctx.scale(obj.flipX ? -1 : 1, obj.flipZ ? -1 : 1);
                     ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(10, Math.min(sizeX,sizeZ)*0.35)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
-                    const labels = { bed:'BED', sofa:'SOFA', table:'TBL', chair:'CHR', tv:'TV', buffet:'BUF', wardrobe:'WRD', bookshelf:'BKS', head_cabinet:'NKS', kitchen_set:'KIT', stove:'STV', fridge:'FRG', toilet:'WC', shower:'SHW', bathtub:'BAT', standing_lamp:'LMP', spot_light:'SPT', area_light:'PNL', carpet:'CRP', curtain:'CUR', plant:'PLT', tree:'TRE', desk:'DSK', washbasin:'WSB', washing_machine:'WSH', ac_unit:'AC', custom_glb:'GLB', custom_obj:'OBJ' }; ctx.fillText(labels[obj.type] || 'OBJ', 0, 0); 
+                    const labels = { bed:'BED', sofa:'SOFA', table:'TBL', chair:'CHR', tv:'TV', buffet:'BUF', wardrobe:'WRD', bookshelf:'BKS', head_cabinet:'NKS', kitchen_set:'KIT', stove:'STV', fridge:'FRG', toilet:'WC', shower:'SHW', bathtub:'BAT', standing_lamp:'LMP', spot_light:'SPT', area_light:'PNL', carpet:'CRP', curtain:'CUR', plant:'PLT', tree:'TRE', desk:'DSK', washbasin:'WSB', washing_machine:'WSH', ac_unit:'AC', painting:'ART', mirror:'MIR', wall_clock:'CLK', vase:'VAS', fireplace:'FPL', pendant_lamp:'PND', custom_glb:'GLB', custom_obj:'OBJ' }; ctx.fillText(labels[obj.type] || 'OBJ', 0, 0); 
                 } ctx.restore();
             });
             gambarJejakVoid();
@@ -1850,6 +2032,13 @@
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, renderContainer.clientWidth / renderContainer.clientHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(renderContainer.clientWidth, renderContainer.clientHeight); renderer.setClearColor(0x27272a); renderContainer.appendChild(renderer.domElement);
+        /* Pipeline warna: tekstur & warna pilihan pengguna ada di ruang sRGB, render
+           dikerjakan linear, lalu dikembalikan ke sRGB saat ditampilkan. Tanpa ini
+           warna di layar tidak pernah sama dengan warna yang dipilih. */
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -1861,10 +2050,6 @@
 
         const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.15);
         sunLight.castShadow = true;
-        sunLight.shadow.mapSize.set(4096, 4096);
-        sunLight.shadow.bias = -0.0005;
-        sunLight.shadow.normalBias = 0.05;
-        sunLight.shadow.radius = 4;
         scene.add(sunLight);
         scene.add(sunLight.target);
 
@@ -1872,6 +2057,13 @@
 
         function updateSun() {
             const on = document.getElementById('chkSun').checked;
+            sunLight.color.copy(warnaKelvin(parseFloat(document.getElementById('sunTemp').value) || 5200));
+            const kuatAmbien = parseFloat(document.getElementById('ambInt').value);
+            if (isFinite(kuatAmbien)) {
+                ambientLight.intensity = kuatAmbien * 0.55;
+                langitLight.intensity = kuatAmbien;
+            }
+            renderer.toneMappingExposure = parseFloat(document.getElementById('expo').value) || 1.0;
             const azim = THREE.MathUtils.degToRad(parseFloat(document.getElementById('sunAzim').value));
             const elev = THREE.MathUtils.degToRad(parseFloat(document.getElementById('sunElev').value));
             const kuat = parseFloat(document.getElementById('sunInt').value);
@@ -1892,8 +2084,36 @@
             c.updateProjectionMatrix();
         }
 
+        const SHADOW_PRESET = {
+            cepat:    { type: THREE.PCFShadowMap,     ukuran: 1024, radius: 1 },
+            seimbang: { type: THREE.PCFSoftShadowMap, ukuran: 2048, radius: 3 },
+            halus:    { type: THREE.PCFSoftShadowMap, ukuran: 4096, radius: 5 },
+            lembut:   { type: THREE.VSMShadowMap,     ukuran: 2048, radius: 8 }
+        };
+        let mutuBayangan = 'seimbang';
+
+        /* Semua sumber cahaya memakai preset yang sama, jadi bayangan matahari dan
+           lampu punya tingkat kelembutan yang konsisten. */
+        function aturShadowCamera(cahaya, preset, halus) {
+            if (!cahaya.shadow) return;
+            cahaya.shadow.mapSize.set(preset.ukuran, preset.ukuran);
+            cahaya.shadow.radius = Math.max(0.5, preset.radius * (0.4 + halus / 6));
+            if (preset.type === THREE.VSMShadowMap) {
+                cahaya.shadow.bias = 0;
+                cahaya.shadow.normalBias = 0;
+            } else {
+                cahaya.shadow.bias = cahaya.isDirectionalLight ? -0.0004 : -0.001;
+                cahaya.shadow.normalBias = 0.045;
+            }
+            if (cahaya.shadow.map) { cahaya.shadow.map.dispose(); cahaya.shadow.map = null; }
+        }
+
         function terapkanBayangan() {
             const aktif = document.getElementById('chkShadow').checked;
+            const preset = SHADOW_PRESET[mutuBayangan] || SHADOW_PRESET.seimbang;
+            const halus = parseFloat(document.getElementById('shadowSoft').value);
+            if (renderer.shadowMap.type !== preset.type) { renderer.shadowMap.type = preset.type; scene.traverse(o => { if (o.isMesh && o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; }); }); }
+            scene.traverse(o => { if (o.isLight && o.shadow) aturShadowCamera(o, preset, isFinite(halus) ? halus : 3); });
             renderer.shadowMap.enabled = aktif;
             modelGroup.traverse(o => {
                 if (!o.isMesh) return;
@@ -1920,6 +2140,8 @@
         
         function animate() { 
             requestAnimationFrame(animate); 
+            /* animate() sudah berjalan sebelum blok POV dideklarasikan, jadi harus dijaga. */
+            if (typeof POV !== 'undefined' && POV.aktif) { updateJalan(); renderer.render(scene, camera); return; }
             controls.update(); 
             
             if (selectedItem && selectedItem.lineIndex === undefined && !selectedItem.isWall) {
@@ -1989,9 +2211,9 @@
         function createStairsMesh(stepsCount, stairWidth, totalHeight, variant = 0, obj = null) {
             const stairsGroup = new THREE.Group();
             const warnaKayu = (obj && obj.warna) ? new THREE.Color(obj.warna).getHex() : 0xd2b48c;
-            const matStairs = new THREE.MeshLambertMaterial({ color: warnaKayu });
-            const matGelap = new THREE.MeshLambertMaterial({ color: 0x6b4c2f });
-            const matBesi = new THREE.MeshLambertMaterial({ color: 0x9aa0a6 });
+            const matStairs = matTeks('kayu', warnaKayu, 2);
+            const matGelap = matPolos(0x6b4c2f, null, 'kayu');
+            const matBesi = matPolos(0x9aa0a6, null, 'logam');
             const n = Math.max(3, parseInt(stepsCount) || 14);
             const W = Math.max(0.4, stairWidth || 1.0);
             const hStep = totalHeight / n;
@@ -2145,10 +2367,108 @@
             return stairsGroup;
         }
 
+        /* ---------- WARNA, MATERIAL, PBR ---------- */
+        let pbrAktif = false;
+
+        /* Warna yang dipilih pengguna selalu sRGB; shader butuh linear. */
+        const sRGB = (c) => new THREE.Color(c).convertSRGBToLinear();
+
+        /* Suhu warna (Kelvin) -> RGB, pendekatan Tanner Helland. 2700K lampu pijar
+           hangat, 4000K netral, 5200K siang, 7000K+ langit mendung kebiruan. */
+        function warnaKelvin(k) {
+            const t = Math.max(1000, Math.min(12000, k)) / 100;
+            let r, g, b;
+            if (t <= 66) { r = 255; g = 99.4708025861 * Math.log(t) - 161.1195681661; }
+            else { r = 329.698727446 * Math.pow(t - 60, -0.1332047592); g = 288.1221695283 * Math.pow(t - 60, -0.0755148492); }
+            if (t >= 66) b = 255;
+            else if (t <= 19) b = 0;
+            else b = 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+            const c = (v) => Math.min(1, Math.max(0, v / 255));
+            return new THREE.Color(c(r), c(g), c(b)).convertSRGBToLinear();
+        }
+
+        /* Sifat permukaan tiap jenis bahan saat mode PBR aktif. */
+        const PBR_SIFAT = {
+            kayu:    { roughness: 0.70, metalness: 0.0 },
+            parket:  { roughness: 0.42, metalness: 0.0 },
+            kain:    { roughness: 0.96, metalness: 0.0 },
+            karpet:  { roughness: 1.00, metalness: 0.0 },
+            logam:   { roughness: 0.34, metalness: 0.88 },
+            marmer:  { roughness: 0.18, metalness: 0.0 },
+            keramik: { roughness: 0.14, metalness: 0.0 },
+            granit:  { roughness: 0.35, metalness: 0.0 },
+            bata:    { roughness: 0.93, metalness: 0.0 },
+            beton:   { roughness: 0.88, metalness: 0.0 },
+            plester: { roughness: 0.95, metalness: 0.0 },
+            batu:    { roughness: 0.90, metalness: 0.0 },
+            daun:    { roughness: 0.76, metalness: 0.0 },
+            polos:   { roughness: 0.80, metalness: 0.0 }
+        };
+
+        /* Pilihan finishing: 'cat' rata tanpa tekstur, sisanya bertekstur prosedural. */
+        const BAHAN_TEMBOK = ['cat', 'plester', 'bata', 'beton', 'keramik', 'marmer', 'kayu', 'batu'];
+        const BAHAN_LANTAI = ['keramik', 'parket', 'kayu', 'marmer', 'granit', 'beton', 'karpet', 'batu'];
+        const ULANG_BAHAN = { bata: 4, keramik: 5, beton: 3, plester: 3, batu: 4, marmer: 2, kayu: 3, parket: 4, granit: 3, karpet: 6 };
+
+        bahanSiap = true;
+        isiPilihanBahan();
+
+        /* Pengaturan render ikut tersimpan, supaya PBR dan suasana cahaya tidak
+           kembali ke bawaan setiap kali proyek dibuka. */
+        function ambilPengaturanRender() {
+            const v = (id) => { const el = document.getElementById(id); return el ? el.value : null; };
+            return { pbr: pbrAktif, expo: v('expo'), sunInt: v('sunInt'), sunTemp: v('sunTemp'), sunAzim: v('sunAzim'),
+                     sunElev: v('sunElev'), amb: v('ambInt'), mutu: v('shadowQ'), halus: v('shadowSoft'),
+                     bayangan: document.getElementById('chkShadow').checked, matahari: document.getElementById('chkSun').checked };
+        }
+        function terapkanPengaturanRender(r) {
+            if (!r) return;
+            const set = (id, nilai, label, desimal) => {
+                const el = document.getElementById(id);
+                if (!el || nilai === undefined || nilai === null) return;
+                el.value = nilai;
+                const lb = document.getElementById(label);
+                if (lb) lb.innerText = desimal ? parseFloat(nilai).toFixed(2) : nilai;
+            };
+            set('expo', r.expo, 'valExposure', true); set('sunInt', r.sunInt, 'valSunInt');
+            set('sunTemp', r.sunTemp, 'valSunTemp'); set('sunAzim', r.sunAzim, 'valSunAzim');
+            set('sunElev', r.sunElev, 'valSunElev'); set('ambInt', r.amb, 'valAmbient');
+            set('shadowSoft', r.halus, 'valShadowSoft');
+            if (r.mutu) { document.getElementById('shadowQ').value = r.mutu; mutuBayangan = r.mutu; }
+            if (r.bayangan !== undefined) document.getElementById('chkShadow').checked = r.bayangan;
+            if (r.matahari !== undefined) document.getElementById('chkSun').checked = r.matahari;
+            pbrAktif = !!r.pbr;
+            document.getElementById('chkPBR').checked = pbrAktif;
+            siapkanLingkungan();
+            updateSun(); terapkanBayangan();
+        }
+
+        function bahanTembok(bahan, warna) {
+            if (!bahan || bahan === 'cat') return matPolos(warna, null, 'plester');
+            return matTeks(bahan, new THREE.Color(warna).getHex(), ULANG_BAHAN[bahan] || 3);
+        }
+        function bahanPelat(bahan, warna) {
+            const w = warna || '#d4d4d8';
+            if (!bahan || bahan === 'cat') return matPolos(w, { side: THREE.DoubleSide }, 'plester');
+            return matTeks(bahan, new THREE.Color(w).getHex(), (ULANG_BAHAN[bahan] || 3) * 2, { side: THREE.DoubleSide });
+        }
+
+        /* Material warna polos. Di mode PBR jadi MeshStandardMaterial. */
+        function matPolos(warna, extra, jenis) {
+            const opt = Object.assign({}, extra || {});
+            opt.color = sRGB(warna);
+            if (!pbrAktif) return new THREE.MeshLambertMaterial(opt);
+            const sifat = PBR_SIFAT[jenis || 'polos'] || PBR_SIFAT.polos;
+            if (opt.roughness === undefined) opt.roughness = sifat.roughness;
+            if (opt.metalness === undefined) opt.metalness = sifat.metalness;
+            return new THREE.MeshStandardMaterial(opt);
+        }
+
         const _texCache = {};
-        function bikinTekstur(jenis, warnaDasar, ulang = 1) {
+        const _kanvasCache = {};
+        function kanvasTekstur(jenis, warnaDasar) {
             const kunci = jenis + '_' + warnaDasar;
-            if (!_texCache[kunci]) {
+            if (!_kanvasCache[kunci]) {
                 const S = 256, cv = document.createElement('canvas');
                 cv.width = cv.height = S;
                 const g = cv.getContext('2d');
@@ -2205,6 +2525,95 @@
                         while (y < S) { x += (Math.random() - 0.5) * 26; y += 12; g.lineTo(x, y); }
                         g.stroke();
                     }
+                } else if (jenis === 'bata') {
+                    const th = S / 6, tw = S / 3;
+                    g.fillStyle = 'rgba(240,240,240,0.5)'; g.fillRect(0, 0, S, S);
+                    for (let baris = 0; baris < 6; baris++) {
+                        const geser = (baris % 2) * (tw / 2);
+                        for (let i = -1; i < 4; i++) {
+                            const x = i * tw + geser + 2, y = baris * th + 2;
+                            const v = 1 + (Math.random() - 0.5) * 0.22;
+                            g.fillStyle = 'rgba(' + [0, 0, 0].map(() => 0).join(',') + ',0)';
+                            g.save();
+                            g.globalCompositeOperation = 'source-over';
+                            g.fillStyle = hex; g.fillRect(x, y, tw - 4, th - 4);
+                            g.fillStyle = 'rgba(' + (v > 1 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v - 1) + ')';
+                            g.fillRect(x, y, tw - 4, th - 4);
+                            g.restore();
+                        }
+                    }
+                    for (let i = 0; i < 5000; i++) {
+                        g.fillStyle = 'rgba(0,0,0,' + Math.random() * 0.05 + ')';
+                        g.fillRect(Math.random() * S, Math.random() * S, 2, 2);
+                    }
+                } else if (jenis === 'keramik') {
+                    const n = 4, t = S / n;
+                    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+                        g.fillStyle = hex; g.fillRect(i * t + 1.5, j * t + 1.5, t - 3, t - 3);
+                        const v = (Math.random() - 0.5) * 0.06;
+                        g.fillStyle = 'rgba(' + (v > 0 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v) + ')';
+                        g.fillRect(i * t + 1.5, j * t + 1.5, t - 3, t - 3);
+                    }
+                    g.strokeStyle = 'rgba(0,0,0,0.30)'; g.lineWidth = 3;
+                    for (let i = 0; i <= n; i++) {
+                        g.beginPath(); g.moveTo(i * t, 0); g.lineTo(i * t, S); g.stroke();
+                        g.beginPath(); g.moveTo(0, i * t); g.lineTo(S, i * t); g.stroke();
+                    }
+                    const kilau = g.createLinearGradient(0, 0, S, S);
+                    kilau.addColorStop(0, 'rgba(255,255,255,0.10)'); kilau.addColorStop(0.5, 'rgba(255,255,255,0)');
+                    g.fillStyle = kilau; g.fillRect(0, 0, S, S);
+                } else if (jenis === 'parket') {
+                    const bw = S / 4, bh = S / 8;
+                    for (let baris = 0; baris < 8; baris++) for (let i = 0; i < 4; i++) {
+                        const x = i * bw + (baris % 2 ? bw / 2 : 0), y = baris * bh;
+                        const v = (Math.random() - 0.5) * 0.16;
+                        g.fillStyle = hex; g.fillRect(x, y, bw - 1.5, bh - 1.5);
+                        g.fillStyle = 'rgba(' + (v > 0 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v) + ')';
+                        g.fillRect(x, y, bw - 1.5, bh - 1.5);
+                        g.strokeStyle = 'rgba(0,0,0,0.06)'; g.lineWidth = 0.7;
+                        for (let k = 0; k < 5; k++) {
+                            const yy = y + Math.random() * bh;
+                            g.beginPath(); g.moveTo(x, yy); g.lineTo(x + bw - 1.5, yy + (Math.random() - 0.5) * 2); g.stroke();
+                        }
+                    }
+                } else if (jenis === 'beton') {
+                    for (let i = 0; i < 260; i++) {
+                        const r = 8 + Math.random() * 46;
+                        const v = (Math.random() - 0.5) * 0.12;
+                        g.fillStyle = 'rgba(' + (v > 0 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v) + ')';
+                        g.beginPath(); g.arc(Math.random() * S, Math.random() * S, r, 0, Math.PI * 2); g.fill();
+                    }
+                    for (let i = 0; i < 9000; i++) {
+                        g.fillStyle = 'rgba(0,0,0,' + Math.random() * 0.06 + ')';
+                        g.fillRect(Math.random() * S, Math.random() * S, 1.6, 1.6);
+                    }
+                } else if (jenis === 'plester') {
+                    for (let i = 0; i < 6000; i++) {
+                        const v = Math.random() < 0.5 ? 255 : 0;
+                        g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + Math.random() * 0.045 + ')';
+                        g.beginPath(); g.arc(Math.random() * S, Math.random() * S, 1 + Math.random() * 2.4, 0, Math.PI * 2); g.fill();
+                    }
+                } else if (jenis === 'batu') {
+                    for (let i = 0; i < 34; i++) {
+                        const cx = Math.random() * S, cy = Math.random() * S, r = 14 + Math.random() * 26;
+                        const v = (Math.random() - 0.5) * 0.26;
+                        g.fillStyle = 'rgba(' + (v > 0 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v) + ')';
+                        g.beginPath();
+                        for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+                            const rr = r * (0.7 + Math.random() * 0.5);
+                            const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+                            a === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+                        }
+                        g.closePath(); g.fill();
+                        g.strokeStyle = 'rgba(0,0,0,0.22)'; g.lineWidth = 2; g.stroke();
+                    }
+                } else if (jenis === 'granit') {
+                    for (let i = 0; i < 16000; i++) {
+                        const v = Math.random();
+                        const warna = v < 0.33 ? '0,0,0' : (v < 0.66 ? '255,255,255' : '120,110,100');
+                        g.fillStyle = 'rgba(' + warna + ',' + Math.random() * 0.22 + ')';
+                        g.fillRect(Math.random() * S, Math.random() * S, 1.5 + Math.random() * 2, 1.5 + Math.random() * 2);
+                    }
                 } else if (jenis === 'daun') {
                     for (let i = 0; i < 1800; i++) {
                         const t = Math.random() < 0.5 ? 255 : 0;
@@ -2212,18 +2621,100 @@
                         g.beginPath(); g.ellipse(Math.random() * S, Math.random() * S, 3 + Math.random() * 5, 2 + Math.random() * 3, Math.random() * 3, 0, Math.PI * 2); g.fill();
                     }
                 }
-                const t = new THREE.CanvasTexture(cv);
+                _kanvasCache[kunci] = cv;
+            }
+            return _kanvasCache[kunci];
+        }
+
+        function bikinTekstur(jenis, warnaDasar, ulang = 1) {
+            const kunci = jenis + '_' + warnaDasar;
+            if (!_texCache[kunci]) {
+                const t = new THREE.CanvasTexture(kanvasTekstur(jenis, warnaDasar));
                 t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                t.encoding = THREE.sRGBEncoding;
+                t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
                 _texCache[kunci] = t;
             }
             const tex = _texCache[kunci].clone();
             tex.needsUpdate = true;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.encoding = THREE.sRGBEncoding;
             tex.repeat.set(ulang, ulang);
             return tex;
         }
-        const matTeks = (jenis, warna, ulang, extra) =>
-            new THREE.MeshLambertMaterial(Object.assign({ map: bikinTekstur(jenis, warna, ulang) }, extra || {}));
+
+        /* Peta normal diturunkan dari kecerahan tekstur itu sendiri, jadi serat kayu,
+           nat keramik, dan siar bata benar-benar menangkap cahaya di mode PBR. */
+        const _normCache = {};
+        function bikinNormal(jenis, warnaDasar, ulang = 1) {
+            const kunci = jenis + '_' + warnaDasar;
+            if (!_normCache[kunci]) {
+                const src = kanvasTekstur(jenis, warnaDasar);
+                const S = src.width;
+                const data = src.getContext('2d').getImageData(0, 0, S, S).data;
+                const tinggi = new Float32Array(S * S);
+                for (let i = 0; i < S * S; i++)
+                    tinggi[i] = (data[i * 4] * 0.299 + data[i * 4 + 1] * 0.587 + data[i * 4 + 2] * 0.114) / 255;
+                const out = document.createElement('canvas'); out.width = out.height = S;
+                const og = out.getContext('2d'); const img = og.createImageData(S, S);
+                const kuat = 2.4;
+                for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+                    const kiri = tinggi[y * S + ((x - 1 + S) % S)], kanan = tinggi[y * S + ((x + 1) % S)];
+                    const atas = tinggi[((y - 1 + S) % S) * S + x], bawah = tinggi[((y + 1) % S) * S + x];
+                    const nx = (kiri - kanan) * kuat, ny = (atas - bawah) * kuat, nz = 1;
+                    const pj = Math.hypot(nx, ny, nz);
+                    const i = (y * S + x) * 4;
+                    img.data[i] = ((nx / pj) * 0.5 + 0.5) * 255;
+                    img.data[i + 1] = ((ny / pj) * 0.5 + 0.5) * 255;
+                    img.data[i + 2] = ((nz / pj) * 0.5 + 0.5) * 255;
+                    img.data[i + 3] = 255;
+                }
+                og.putImageData(img, 0, 0);
+                const t = new THREE.CanvasTexture(out);
+                t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                _normCache[kunci] = t;
+            }
+            const tex = _normCache[kunci].clone();
+            tex.needsUpdate = true;
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(ulang, ulang);
+            return tex;
+        }
+
+        /* Lingkungan untuk pantulan PBR: gradien langit-tanah sederhana lewat PMREM. */
+        let petaLingkungan = null;
+        function siapkanLingkungan() {
+            if (!pbrAktif) { scene.environment = null; return; }
+            if (!petaLingkungan) {
+                const S = 256, cv = document.createElement('canvas');
+                cv.width = S * 2; cv.height = S;
+                const g = cv.getContext('2d');
+                const grad = g.createLinearGradient(0, 0, 0, S);
+                grad.addColorStop(0.00, '#7fa8de');
+                grad.addColorStop(0.46, '#dfeaf7');
+                grad.addColorStop(0.52, '#9c9184');
+                grad.addColorStop(1.00, '#46403a');
+                g.fillStyle = grad; g.fillRect(0, 0, S * 2, S);
+                const tex = new THREE.CanvasTexture(cv);
+                tex.mapping = THREE.EquirectangularReflectionMapping;
+                tex.encoding = THREE.sRGBEncoding;
+                const pmrem = new THREE.PMREMGenerator(renderer);
+                pmrem.compileEquirectangularShader();
+                petaLingkungan = pmrem.fromEquirectangular(tex).texture;
+                pmrem.dispose(); tex.dispose();
+            }
+            scene.environment = petaLingkungan;
+        }
+        function matTeks(jenis, warna, ulang, extra) {
+            const opt = Object.assign({ map: bikinTekstur(jenis, warna, ulang) }, extra || {});
+            if (!pbrAktif) return new THREE.MeshLambertMaterial(opt);
+            const sifat = PBR_SIFAT[jenis] || PBR_SIFAT.polos;
+            opt.normalMap = bikinNormal(jenis, warna, ulang);
+            opt.normalScale = new THREE.Vector2(0.55, 0.55);
+            if (opt.roughness === undefined) opt.roughness = sifat.roughness;
+            if (opt.metalness === undefined) opt.metalness = sifat.metalness;
+            return new THREE.MeshStandardMaterial(opt);
+        }
 
         const MATERIAL_UTAMA = {
             sofa: 'kain', curtain: 'kain',
@@ -2234,6 +2725,7 @@
             toilet: 'putih', bathtub: 'putih', shower: 'putih',
             plant: 'hijau', tree: 'hijau',
             desk: 'kayu', washbasin: 'putih', washing_machine: 'putih', ac_unit: 'putih',
+            painting: 'kayu', mirror: 'logam', wall_clock: 'kayu', vase: 'putih', fireplace: 'batu', pendant_lamp: 'logam',
             tv: 'hitam'
         };
 
@@ -2246,20 +2738,29 @@
             let matCurtain = matTeks('kain', 0xf5f5dc, 4);
             let matWhite = matTeks('marmer', 0xecf0f1, 1);
             let matMetal = matTeks('logam', 0x7f8c8d, 1);
-            let matBlack = new THREE.MeshLambertMaterial({ color: 0x111111 });
-            const matGlass = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.4 });
+            let matBlack = matPolos(0x111111);
+            const matGlass = matPolos(0x87CEEB, { transparent: true, opacity: 0.4 });
             let matGreen = matTeks('daun', 0x2e8b57, 2);
 
-            if (obj && obj.warna && MATERIAL_UTAMA[type]) {
-                const hx = new THREE.Color(obj.warna).getHex();
-                switch (MATERIAL_UTAMA[type]) {
-                    case 'kayu':   matWood = matTeks('kayu', hx, 2); break;
-                    case 'kain':   matFabric = matTeks('kain', hx, 3); matCurtain = matTeks('kain', hx, 4); break;
-                    case 'karpet': matCarpet = matTeks('karpet', hx, 4); break;
-                    case 'logam':  matMetal = matTeks('logam', hx, 1); break;
-                    case 'putih':  matWhite = matTeks('marmer', hx, 1); break;
-                    case 'hijau':  matGreen = matTeks('daun', hx, 2); break;
-                    case 'hitam':  matBlack = new THREE.MeshLambertMaterial({ color: hx }); break;
+            /* Warna dan tekstur objek: slot bahan utamanya tetap, tapi jenis tekstur
+               bisa diganti pengguna lewat "Material / Texture". */
+            if (obj && (obj.warna || obj.bahan) && MATERIAL_UTAMA[type]) {
+                const slot = MATERIAL_UTAMA[type];
+                const bawaanWarna = { kain: 0x34495e, kayu: 0x8b5a2b, karpet: 0x9b59b6, logam: 0x7f8c8d, putih: 0xecf0f1, hijau: 0x2e8b57, hitam: 0x111111 };
+                const teksSlot = { kayu: 'kayu', kain: 'kain', karpet: 'karpet', logam: 'logam', putih: 'marmer', hijau: 'daun', hitam: null };
+                const hx = obj.warna ? new THREE.Color(obj.warna).getHex() : bawaanWarna[slot];
+                const jenis = (obj.bahan && obj.bahan !== 'bawaan') ? obj.bahan : teksSlot[slot];
+                const m = (!jenis || jenis === 'cat')
+                    ? matPolos(hx, null, slot === 'logam' ? 'logam' : 'polos')
+                    : matTeks(jenis, hx, ULANG_BAHAN[jenis] || 2);
+                switch (slot) {
+                    case 'kayu':   matWood = m; break;
+                    case 'kain':   matFabric = m; matCurtain = m; break;
+                    case 'karpet': matCarpet = m; break;
+                    case 'logam':  matMetal = m; break;
+                    case 'putih':  matWhite = m; break;
+                    case 'hijau':  matGreen = m; break;
+                    case 'hitam':  matBlack = m; break;
                 }
             }
 
@@ -2309,12 +2810,35 @@
             else if (type === 'table') { if (variant === 1) { const top = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.05, 32), matWood); top.position.y = 0.75; group.add(top); const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.72, 16), matWood); leg.position.y = 0.36; group.add(leg); const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 32), matWood); foot.position.y = 0.025; group.add(foot); } else { const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.8), matWood); top.position.y = 0.75; group.add(top); for(let x of [-0.5, 0.5]) { for(let z of [-0.3, 0.3]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.72, 0.06), matWood); leg.position.set(x, 0.36, z); group.add(leg); } } } } 
             else if (type === 'chair') { if (variant === 1) { const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16), matWood); seat.position.y = 0.75; group.add(seat); const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.7, 8), matMetal); leg.position.y = 0.35; group.add(leg); } else if (variant === 2) { const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.6), matFabric); seat.position.y = 0.3; group.add(seat); const back = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.15), matFabric); back.position.set(0, 0.65, -0.225); group.add(back); for(let x of [-0.25, 0.25]){ const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.6), matFabric); arm.position.set(x, 0.5, 0); group.add(arm); } } else { const seat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.04, 0.45), matWood); seat.position.y = 0.45; group.add(seat); const back = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.04), matWood); back.position.set(0, 0.68, -0.2); group.add(back); } } 
             else if (type === 'carpet') {
-                const carpet = variant === 1
-                    ? new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.02, 32), matCarpet)
-                    : new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.02, 1.5), matCarpet);
-                carpet.position.y = 0.01; group.add(carpet);
+                let carpet;
+                if (variant === 1) carpet = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.02, 32), matCarpet);
+                else if (variant === 2) carpet = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.02, 0.8), matCarpet);
+                else if (variant === 3) carpet = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.07, 1.5), matCarpet);
+                else carpet = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.02, 1.5), matCarpet);
+                carpet.position.y = variant === 3 ? 0.035 : 0.01; group.add(carpet);
+                if (variant === 3) for (let i = 0; i < 90; i++) {
+                    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.07, 5), matCarpet);
+                    b.position.set((Math.random() - 0.5) * 1.9, 0.07, (Math.random() - 0.5) * 1.4); group.add(b);
+                }
             }
-            else if (type === 'curtain') { const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.2, 8), matMetal); rail.rotation.z = Math.PI/2; rail.position.y = 2.4; group.add(rail); if (variant === 1) { const fabric = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.3, 0.05), matCurtain); fabric.position.y = 1.25; group.add(fabric); } else { for (let x of [-0.8, 0.8]) { const fabric = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.3, 0.05), matCurtain); fabric.position.set(x, 1.25, 0); group.add(fabric); } } }
+            else if (type === 'curtain') {
+                const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.2, 8), matMetal);
+                rail.rotation.z = Math.PI / 2; rail.position.y = 2.4; group.add(rail);
+                if (variant === 1) { const fabric = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.3, 0.05), matCurtain); fabric.position.y = 1.25; group.add(fabric); }
+                else if (variant === 2) {
+                    const kain = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.9, 0.06), matCurtain);
+                    kain.position.y = 1.95; group.add(kain);
+                    for (let i = 0; i < 3; i++) {
+                        const lipat = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.0, 10, 1, false, 0, Math.PI), matCurtain);
+                        lipat.rotation.z = Math.PI / 2; lipat.position.set(0, 1.55 - i * 0.17, 0.03); group.add(lipat);
+                    }
+                } else if (variant === 3) {
+                    for (let i = 0; i < 13; i++) {
+                        const bilah = new THREE.Mesh(new THREE.BoxGeometry(0.02, 2.3, 0.14), matCurtain);
+                        bilah.position.set(-1.0 + i * 0.165, 1.25, 0); bilah.rotation.y = 0.5; group.add(bilah);
+                    }
+                } else { for (let x of [-0.8, 0.8]) { const fabric = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.3, 0.05), matCurtain); fabric.position.set(x, 1.25, 0); group.add(fabric); } }
+            }
             else if (type === 'tv') {
                 if (variant === 1) {
                     const braket = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.06), matMetal); braket.position.set(0, 1.35, -0.05); group.add(braket);
@@ -2372,14 +2896,14 @@
                 }
             }
             else if (type === 'spot_light' || type === 'area_light') {
-                const warna = 0xfff1d0;
+                const warna = warnaKelvin((obj && obj.lightTemp) || 3000);
                 const bawaan = [1.6, 2.6, 3.6][variant] || 1.6;
                 const nyala = !obj || obj.lightOn !== false;
                 const mauBayangan = !obj || obj.lightShadow !== false;
                 const kuat = nyala ? (obj && obj.lightIntensity !== undefined ? obj.lightIntensity : bawaan) : 0;
                 const jangkauan = (obj && obj.lightRange !== undefined) ? obj.lightRange : 20;
                 const efektifNyala = nyala && kuat > 0;
-                const warnaKaca = efektifNyala ? warna : 0x555555;
+                const warnaKaca = efektifNyala ? 0xfff1d0 : 0x555555;
 
                 if (type === 'spot_light') {
                     const batang = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 8), matMetal);
@@ -2387,10 +2911,10 @@
                     const rumah = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.14, 0.2, 16), matMetal);
                     rumah.position.y = 2.35; group.add(rumah);
                     const kaca = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 16),
-                        new THREE.MeshBasicMaterial({ color: warnaKaca }));
+                        new THREE.MeshBasicMaterial({ color: sRGB(warnaKaca) }));
                     kaca.position.y = 2.25; group.add(kaca);
 
-                    const lampu = new THREE.SpotLight(warna, kuat, jangkauan, Math.PI / 7, 0.45, 1.4);
+                    const lampu = new THREE.SpotLight(warna, kuat, jangkauan, Math.PI / 7, 0.45, 2);
                     lampu.position.set(0, 2.3, 0);
                     lampu.visible = efektifNyala;
                     lampu.castShadow = mauBayangan;
@@ -2408,10 +2932,10 @@
                     const bingkai = new THREE.Mesh(new THREE.BoxGeometry(W + 0.06, 0.06, D + 0.06), matMetal);
                     bingkai.position.y = 2.72; group.add(bingkai);
                     const bidang = new THREE.Mesh(new THREE.BoxGeometry(W, 0.03, D),
-                        new THREE.MeshBasicMaterial({ color: warnaKaca }));
+                        new THREE.MeshBasicMaterial({ color: sRGB(warnaKaca) }));
                     bidang.position.y = 2.68; group.add(bidang);
 
-                    const lampu = new THREE.SpotLight(warna, kuat, jangkauan, Math.PI / 2.4, 1.0, 1.2);
+                    const lampu = new THREE.SpotLight(warna, kuat, jangkauan, Math.PI / 2.4, 1.0, 2);
                     lampu.position.set(0, 2.66, 0);
                     lampu.visible = efektifNyala;
                     lampu.castShadow = mauBayangan;
@@ -2445,7 +2969,7 @@
                         const lebar = 0.03 + ((r * 7 + n * 3) % 5) * 0.012;
                         const tinggi = (H / jml) * (0.52 + ((n * 5 + r) % 4) * 0.09);
                         const buku = new THREE.Mesh(new THREE.BoxGeometry(lebar, tinggi, D * 0.62),
-                            new THREE.MeshLambertMaterial({ color: warnaBuku[(r * 3 + n) % warnaBuku.length] }));
+                            matPolos(warnaBuku[(r * 3 + n) % warnaBuku.length]));
                         buku.position.set(x + lebar / 2, yRak + tinggi / 2, 0.01);
                         group.add(buku); x += lebar + 0.008; n++;
                     }
@@ -2560,17 +3084,17 @@
                 if (variant === 1) {
                     const tub = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.38, 0.6, 24), matWhite);
                     tub.scale.x = 1.8; tub.position.y = 0.34; group.add(tub);
-                    const dalam = new THREE.Mesh(new THREE.CylinderGeometry(0.39, 0.33, 0.06, 24), new THREE.MeshLambertMaterial({ color: 0xdfe9ef }));
+                    const dalam = new THREE.Mesh(new THREE.CylinderGeometry(0.39, 0.33, 0.06, 24), matPolos(0xdfe9ef));
                     dalam.scale.x = 1.8; dalam.position.y = 0.62; group.add(dalam);
                     const keran = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8), matMetal); keran.position.set(-0.78, 0.25, 0); group.add(keran);
                 } else if (variant === 2) {
                     const tub = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.2, 0.55, 22, 1, false, 0, Math.PI / 2), matWhite);
                     tub.position.set(-0.65, 0.275, -0.65); group.add(tub);
-                    const dalam = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.1, 0.06, 22, 1, false, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xdfe9ef }));
+                    const dalam = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.1, 0.06, 22, 1, false, 0, Math.PI / 2), matPolos(0xdfe9ef));
                     dalam.position.set(-0.65, 0.53, -0.65); group.add(dalam);
                 } else {
                     const tub = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.55, 0.75), matWhite); tub.position.y = 0.275; group.add(tub);
-                    const dalam = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.06, 0.62), new THREE.MeshLambertMaterial({ color: 0xdfe9ef })); dalam.position.y = 0.52; group.add(dalam);
+                    const dalam = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.06, 0.62), matPolos(0xdfe9ef)); dalam.position.y = 0.52; group.add(dalam);
                 }
             } 
             else if (type === 'standing_lamp') {
@@ -2578,7 +3102,7 @@
                 const kuatL = nyalaL ? (obj && obj.lightIntensity !== undefined ? obj.lightIntensity : 1.8) : 0;
                 const bayanganL = !obj || obj.lightShadow !== false;
                 const hidup = nyalaL && kuatL > 0;
-                const matNyala = hidup ? new THREE.MeshBasicMaterial({ color: 0xfff0c8 }) : matWhite;
+                const matNyala = hidup ? new THREE.MeshBasicMaterial({ color: sRGB(0xfff0c8) }) : matWhite;
                 let posKap = new THREE.Vector3(0, 1.58, 0);
                 if (variant === 1) {
                     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.06, 20), matMetal); base.position.y = 0.03; group.add(base);
@@ -2605,7 +3129,7 @@
                     const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 0.3, 16), matNyala);
                     shade.position.y = 1.6; group.add(shade);
                 }
-                const bohlam = new THREE.PointLight(0xfff1d0, kuatL, (obj && obj.lightRange !== undefined) ? obj.lightRange : 9, 1.6);
+                const bohlam = new THREE.PointLight(warnaKelvin((obj && obj.lightTemp) || 2700), kuatL, (obj && obj.lightRange !== undefined) ? obj.lightRange : 9, 2);
                 bohlam.position.copy(posKap);
                 bohlam.visible = hidup;
                 bohlam.castShadow = bayanganL;
@@ -2617,7 +3141,183 @@
                 bohlam.shadow.camera.near = 0.15; bohlam.shadow.camera.far = 20;
                 group.add(bohlam);
             }
-            else if (type === 'plant') { const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.1, 0.3, 16), matWhite); pot.position.y = 0.15; group.add(pot); if (variant === 1) { const cactus = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 8), matGreen); cactus.position.y = 0.55; group.add(cactus); const arm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 8), matGreen); arm1.rotation.z = Math.PI/4; arm1.position.set(0.1, 0.5, 0); group.add(arm1); } else { const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), matGreen); leaves.position.y = 0.5; group.add(leaves); } }
+            else if (type === 'plant') {
+                const daunLebar = (x, y, z, s, miring, putar) => {
+                    const d = new THREE.Mesh(new THREE.CircleGeometry(s, 10, 0, Math.PI), matGreen);
+                    d.material.side = THREE.DoubleSide;
+                    d.position.set(x, y, z); d.rotation.set(-Math.PI / 2 + miring, putar, 0); return d;
+                };
+                if (variant === 5) {
+                    const gantung = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.0, 6), matMetal);
+                    gantung.position.y = 2.4; group.add(gantung);
+                    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.14, 0.22, 16), matWhite);
+                    pot.position.y = 1.8; group.add(pot);
+                    for (let i = 0; i < 16; i++) {
+                        const a = (i / 16) * Math.PI * 2, pj = 0.3 + Math.random() * 0.55;
+                        const sulur = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, pj, 5), matGreen);
+                        sulur.position.set(Math.cos(a) * 0.17, 1.7 - pj / 2, Math.sin(a) * 0.17);
+                        sulur.rotation.set(Math.cos(a) * 0.25, 0, -Math.sin(a) * 0.25); group.add(sulur);
+                    }
+                    return group;
+                }
+                const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.1, 0.3, 16), matWhite);
+                pot.position.y = 0.15; group.add(pot);
+                if (variant === 1) {
+                    const cactus = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 8), matGreen);
+                    cactus.position.y = 0.55; group.add(cactus);
+                    const arm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 8), matGreen);
+                    arm1.rotation.z = Math.PI / 4; arm1.position.set(0.1, 0.5, 0); group.add(arm1);
+                } else if (variant === 2) {
+                    for (let i = 0; i < 7; i++) {
+                        const a = (i / 7) * Math.PI * 2;
+                        const tangkai = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.45 + i * 0.04, 5), matGreen);
+                        tangkai.position.set(Math.cos(a) * 0.06, 0.5 + i * 0.02, Math.sin(a) * 0.06); group.add(tangkai);
+                        group.add(daunLebar(Math.cos(a) * 0.26, 0.72 + i * 0.045, Math.sin(a) * 0.26, 0.2, 0.9, a));
+                    }
+                } else if (variant === 3) {
+                    const batang = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.6, 8), matWoodDark);
+                    batang.position.y = 0.55; group.add(batang);
+                    for (let i = 0; i < 9; i++) {
+                        const a = (i / 9) * Math.PI * 2;
+                        const pelepah = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 0.55), matGreen);
+                        pelepah.position.set(Math.cos(a) * 0.25, 0.92, Math.sin(a) * 0.25);
+                        pelepah.rotation.set(0.35, -a, 0); group.add(pelepah);
+                    }
+                } else if (variant === 4) {
+                    for (let i = 0; i < 5; i++) {
+                        const a = (i / 5) * Math.PI * 2;
+                        const roset = new THREE.Mesh(new THREE.SphereGeometry(0.07 + i * 0.008, 7, 5), matGreen);
+                        roset.scale.y = 0.6;
+                        roset.position.set(Math.cos(a) * 0.07, 0.33, Math.sin(a) * 0.07); group.add(roset);
+                    }
+                    const tengah = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), matGreen);
+                    tengah.scale.y = 0.7; tengah.position.y = 0.36; group.add(tengah);
+                } else {
+                    const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), matGreen);
+                    leaves.position.y = 0.5; group.add(leaves);
+                }
+            }
+            else if (type === 'painting') {
+                const bikin = (w, h, x, y) => {
+                    const bingkai = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, h + 0.08, 0.05), matWood);
+                    bingkai.position.set(x, y, 0); group.add(bingkai);
+                    const kanvas = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.02),
+                        matPolos(variant === 1 ? 0xc2703f : 0x6f8fa8, null, 'kain'));
+                    kanvas.position.set(x, y, 0.03); group.add(kanvas);
+                };
+                if (variant === 2) { bikin(0.5, 0.7, -0.62, 1.6); bikin(0.5, 0.7, 0, 1.6); bikin(0.5, 0.7, 0.62, 1.6); }
+                else if (variant === 1) bikin(1.0, 1.0, 0, 1.6);
+                else bikin(1.2, 0.8, 0, 1.6);
+            }
+            else if (type === 'mirror') {
+                const kaca = matPolos(0xcfe3ef, { roughness: 0.03, metalness: 0.9 }, 'logam');
+                if (variant === 1) {
+                    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.05, 32), matMetal);
+                    b.rotation.x = Math.PI / 2; b.position.y = 1.55; group.add(b);
+                    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.02, 32), kaca);
+                    m.rotation.x = Math.PI / 2; m.position.set(0, 1.55, 0.03); group.add(m);
+                } else if (variant === 2) {
+                    const b = new THREE.Mesh(new THREE.BoxGeometry(0.66, 1.75, 0.06), matWood);
+                    b.position.y = 0.88; b.rotation.x = -0.06; group.add(b);
+                    const m = new THREE.Mesh(new THREE.BoxGeometry(0.56, 1.65, 0.02), kaca);
+                    m.position.set(0, 0.88, 0.04); m.rotation.x = -0.06; group.add(m);
+                    const kaki = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.3), matWood);
+                    kaki.position.set(0, 0.02, 0.1); group.add(kaki);
+                } else {
+                    const b = new THREE.Mesh(new THREE.BoxGeometry(0.72, 1.0, 0.06), matMetal);
+                    b.position.y = 1.5; group.add(b);
+                    const m = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.92, 0.02), kaca);
+                    m.position.set(0, 1.5, 0.04); group.add(m);
+                }
+            }
+            else if (type === 'wall_clock') {
+                if (variant === 1) {
+                    const b = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 0.05), matWood);
+                    b.position.y = 2.0; group.add(b);
+                    const m = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.01), matWhite);
+                    m.position.set(0, 2.0, 0.031); group.add(m);
+                } else {
+                    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 28), matWood);
+                    b.rotation.x = Math.PI / 2; b.position.y = 2.0; group.add(b);
+                    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.01, 28), matWhite);
+                    m.rotation.x = Math.PI / 2; m.position.set(0, 2.0, 0.031); group.add(m);
+                }
+                for (const [pj, sdt, teb] of [[0.11, 1.1, 0.012], [0.15, -0.5, 0.008]]) {
+                    const jarum = new THREE.Mesh(new THREE.BoxGeometry(teb, pj, 0.008), matBlack);
+                    jarum.position.set(Math.sin(sdt) * pj / 2, 2.0 + Math.cos(sdt) * pj / 2, 0.04);
+                    jarum.rotation.z = -sdt; group.add(jarum);
+                }
+            }
+            else if (type === 'vase') {
+                const bikinVas = (x, r, h, isi) => {
+                    const v = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.62, r, h, 18), matWhite);
+                    v.position.set(x, h / 2, 0); group.add(v);
+                    if (isi) for (let i = 0; i < 6; i++) {
+                        const a = (i / 6) * Math.PI * 2;
+                        const t = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, h * 0.9, 5), matGreen);
+                        t.position.set(x + Math.cos(a) * 0.04, h + h * 0.4, Math.sin(a) * 0.04);
+                        t.rotation.set(Math.cos(a) * 0.2, 0, -Math.sin(a) * 0.2); group.add(t);
+                        const bunga = new THREE.Mesh(new THREE.SphereGeometry(0.05, 7, 5), matPolos(0xd9536f, null, 'kain'));
+                        bunga.position.set(x + Math.cos(a) * 0.1, h + h * 0.85, Math.sin(a) * 0.1); group.add(bunga);
+                    }
+                };
+                if (variant === 1) bikinVas(0, 0.2, 0.28, false);
+                else if (variant === 2) { bikinVas(-0.22, 0.09, 0.3, false); bikinVas(0, 0.12, 0.46, true); bikinVas(0.22, 0.08, 0.22, false); }
+                else bikinVas(0, 0.13, 0.62, true);
+            }
+            else if (type === 'fireplace') {
+                const rangka = new THREE.Mesh(new THREE.BoxGeometry(1.5, variant === 1 ? 1.0 : 1.3, 0.45), matWhite);
+                rangka.position.y = (variant === 1 ? 1.0 : 1.3) / 2 + (variant === 1 ? 0.35 : 0); group.add(rangka);
+                const lubang = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.06), matBlack);
+                lubang.position.set(0, (variant === 1 ? 0.85 : 0.55), 0.22); group.add(lubang);
+                const api = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.3, 0.02),
+                    new THREE.MeshBasicMaterial({ color: sRGB(0xff8a3d), transparent: true, opacity: 0.85 }));
+                api.position.set(0, (variant === 1 ? 0.72 : 0.42), 0.24); group.add(api);
+                const cahaya = new THREE.PointLight(warnaKelvin(1900), 1.6, 7, 2);
+                cahaya.position.set(0, (variant === 1 ? 0.8 : 0.5), 0.5);
+                cahaya.castShadow = false; cahaya.userData.mauBayangan = false; group.add(cahaya);
+                if (variant === 1) { const alas = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.35, 0.5), matWhite); alas.position.y = 0.175; group.add(alas); }
+                else { const rak = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.08, 0.55), matWood); rak.position.y = 1.34; group.add(rak); }
+            }
+            else if (type === 'pendant_lamp') {
+                const nyalaP = !obj || obj.lightOn !== false;
+                const kuatP = nyalaP ? (obj && obj.lightIntensity !== undefined ? obj.lightIntensity : 2.0) : 0;
+                const bayanganP = !obj || obj.lightShadow !== false;
+                const hidupP = nyalaP && kuatP > 0;
+                const warnaP = warnaKelvin((obj && obj.lightTemp) || 2700);
+                const matNyalaP = hidupP ? new THREE.MeshBasicMaterial({ color: sRGB(0xfff0c8) }) : matWhite;
+                let yLampu = 2.1;
+                if (variant === 1) {
+                    for (const [x, y] of [[-0.35, 2.05], [0, 2.3], [0.35, 1.85]]) {
+                        const kabel = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 2.85 - y, 5), matBlack);
+                        kabel.position.set(x, (2.85 + y) / 2, 0); group.add(kabel);
+                        const bola = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), matNyalaP);
+                        bola.position.set(x, y, 0); group.add(bola);
+                    }
+                    yLampu = 2.05;
+                } else if (variant === 2) {
+                    const kabel = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.6, 6), matBlack);
+                    kabel.position.y = 2.55; group.add(kabel);
+                    const kap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.3, 0.26, 18, 1, true), matMetal);
+                    kap.material.side = THREE.DoubleSide; kap.position.y = 2.12; group.add(kap);
+                    const bola = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), matNyalaP);
+                    bola.position.y = 2.02; group.add(bola);
+                    yLampu = 2.0;
+                } else {
+                    const kabel = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.5, 6), matBlack);
+                    kabel.position.y = 2.6; group.add(kabel);
+                    const kubah = new THREE.Mesh(new THREE.SphereGeometry(0.28, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), matNyalaP);
+                    kubah.rotation.x = Math.PI; kubah.position.y = 2.35; group.add(kubah);
+                    yLampu = 2.2;
+                }
+                const lampu = new THREE.PointLight(warnaP, kuatP, (obj && obj.lightRange !== undefined) ? obj.lightRange : 11, 2);
+                lampu.position.y = yLampu;
+                lampu.visible = hidupP;
+                lampu.castShadow = bayanganP;
+                lampu.userData.mauBayangan = bayanganP;
+                lampu.shadow.camera.near = 0.15; lampu.shadow.camera.far = 22;
+                group.add(lampu);
+            }
             else if (type === 'desk') {
                 const W = 1.4, D = 0.7, H = 0.75;
                 const top = new THREE.Mesh(new THREE.BoxGeometry(W, 0.05, D), matWood); top.position.y = H; group.add(top);
@@ -2701,7 +3401,36 @@
                     const kisi = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.06, 0.03), matMetal); kisi.position.set(0, 2.18, 0.11); group.add(kisi);
                 }
             }
-            else if (type === 'tree') { const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 1.0, 8), matWoodDark); trunk.position.y = 0.5; group.add(trunk); if (variant === 1) { const leaves1 = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.2, 16), matGreen); leaves1.position.y = 1.2; group.add(leaves1); const leaves2 = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.0, 16), matGreen); leaves2.position.y = 1.8; group.add(leaves2); } else { const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), matGreen); leaves.position.y = 1.2; group.add(leaves); } }
+            else if (type === 'tree') {
+                if (variant === 2) {
+                    const batang = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.2, 2.6, 10), matWoodDark);
+                    batang.position.y = 1.3; group.add(batang);
+                    for (let i = 0; i < 11; i++) {
+                        const a = (i / 11) * Math.PI * 2;
+                        const pelepah = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 1.5), matGreen);
+                        pelepah.position.set(Math.cos(a) * 0.65, 2.55, Math.sin(a) * 0.65);
+                        pelepah.rotation.set(0.42, -a, 0); group.add(pelepah);
+                    }
+                } else if (variant === 3) {
+                    const pot = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.45), matWhite);
+                    pot.position.y = 0.1; group.add(pot);
+                    const batang = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.5, 8), matWoodDark);
+                    batang.position.y = 0.45; batang.rotation.z = 0.2; group.add(batang);
+                    for (const [x, y, r] of [[-0.18, 0.78, 0.22], [0.14, 0.86, 0.18], [0.02, 0.72, 0.16]]) {
+                        const rumpun = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), matGreen);
+                        rumpun.scale.y = 0.55; rumpun.position.set(x, y, 0); group.add(rumpun);
+                    }
+                } else {
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 1.0, 8), matWoodDark);
+                    trunk.position.y = 0.5; group.add(trunk);
+                    if (variant === 1) {
+                        const leaves1 = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.2, 16), matGreen); leaves1.position.y = 1.2; group.add(leaves1);
+                        const leaves2 = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.0, 16), matGreen); leaves2.position.y = 1.8; group.add(leaves2);
+                    } else {
+                        const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), matGreen); leaves.position.y = 1.2; group.add(leaves);
+                    }
+                }
+            }
             return group;
         }
 
@@ -2785,6 +3514,7 @@
             });
 
             if (window.transformControl) updateTransformControlSelection(selectedItem);
+            if (typeof POV !== 'undefined' && POV.aktif) kumpulkanPenghalang();
             if (charactersOn) { characterGroup.position.y = floorBaseY(currentFloor); buildWalkGrid(); }
             updateSun();
             terapkanBayangan();
@@ -2794,13 +3524,21 @@
 
         /* Denah lokal tangga (meter, titik pusat = pusat objek), mengikuti bentuk
            aslinya: tangga L dapat lubang berbentuk L, spiral dapat lubang bundar. */
-        function denahLokalTangga(o, pad) {
+        function denahLokalTangga(o, pad, tinggiLantai) {
             const n = Math.max(3, parseInt(o.steps) || 14);
             const W = Math.max(0.4, o.width3D || 1.0);
             const d = STEP_DEPTH;
             const v = o.variant || 0;
+            /* Ujung atas tangga TIDAK boleh ikut dilubangi: di situlah orang menapak
+               keluar ke lantai atas. Panjang yang dipotong dihitung dari titik saat
+               tangga sudah berada kurang dari 18 cm di bawah pelat. */
+            const hStep = (tinggiLantai || 3) / n;
+            const potong = Math.max(0.12, Math.min(1.4 * d, (0.18 / hStep) * d));
+
             if (v === 4) {
-                const R = Math.max(0.8, W) + pad;
+                /* Spiral: lubang dikecilkan satu anak tangga, jadi cincin terluarnya
+                   tetap berpelat dan bisa dipijak saat keluar di atas. */
+                const R = Math.max(0.35, Math.max(0.8, W) + pad - potong);
                 const titik = [];
                 for (let i = 0; i < 20; i++) { const a = (i / 20) * Math.PI * 2; titik.push({ x: Math.cos(a) * R, z: Math.sin(a) * R }); }
                 return titik;
@@ -2809,14 +3547,26 @@
                 const n1 = Math.max(1, Math.floor(n / 2)), n2 = Math.max(1, n - n1 - 1);
                 const cx = -n2 * d / 2, cz = (n1 * d + W) / 2;
                 const kiri = -W / 2 - pad, kanan = W / 2 + pad;
-                const jauh = -W / 2 - n2 * d - pad;
+                const jauh = Math.min(kiri - 0.1, -W / 2 - n2 * d - pad + potong);
                 const z0 = -pad, zSiku = n1 * d - pad, z1 = n1 * d + W + pad;
                 return [[kiri, z0], [kanan, z0], [kanan, z1], [jauh, z1], [jauh, zSiku], [kiri, zSiku]]
                     .map(([x, z]) => ({ x: x - cx, z: z - cz }));
             }
+            if (v === 3) {
+                const n1 = Math.max(1, Math.floor((n - 1) / 2)), n2 = Math.max(1, n - 1 - n1);
+                const jarak = W / 2 + U_SUMUR / 2;
+                const cz = (n1 * d + W) / 2;
+                const A = -jarak - W / 2 - pad, B = -jarak + W / 2 + pad;
+                const C = jarak - W / 2 - pad, D2 = jarak + W / 2 + pad;
+                const z0 = -pad, zL0 = n1 * d + pad, zL1 = n1 * d + W + pad;
+                /* Larik ke-2 menanjak ke arah -Z, jadi ujung atasnya dipotong di sisi z kecil. */
+                const zT = Math.max(z0, Math.min(zL0, n1 * d + W - n2 * d + potong));
+                return [[A, z0], [B, z0], [B, zL0], [C, zL0], [C, zT], [D2, zT], [D2, zL1], [A, zL1]]
+                    .map(([x, z]) => ({ x: x, z: z - cz }));
+            }
             const fp = footprintTangga(o);
             const w = fp.w / 2 + pad, dd = fp.d / 2 + pad;
-            return [{ x: -w, z: -dd }, { x: w, z: -dd }, { x: w, z: dd }, { x: -w, z: dd }];
+            return [{ x: -w, z: -dd }, { x: w, z: -dd }, { x: w, z: dd - potong }, { x: -w, z: dd - potong }];
         }
 
         /* Denah lokal void: hasil trace kalau ada, kalau tidak persegi Lebar x Dalam. */
@@ -2840,7 +3590,7 @@
             });
         }
 
-        function poligonTangga(o, pad) { return poligonKeDunia(o, denahLokalTangga(o, pad)); }
+        function poligonTangga(o, pad, tinggiLantai) { return poligonKeDunia(o, denahLokalTangga(o, pad, tinggiLantai)); }
         function poligonVoid(o) { return poligonKeDunia(o, denahLokalVoid(o)); }
 
         const bboxPoligon = (poly) => poly.reduce((a, p) => ({
@@ -2860,6 +3610,8 @@
             daftar.forEach((_, i) => { const r = akar(i); (kelompok[r] = kelompok[r] || []).push(i); });
             return Object.values(kelompok).map(anggota => {
                 if (anggota.length === 1) return daftar[anggota[0]];
+                /* Beberapa lubang bertumpuk digabung jadi satu kotak; bentuk L/U hanya
+                   dipertahankan kalau lubangnya memang berdiri sendiri. */
                 const g = anggota.map(i => kotak[i]).reduce((a, b) => ({
                     x0: Math.min(a.x0, b.x0), x1: Math.max(a.x1, b.x1), z0: Math.min(a.z0, b.z0), z1: Math.max(a.z1, b.z1)
                 }));
@@ -2874,7 +3626,7 @@
             const poli = [];
             const bawah = floors[iLantai - 1];
             if (bawah) bawah.freeObjects.forEach(o => {
-                if (o.type === 'stairs' && o.bikinVoid !== false) poli.push(poligonTangga(o, 0.12));
+                if (o.type === 'stairs' && o.bikinVoid !== false) poli.push(poligonTangga(o, 0.12, floorHeight(iLantai - 1)));
             });
             const ini = floors[iLantai];
             if (ini) ini.freeObjects.forEach(o => { if (o.type === 'void') poli.push(poligonVoid(o)); });
@@ -2886,7 +3638,7 @@
             const f = floors[iLantai];
             if (!f) return [];
             const tangga = f.freeObjects.filter(o => o.type === 'stairs' && o.bikinVoid !== false);
-            return tangga.length ? gabungLubang(tangga.map(o => poligonTangga(o, 0.12))) : [];
+            return tangga.length ? gabungLubang(tangga.map(o => poligonTangga(o, 0.12, floorHeight(iLantai)))) : [];
         }
 
         /* Pelat datar (lantai / atap) berbentuk persegi dengan lubang void tangga.
@@ -2918,11 +3670,11 @@
             poly.forEach((pt, i) => { if (i === 0) bentuk.moveTo(pt.x, -pt.z); else bentuk.lineTo(pt.x, -pt.z); });
             bentuk.closePath();
             const isi = new THREE.Mesh(new THREE.ShapeGeometry(bentuk),
-                new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false }));
+                new THREE.MeshBasicMaterial({ color: sRGB(0xf97316), transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false }));
             isi.rotation.x = -Math.PI / 2; isi.position.y = 0.03;
             g.add(isi);
             /* Bingkai: balok tipis di tiap sisi, jadi bentuk apa pun tetap bertepi jelas. */
-            const matBingkai = new THREE.MeshBasicMaterial({ color: 0xf97316, side: THREE.DoubleSide });
+            const matBingkai = new THREE.MeshBasicMaterial({ color: sRGB(0xf97316), side: THREE.DoubleSide });
             const tebal = 0.07;
             for (let i = 0; i < poly.length; i++) {
                 const a = poly[i], b = poly[(i + 1) % poly.length];
@@ -2950,7 +3702,12 @@
 
             lines.forEach(l => { minX = Math.min(minX, l.start.x, l.end.x); maxX = Math.max(maxX, l.start.x, l.end.x); minY = Math.min(minY, l.start.y, l.end.y); maxY = Math.max(maxY, l.start.y, l.end.y); });
             freeObjects.forEach(o => { minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x); minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y); });
-            const matWall = new THREE.MeshLambertMaterial({ color: 0xefefef }); const matDoor = new THREE.MeshLambertMaterial({ color: 0x5c4033 }); const matWindow = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.5 }); const matFrame = new THREE.MeshLambertMaterial({ color: 0x3f3f46 }); const matFloor = new THREE.MeshLambertMaterial({ color: 0xd4d4d8, side: THREE.DoubleSide }); const matRoof = new THREE.MeshLambertMaterial({ color: 0xe4e4e7, side: THREE.DoubleSide });
+            const matWall = matPolos(0xefefef, null, 'plester');
+            const matDoor = matPolos(0x5c4033, null, 'kayu');
+            const matWindow = matPolos(0x87CEEB, { transparent: true, opacity: 0.45, roughness: 0.05, metalness: 0.0 }, 'keramik');
+            const matFrame = matPolos(0x3f3f46, null, 'logam');
+            const matFloor = bahanPelat(dataLantai.lantaiBahan, dataLantai.lantaiWarna);
+            const matRoof = matPolos(0xe4e4e7, { side: THREE.DoubleSide }, 'plester');
             
             if (minX !== Infinity) { 
                 /* Pelat lantai ini dilubangi oleh tangga dari lantai di bawahnya,
@@ -3020,9 +3777,10 @@
                     } wallShape.holes.push(hole);
                 });
                 const warnaA = line.warnaA || '#efefef', warnaB = line.warnaB || '#efefef', warnaTepi = line.warnaTepi || '#efefef';
-                const matSisiA = new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaA) });
-                const matSisiB = new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaB) });
-                const matTepi = new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaTepi) });
+                const bahanA = line.bahanA || 'cat', bahanB = line.bahanB || line.bahanA || 'cat';
+                const matSisiA = bahanTembok(bahanA, warnaA);
+                const matSisiB = bahanTembok(bahanB, warnaB);
+                const matTepi = matPolos(warnaTepi, null, 'plester');
                 const geoTembok = pisahSisiTembok(new THREE.ExtrudeGeometry(wallShape, { depth: tW, bevelEnabled: false }));
                 const wallMesh = new THREE.Mesh(geoTembok, [matSisiA, matSisiB, matTepi]); wallMesh.position.set(-length/2, 0, -tW/2);
                 wallMesh.userData.wallIndex = index;
@@ -3050,7 +3808,7 @@
                 const kunci = v.ujung === 'start' ? 'warnaSudutStart' : 'warnaSudutEnd';
                 const warnaSudut = lines[v.li] && lines[v.li][kunci];
                 const matSudut = warnaSudut
-                    ? new THREE.MeshLambertMaterial({ color: new THREE.Color(warnaSudut) })
+                    ? matPolos(warnaSudut, null, 'plester')
                     : matWall;
                 const posX = (v.pt.x - center2DX) * scale3D;
                 const posZ = (v.pt.y - center2DY) * scale3D;
@@ -3072,7 +3830,7 @@
                     innerMesh = new THREE.Group();
                     const ph = new THREE.Mesh(
                         new THREE.BoxGeometry(1, 1, 1),
-                        new THREE.MeshLambertMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.35 })
+                        matPolos(0x8b5cf6, { transparent: true, opacity: 0.35 })
                     );
                     ph.position.y = 0.5; innerMesh.add(ph);
                     innerMesh.add(new THREE.LineSegments(
@@ -3236,9 +3994,9 @@
 
         function createCharacterMesh(warna) {
             const g = new THREE.Group();
-            const kulit = new THREE.MeshLambertMaterial({ color: 0xf1c27d });
-            const baju = new THREE.MeshLambertMaterial({ color: warna });
-            const celana = new THREE.MeshLambertMaterial({ color: 0x3f4756 });
+            const kulit = matPolos(0xf1c27d);
+            const baju = matPolos(warna);
+            const celana = matPolos(0x3f4756);
 
             const badan = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.52, 12), baju);
             badan.position.y = 1.02; g.add(badan);
@@ -3429,7 +4187,7 @@
                     packed[id] = { kind: rec.kind, name: rec.name, ...(await packModel(rec.buf)) };
                 }
                 syncActiveFloor();
-                const projectData = { version: 2, floors, currentFloor, lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value, customModelSrc: packed };
+                const projectData = { version: 3, floors, currentFloor, lines, openings, freeObjects, wallHeight: inputWallH.value, wallThick: inputWallT.value, render: ambilPengaturanRender(), customModelSrc: packed };
                 const blob = new Blob([JSON.stringify(projectData)], { type: "application/octet-stream" });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a'); link.href = url; link.download = "floorplan_project.json"; document.body.appendChild(link); link.click();
@@ -3449,6 +4207,7 @@
                     }]);
                     bindFloor(loadedData.currentFloor || 0);
                     if(loadedData.wallThick) inputWallT.value = loadedData.wallThick;
+                    terapkanPengaturanRender(loadedData.render);
                     syncFloorUI();
                     undoStack = []; redoStack = []; releaseGizmo(); stopDrawing(); closeEditPanel(); draw2D(); update3D();
                     restoreCustomModels(loadedData.customModelSrc);
@@ -3461,6 +4220,247 @@
                 } catch (err) { alert(currentLang === 'id' ? "Gagal memuat file!" : "Failed to load project file."); }
             }; reader.readAsText(file); e.target.value = "";
         });
+
+        /* ===================== MODE JALAN ORANG PERTAMA =====================
+           Kamera diperlakukan sebagai orang dengan tinggi mata, jari-jari badan,
+           dan batas ketinggian langkah. Tabrakan diuji dengan sinar mendatar pada
+           tiga ketinggian di ATAS batas langkah, sehingga apa pun yang lebih rendah
+           dari satu anak tangga otomatis bisa dinaiki - termasuk tangga L, U, dan
+           spiral - tanpa logika khusus per bentuk. Sinar ke bawah menentukan lantai
+           pijakan, jadi naik ke lantai berikutnya lewat void tangga bekerja sendiri.
+           =================================================================== */
+        var POV = {   /* var, bukan const: setLanguage() berjalan sebelum blok ini */
+            aktif: false,
+            pos: new THREE.Vector3(),
+            yaw: 0, pitch: 0, vy: 0,
+            tinggiMata: 1.62, radius: 0.30, naikMaks: 0.46,
+            laju: 2.4, lajuLari: 4.4, lari: false,
+            tombol: {}, joy: { x: 0, y: 0 },
+            lihat: null, simpan: null, penghalang: [], jam: null
+        };
+        const _rcJalan = new THREE.Raycaster();
+        const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3();
+
+        function kumpulkanPenghalang() {
+            POV.penghalang = [];
+            modelGroup.traverse(o => {
+                if (o.isMesh && !o.userData.penanda && o.visible) POV.penghalang.push(o);
+            });
+        }
+
+        /* Permukaan pijakan tertinggi di bawah kaki, dalam jangkauan langkah. */
+        function tanahDiBawah(x, z, kakiY) {
+            _rcJalan.set(_v1.set(x, kakiY + POV.naikMaks + 0.05, z), _v2.set(0, -1, 0));
+            _rcJalan.far = POV.naikMaks + 0.05 + 40;
+            const kena = _rcJalan.intersectObjects(POV.penghalang, false);
+            for (const k of kena) {
+                const n = k.face ? k.face.normal.clone().transformDirection(k.object.matrixWorld) : null;
+                if (n && Math.abs(n.y) < 0.5) continue;     /* bidang tegak, bukan lantai */
+                return k.point.y;
+            }
+            return null;
+        }
+
+        /* Bisa bergerak sejauh (dx,dz)? Hanya bidang tegak yang menghalangi, dan
+           hanya yang lebih tinggi dari batas langkah. */
+        function jalanBebas(dx, dz) {
+            const jarak = Math.hypot(dx, dz);
+            if (jarak < 1e-5) return true;
+            _v2.set(dx / jarak, 0, dz / jarak);
+            for (const tinggi of [POV.naikMaks + 0.12, 1.05, POV.tinggiMata - 0.05]) {
+                _rcJalan.set(_v1.set(POV.pos.x, POV.pos.y + tinggi, POV.pos.z), _v2);
+                _rcJalan.far = jarak + POV.radius;
+                const kena = _rcJalan.intersectObjects(POV.penghalang, false);
+                for (const k of kena) {
+                    const n = k.face ? k.face.normal.clone().transformDirection(k.object.matrixWorld) : null;
+                    if (n && Math.abs(n.y) > 0.6) continue; /* lantai / pijakan, bukan dinding */
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function titikMulaiJalan() {
+            const dasar = floorBaseY(currentFloor);
+            let x = 0, z = 0;
+            const f = activeFloor();
+            if (f && f.lines.length) {
+                let sx = 0, sy = 0, n = 0;
+                f.lines.forEach(l => { sx += l.start.x + l.end.x; sy += l.start.y + l.end.y; n += 2; });
+                x = ((sx / n) - center2DX) * scale3D;
+                z = ((sy / n) - center2DY) * scale3D;
+            }
+            const h = tanahDiBawah(x, z, dasar + 0.4);
+            return new THREE.Vector3(x, h !== null ? h : dasar, z);
+        }
+
+        function mulaiJalan() {
+            if (POV.aktif) return;
+            POV.simpan = {
+                kamera: camera.position.clone(),
+                quat: camera.quaternion.clone(),
+                target: controls.target.clone(),
+                mode: floorViewMode,
+                tampak: floors.map(f => f.visible !== false),
+                pilih: selectedItem
+            };
+            /* Semua lantai harus padat, kalau tidak pejalan jatuh menembus lantai. */
+            floorViewMode = 'solid';
+            floors.forEach(f => { f.visible = true; });
+            POV.aktif = true;
+            releaseGizmo();
+            selectionBox.visible = false;
+            controls.enabled = false;
+            update3D();
+            kumpulkanPenghalang();
+            POV.pos.copy(titikMulaiJalan());
+            POV.vy = 0; POV.pitch = 0;
+            POV.yaw = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
+            POV.jam = null;
+            camera.rotation.order = 'YXZ';
+            document.getElementById('walkUI').style.display = 'block';
+            document.getElementById('transformUI').style.display = 'none';
+            document.getElementById('btnWalk').style.background = '#ef4444';
+            document.getElementById('btnWalk').innerText = 'Exit';
+            perbaruiInfoJalan();
+        }
+
+        function hentikanJalan() {
+            if (!POV.aktif) return;
+            POV.aktif = false;
+            const s = POV.simpan;
+            document.getElementById('walkUI').style.display = 'none';
+            document.getElementById('transformUI').style.display = 'flex';
+            document.getElementById('btnWalk').style.background = '#10b981';
+            document.getElementById('btnWalk').innerText = 'Walk';
+            POV.tombol = {}; POV.joy.x = POV.joy.y = 0; POV.lihat = null;
+            geserKnob(0, 0);
+            if (s) {
+                floorViewMode = s.mode;
+                floors.forEach((f, i) => { f.visible = s.tampak[i] !== false; });
+                camera.position.copy(s.kamera);
+                camera.quaternion.copy(s.quat);
+                camera.rotation.order = 'XYZ';
+                controls.target.copy(s.target);
+                POV.simpan = null;
+                update3D();
+            }
+            controls.enabled = true;
+            controls.update();
+        }
+
+        function perbaruiInfoJalan() {
+            const el = document.getElementById('walkInfo');
+            if (!el) return;
+            let lantai = 0;
+            for (let i = 0; i < floors.length; i++) if (POV.pos.y >= floorBaseY(i) - 0.35) lantai = i;
+            const t = texts[currentLang];
+            el.innerHTML = '<b>' + floorName(lantai) + '</b><br>' + t.walkHint;
+        }
+
+        function geserKnob(x, y) {
+            const k = document.getElementById('walkKnob');
+            if (k) k.style.transform = 'translate(' + (x * 32) + 'px,' + (y * 32) + 'px)';
+        }
+
+        function updateJalan() {
+            if (!POV.aktif) return;
+            if (!POV.jam) POV.jam = new THREE.Clock();
+            const dt = Math.min(POV.jam.getDelta(), 0.05);
+
+            let maju = 0, samping = 0;
+            const t = POV.tombol;
+            if (t['w'] || t['arrowup']) maju += 1;
+            if (t['s'] || t['arrowdown']) maju -= 1;
+            if (t['a'] || t['arrowleft']) samping -= 1;
+            if (t['d'] || t['arrowright']) samping += 1;
+            maju -= POV.joy.y; samping += POV.joy.x;
+            const besar = Math.hypot(maju, samping);
+            if (besar > 1) { maju /= besar; samping /= besar; }
+
+            const laju = (POV.lari || t['shift']) ? POV.lajuLari : POV.laju;
+            const sin = Math.sin(POV.yaw), cos = Math.cos(POV.yaw);
+            /* yaw 0 menghadap -Z, sama seperti kamera three.js */
+            let dx = (-sin * maju + cos * samping) * laju * dt;
+            let dz = (-cos * maju - sin * samping) * laju * dt;
+
+            if (dx !== 0 && jalanBebas(dx, 0)) POV.pos.x += dx;
+            if (dz !== 0 && jalanBebas(0, dz)) POV.pos.z += dz;
+
+            const tanah = tanahDiBawah(POV.pos.x, POV.pos.z, POV.pos.y);
+            if (tanah !== null && tanah <= POV.pos.y + POV.naikMaks && tanah >= POV.pos.y - 0.08) {
+                POV.pos.y += (tanah - POV.pos.y) * Math.min(1, dt * 16);
+                POV.vy = 0;
+            } else {
+                POV.vy -= 9.8 * dt;
+                POV.pos.y += POV.vy * dt;
+                const mendarat = tanahDiBawah(POV.pos.x, POV.pos.z, POV.pos.y);
+                if (mendarat !== null && POV.pos.y <= mendarat) { POV.pos.y = mendarat; POV.vy = 0; }
+                if (POV.pos.y < -40) POV.pos.copy(titikMulaiJalan());
+            }
+
+            camera.position.set(POV.pos.x, POV.pos.y + POV.tinggiMata, POV.pos.z);
+            camera.rotation.set(POV.pitch, POV.yaw, 0);
+            if ((POV.jam.elapsedTime | 0) % 2 === 0) perbaruiInfoJalan();
+        }
+
+        document.getElementById('btnWalk').onclick = () => { POV.aktif ? hentikanJalan() : mulaiJalan(); };
+        document.getElementById('walkExit').onclick = (e) => { e.stopPropagation(); hentikanJalan(); };
+        document.getElementById('walkRun').onclick = (e) => {
+            e.stopPropagation();
+            POV.lari = !POV.lari;
+            document.getElementById('walkRun').classList.toggle('on', POV.lari);
+        };
+
+        /* Joystick kiri untuk bergerak. */
+        (function joystick() {
+            const joy = document.getElementById('walkJoy');
+            let id = null, cx = 0, cy = 0, r = 50;
+            joy.addEventListener('pointerdown', (e) => {
+                e.stopPropagation(); e.preventDefault();
+                const b = joy.getBoundingClientRect();
+                cx = b.left + b.width / 2; cy = b.top + b.height / 2; r = b.width / 2;
+                id = e.pointerId; joy.setPointerCapture(id);
+            });
+            joy.addEventListener('pointermove', (e) => {
+                if (e.pointerId !== id) return;
+                e.stopPropagation();
+                let dx = (e.clientX - cx) / r, dy = (e.clientY - cy) / r;
+                const m = Math.hypot(dx, dy);
+                if (m > 1) { dx /= m; dy /= m; }
+                POV.joy.x = dx; POV.joy.y = dy; geserKnob(dx, dy);
+            });
+            const lepas = (e) => {
+                if (id === null || (e && e.pointerId !== id)) return;
+                id = null; POV.joy.x = POV.joy.y = 0; geserKnob(0, 0);
+            };
+            joy.addEventListener('pointerup', lepas);
+            joy.addEventListener('pointercancel', lepas);
+        })();
+
+        /* Seret di mana pun pada tampilan 3D untuk menoleh. */
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            if (!POV.aktif) return;
+            POV.lihat = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        });
+        renderer.domElement.addEventListener('pointermove', (e) => {
+            if (!POV.aktif || !POV.lihat || e.pointerId !== POV.lihat.id) return;
+            const dx = e.clientX - POV.lihat.x, dy = e.clientY - POV.lihat.y;
+            POV.lihat.x = e.clientX; POV.lihat.y = e.clientY;
+            POV.yaw -= dx * 0.0032;
+            POV.pitch = Math.max(-1.35, Math.min(1.35, POV.pitch - dy * 0.0032));
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+            renderer.domElement.addEventListener(ev, () => { POV.lihat = null; }));
+
+        window.addEventListener('keydown', (e) => {
+            if (!POV.aktif) return;
+            if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+            POV.tombol[e.key.toLowerCase()] = true;
+            if (e.key === 'Escape') hentikanJalan();
+            if (['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
+        });
+        window.addEventListener('keyup', (e) => { POV.tombol[e.key.toLowerCase()] = false; });
 
         // === TRANSFORM CONTROLS LOGIC ===
         window.transformControl = new THREE.TransformControls(camera, renderer.domElement);
@@ -3692,6 +4692,7 @@
         syncSpaceButton();
 
         window.addEventListener('keydown', (e) => {
+            if (POV.aktif) return;
             if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
             if (e.ctrlKey || e.metaKey || e.altKey) return;
             const k = e.key.toLowerCase();
@@ -3720,6 +4721,7 @@
         });
 
         renderer.domElement.addEventListener('pointerup', (e) => {
+            if (POV.aktif) return;
             if (isDragging3D || transformControl.dragging || (transformControl.object && transformControl.axis !== null)) {
                 return;
             }
