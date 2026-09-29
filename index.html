@@ -2276,9 +2276,24 @@
 
         /* Semua sumber cahaya memakai preset yang sama, jadi bayangan matahari dan
            lampu punya tingkat kelembutan yang konsisten. */
+        /* Batas ukuran peta bayangan. Bayangan lampu titik di three.js r128 menyimpan enam
+           sisi kubus dalam satu tekstur 4x2 kali ukurannya: ukuran 2048 berarti tekstur
+           8192x4096 (+ buffer kedalaman), kira-kira 256 MB per lampu. Beberapa lampu saja
+           sudah cukup membuat Safari/Chrome di iPad menutup paksa tab (halaman "refresh"
+           sendiri lalu "Can't open this page"). */
+        const PERANGKAT_SENTUH = (navigator.maxTouchPoints || 0) > 1;
+        const MAKS_LAMPU_BERBAYANG = PERANGKAT_SENTUH ? 3 : 6;
+        function ukuranPetaBayangan(cahaya, preset) {
+            let u = preset.ukuran;
+            if (PERANGKAT_SENTUH) u = Math.min(u, 2048);
+            if (cahaya.isPointLight) u = Math.min(u, preset.ukuran >= 4096 && !PERANGKAT_SENTUH ? 1024 : 512);
+            else if (cahaya.isSpotLight) u = Math.min(u, 1024);
+            return u;
+        }
         function aturShadowCamera(cahaya, preset, halus) {
             if (!cahaya.shadow) return;
-            cahaya.shadow.mapSize.set(preset.ukuran, preset.ukuran);
+            const u = ukuranPetaBayangan(cahaya, preset);
+            cahaya.shadow.mapSize.set(u, u);
             cahaya.shadow.radius = Math.max(0.5, preset.radius * (0.4 + halus / 6));
             if (preset.type === THREE.VSMShadowMap) {
                 cahaya.shadow.bias = 0;
@@ -2308,7 +2323,23 @@
                 if (atap) o.material.shadowSide = THREE.DoubleSide;
             });
             if (characterGroup) characterGroup.traverse(o => { if (o.isMesh) { o.castShadow = aktif; o.receiveShadow = aktif; } });
-            scene.traverse(o => { if (o.isLight && o.shadow) o.castShadow = aktif && o.userData.mauBayangan !== false; });
+            /* Hanya lampu berbayang terdekat yang benar-benar melempar bayangan: tiap lampu titik
+               merender adegan enam kali per frame dan memakan memori peta bayangan sendiri. */
+            const lampuBerbayang = [];
+            scene.traverse(o => {
+                if (!o.isLight || !o.shadow) return;
+                o.castShadow = aktif && o.userData.mauBayangan !== false;
+                if (o.castShadow && !o.isDirectionalLight) lampuBerbayang.push(o);
+            });
+            if (lampuBerbayang.length > MAKS_LAMPU_BERBAYANG) {
+                const cam = camera.position, pw = new THREE.Vector3();
+                lampuBerbayang
+                    .map(o => ({ o, d: o.getWorldPosition(pw).distanceToSquared(cam) }))
+                    .sort((a, b) => a.d - b.d)
+                    .slice(MAKS_LAMPU_BERBAYANG)
+                    .forEach(x => { x.o.castShadow = false; });
+            }
+            scene.traverse(o => { if (o.isLight && o.shadow && !o.castShadow && o.shadow.map) { o.shadow.map.dispose(); o.shadow.map = null; } });
             renderer.shadowMap.needsUpdate = true;
         }
         const modelGroup = new THREE.Group(); scene.add(modelGroup); camera.position.set(0, 15, 20); 
@@ -3067,14 +3098,13 @@
                 t.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy());
                 _texCache[kunci] = t;
             }
+            /* Satu tekstur GPU dipakai bersama semua material. Dulu tiap material mendapat
+               salinan (clone) yang diunggah ulang ke GPU - ratusan salinan setelah beberapa
+               kali denah dibangun ulang. Skala ulangnya hanya bergantung pada jenis bahan
+               (UV sudah dalam meter), jadi aman dipakai bersama. */
             const r = 1 / skalaTekstur(jenis);
-            const tex = _texCache[kunci].clone();
-            tex.needsUpdate = true;
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.encoding = THREE.sRGBEncoding;
-            tex.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy());
-            tex.repeat.set(r, r);
-            return tex;
+            _texCache[kunci].repeat.set(r, r);
+            return _texCache[kunci];
         }
 
         /* Peta normal diturunkan dari kecerahan tekstur itu sendiri, jadi serat kayu,
@@ -3109,11 +3139,8 @@
                 _normCache[kunci] = t;
             }
             const r = 1 / skalaTekstur(jenis);
-            const tex = _normCache[kunci].clone();
-            tex.needsUpdate = true;
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(r, r);
-            return tex;
+            _normCache[kunci].repeat.set(r, r);
+            return _normCache[kunci];
         }
 
         /* Lingkungan untuk pantulan PBR: gradien langit-tanah sederhana lewat PMREM. */
@@ -4041,9 +4068,23 @@
             });
         }
 
+        /* Adegan dibangun ulang dari nol pada hampir setiap perubahan (menggeser slider bisa
+           memicunya puluhan kali). Geometri, material dan peta bayangan yang lama harus
+           dilepas dari GPU; tanpa ini memori terus bertambah sampai tab dimatikan browser.
+           Tekstur tidak ikut dilepas karena dipakai bersama lewat cache. */
+        function buangSumberDaya(akar) {
+            const lepasMat = (m) => { if (m && m.dispose) m.dispose(); };
+            akar.traverse(o => {
+                if (o.geometry) o.geometry.dispose();
+                if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(lepasMat);
+                if (o.userData) { lepasMat(o.userData.matNyala); lepasMat(o.userData.matMati); }
+                if (o.isLight && o.shadow && o.shadow.map) { o.shadow.map.dispose(); o.shadow.map = null; }
+            });
+        }
+
         function update3D() {
             syncActiveFloor();
-            while(modelGroup.children.length > 0) modelGroup.remove(modelGroup.children[0]);
+            while(modelGroup.children.length > 0) { const lama = modelGroup.children[0]; modelGroup.remove(lama); buangSumberDaya(lama); }
             floorGroups = [];
             if (sceneIsEmpty()) { if (window.transformControl) transformControl.detach(); return; }
 
