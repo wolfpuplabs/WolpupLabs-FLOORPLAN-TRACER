@@ -329,6 +329,11 @@
 
             <div class="sidebar-section">
                 <h4 id="txtSecLight">Lighting</h4>
+                <label id="txtLblKualitas">Render Quality:</label>
+                <select id="kualitasSel" style="margin-bottom: 8px;">
+                    <option value="sinematik" id="optKualitasSin">Cinematic</option>
+                    <option value="standar" id="optKualitasStd">Standard (fast)</option>
+                </select>
                 <label id="txtLblSuasana">Time of Day:</label>
                 <select id="suasanaSel" style="margin-bottom: 8px;">
                     <option value="siang" id="optWaktuSiang">Day</option>
@@ -873,6 +878,7 @@
                 lblLightTemp: "Warna Lampu:", lblWallMat: "Finishing Tembok:", lblObjMat: "Material / Tekstur:",
                 lblFloorMat: "Finishing Lantai (level aktif):",
                 btnWalk: "Jalan", btnWalkExit: "Keluar", btnWalkFull: "Layar Penuh",
+                lblKualitas: "Kualitas Render:", kualitasSin: "Sinematik", kualitasStd: "Standar (cepat)",
                 lblSuasana: "Suasana Waktu:", waktu_siang: "Siang", waktu_sore: "Sore", waktu_malam: "Malam", waktu_kustom: "Kustom",
                 walkHint: "Seret untuk menoleh &middot; joystick / WASD untuk jalan &middot; ketuk objek untuk memakainya &middot; ESC keluar",
                 aksiLampu: "Lampu &mdash; ketuk untuk {a}", aksiPintu: "Pintu &mdash; ketuk untuk {a}", aksiTirai: "Tirai &mdash; ketuk untuk {a}", aksiTV: "TV &mdash; ketuk untuk {a}", aksiJendela: "Jendela &mdash; ketuk untuk {a}",
@@ -925,6 +931,7 @@
                 lblLightTemp: "Light Color:", lblWallMat: "Wall Finish:", lblObjMat: "Material / Texture:",
                 lblFloorMat: "Floor Finish (active level):",
                 btnWalk: "Walk", btnWalkExit: "Exit", btnWalkFull: "Fullscreen",
+                lblKualitas: "Render Quality:", kualitasSin: "Cinematic", kualitasStd: "Standard (fast)",
                 lblSuasana: "Time of Day:", waktu_siang: "Day", waktu_sore: "Golden Hour", waktu_malam: "Night", waktu_kustom: "Custom",
                 walkHint: "Drag to look &middot; joystick / WASD to move &middot; tap an object to use it &middot; ESC to exit",
                 aksiLampu: "Lamp &mdash; tap to {a}", aksiPintu: "Door &mdash; tap to {a}", aksiTirai: "Curtain &mdash; tap to {a}", aksiTV: "TV &mdash; tap to {a}", aksiJendela: "Window &mdash; tap to {a}",
@@ -1014,6 +1021,7 @@
             if (typeof POV !== 'undefined' && !POV.aktif) setTxt('btnWalk', t.btnWalk);
             setTxt('walkExit', '\u00d7 ' + t.btnWalkExit);
             setTxt('walkFull', t.btnWalkFull);
+            setTxt('txtLblKualitas', t.lblKualitas); setTxt('optKualitasSin', t.kualitasSin); setTxt('optKualitasStd', t.kualitasStd);
             setTxt('txtLblSuasana', t.lblSuasana); setTxt('optWaktuSiang', t.waktu_siang); setTxt('optWaktuSore', t.waktu_sore);
             setTxt('optWaktuMalam', t.waktu_malam); setTxt('optWaktuKustom', t.waktu_kustom);
             perbaruiTombolWaktu();
@@ -1163,6 +1171,14 @@
             });
         });
         document.getElementById('chkSun').addEventListener('change', updateSun);
+        document.getElementById('kualitasSel').addEventListener('change', (e) => {
+            aturKualitas(e.target.value);
+            /* Tampilan sinematik bergantung pada material PBR (kilap, logam, pantulan). */
+            if (kualitasRender === 'sinematik' && !pbrAktif) {
+                pbrAktif = true; document.getElementById('chkPBR').checked = true; siapkanLingkungan(); update3D();
+            }
+            triggerAutosave();
+        });
         document.getElementById('suasanaSel').addEventListener('change', (e) => { if (e.target.value !== 'kustom') terapkanSuasana(e.target.value); });
         document.getElementById('chkShadow').addEventListener('change', terapkanBayangan);
         document.getElementById('shadowQ').addEventListener('change', (e) => { mutuBayangan = e.target.value; terapkanBayangan(); });
@@ -1237,6 +1253,8 @@
             fitAppToViewport();
             [0, 150, 400, 1000].forEach(t => setTimeout(fitAppToViewport, t));
 
+            document.getElementById('chkPBR').checked = pbrAktif; siapkanLingkungan();
+            aturKualitas(kualitasRender);
             updateSun(); terapkanBayangan();
             initDefaultCanvas(); 
             const saved = localStorage.getItem('floorplan_autosave');
@@ -1566,7 +1584,7 @@
                     document.getElementById('valLightInt').innerText = item.lightIntensity;
                     document.getElementById('editLightRange').value = item.lightRange;
                     document.getElementById('valLightRange').innerText = item.lightRange;
-                    if (item.lightTemp === undefined) item.lightTemp = lampuLantai ? 2700 : 3000;
+                    if (item.lightTemp === undefined) item.lightTemp = lampuLantai ? 3000 : 3500;
                     document.getElementById('editLightTemp').value = item.lightTemp;
                     document.getElementById('valLightTemp').innerText = item.lightTemp;
                 }
@@ -2188,7 +2206,7 @@
            hari ambien hampir padam sehingga ruangan benar-benar bergantung pada lampu. */
         var suasana = 'siang';
         const PRESET_SUASANA = {
-            siang: { sunInt: 1.15, sunElev: 55, sunTemp: 5600, amb: 0.45, expo: 1.0, langit: 0xd3e0f0, tanah: 0xa89a88, ambien: 0xffffff, latar: 0xa9c4de },
+            siang: { sunInt: 1.5, sunElev: 40, sunTemp: 5200, amb: 0.45, expo: 0.95, langit: 0xd3e0f0, tanah: 0xa89a88, ambien: 0xffffff, latar: 0xa9c4de },
             sore:  { sunInt: 1.05, sunElev: 9,  sunTemp: 2900, amb: 0.28, expo: 1.05, langit: 0xf0c7a0, tanah: 0x6e5a48, ambien: 0xffe6cc, latar: 0xe1a57d },
             malam: { sunInt: 0.14, sunElev: 42, sunTemp: 9500, amb: 0.05, expo: 1.0, langit: 0x3a4a72, tanah: 0x1c1813, ambien: 0xb8c6ff, latar: 0x0b1222 }
         };
@@ -2236,9 +2254,11 @@
             sunLight.color.copy(warnaKelvin(parseFloat(document.getElementById('sunTemp').value) || 5200));
             const kuatAmbien = parseFloat(document.getElementById('ambInt').value);
             if (isFinite(kuatAmbien)) {
-                ambientLight.intensity = kuatAmbien * 0.55;
-                langitLight.intensity = kuatAmbien;
-                aturKuatLingkungan(Math.min(1, kuatAmbien * 1.3));
+                /* Dengan PBR, peta lingkungan sudah memberi cahaya pantul merata; langit dan
+                   ambien dikurangi supaya ruangan tidak terang rata tanpa bayangan. */
+                ambientLight.intensity = kuatAmbien * (pbrAktif ? 0.15 : 0.55);
+                langitLight.intensity = kuatAmbien * (pbrAktif ? 0.55 : 1);
+                aturKuatLingkungan(Math.min(1, kuatAmbien * (pbrAktif ? 0.8 : 1.3)));
             }
             const ps = PRESET_SUASANA[suasana] || PRESET_SUASANA.siang;
             langitLight.color.copy(sRGB(ps.langit));
@@ -2318,7 +2338,9 @@
                 const datar = o.userData.datar || (o.geometry && (o.geometry.type === 'PlaneGeometry' || o.userData.tipeAsli === 'PlaneGeometry'));
                 const tembusPandang = o.material && o.material.transparent;
                 const atap = o.userData && o.userData.atap;
-                o.castShadow = aktif && !tembusPandang && (atap || !datar) && !o.userData.tanpaBayangan;
+                /* Pelat lantai atas ikut melempar bayangan: tanpa itu matahari menembus plafon
+                   dan menerangi seluruh interior lantai bawah secara rata. */
+                o.castShadow = aktif && !tembusPandang && (atap || !datar || o.userData.pelatAtas) && !o.userData.tanpaBayangan;
                 o.receiveShadow = aktif;
                 if (atap) o.material.shadowSide = THREE.DoubleSide;
             });
@@ -2351,6 +2373,200 @@
         function resizeViewports() { const renderRect = renderContainer.getBoundingClientRect(); if (renderRect.width > 0 && renderRect.height > 0) { camera.aspect = renderRect.width / renderRect.height; camera.updateProjectionMatrix(); renderer.setSize(renderRect.width, renderRect.height); } }
         window.addEventListener('resize', resizeViewports); const resizeObserver = new ResizeObserver(() => resizeViewports()); resizeObserver.observe(renderContainer); resizeObserver.observe(workspaceContainer);
         
+
+        /* ---------- EFEK SINEMATIK (pasca-proses) ----------
+           Adegan dirender ke tekstur, lalu dipoles:
+           - ambient occlusion dari buffer kedalaman: sudut ruangan, kolong perabot dan
+             pertemuan dinding-lantai menjadi lebih gelap seperti cahaya sungguhan;
+           - bloom: lampu, layar dan jendela terang tampak berpendar;
+           - color grading (kontras lembut, saturasi, sedikit hangat) dan vignette;
+           - FXAA untuk menghaluskan tepi.
+           Tidak memuat pustaka tambahan; kalau GPU tidak mendukung tekstur kedalaman,
+           render biasa dipakai. */
+        var kualitasRender = 'sinematik';
+        var FX = null, fxGagal = false;
+        function fxAktif() { return kualitasRender === 'sinematik' && !fxGagal; }
+        function bikinFX() {
+            if (!(renderer.capabilities.isWebGL2 || renderer.extensions.get('WEBGL_depth_texture'))) { fxGagal = true; return null; }
+            const vs = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+            const bahan = (fs, uniforms) => new THREE.ShaderMaterial({ vertexShader: vs, fragmentShader: fs, uniforms: uniforms, depthTest: false, depthWrite: false });
+            const target = (kedalaman) => {
+                const t = new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, depthBuffer: !!kedalaman, stencilBuffer: false });
+                if (kedalaman) { t.depthTexture = new THREE.DepthTexture(4, 4); t.depthTexture.type = THREE.UnsignedIntType; }
+                return t;
+            };
+            const fx = {
+                adegan: target(true), ao: target(false), ao2: target(false), sinar: target(false), sinar2: target(false), akhir: target(false),
+                quad: new THREE.Mesh(new THREE.PlaneGeometry(2, 2)), kamera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
+                w: 0, h: 0
+            };
+            /* Material adegan menulis nilai sRGB ke tekstur 8-bit, jadi bayangan gelap tidak pecah (banding). */
+            fx.adegan.texture.encoding = THREE.sRGBEncoding;
+            fx.panggung = new THREE.Scene(); fx.panggung.add(fx.quad);
+            const umum = '#include <packing>\nuniform sampler2D tDepth; uniform float near; uniform float far; varying vec2 vUv;\n' +
+                'float jarakZ(vec2 uv) { return -perspectiveDepthToViewZ(texture2D(tDepth, uv).x, near, far); }\n';
+            fx.mAO = bahan(umum + `
+                uniform vec2 ukuran; uniform mat4 proj; uniform mat4 projInv; uniform float radius; uniform float kuat;
+                vec3 posisi(vec2 uv) { float d = texture2D(tDepth, uv).x; vec4 v = projInv * vec4(vec3(uv, d) * 2.0 - 1.0, 1.0); return v.xyz / v.w; }
+                void main() {
+                    float d = texture2D(tDepth, vUv).x;
+                    if (d > 0.99999) { gl_FragColor = vec4(1.0); return; }
+                    vec3 P = posisi(vUv);
+                    /* Normal dari selisih kedalaman dengan jarak 2 piksel: jarak 1 piksel terlalu
+                       peka terhadap anak tangga kuantisasi kedalaman pada dinding miring. */
+                    vec2 px = 2.0 / ukuran;
+                    vec3 pr = posisi(vUv + vec2(px.x, 0.0)) - P, pl = P - posisi(vUv - vec2(px.x, 0.0));
+                    vec3 pu = posisi(vUv + vec2(0.0, px.y)) - P, pd = P - posisi(vUv - vec2(0.0, px.y));
+                    px = 1.0 / ukuran;
+                    vec3 N = normalize(cross(abs(pr.z) < abs(pl.z) ? pr : pl, abs(pu.z) < abs(pd.z) ? pu : pd));
+                    float rPx = clamp(radius * proj[1][1] * 0.5 * ukuran.y / max(0.05, -P.z), 3.0, 120.0);
+                    float a0 = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 6.2831853;
+                    float occ = 0.0;
+                    for (int i = 0; i < 14; i++) {
+                        float t = (float(i) + 0.5) / 14.0;
+                        float sudut = a0 + t * 19.0;
+                        vec3 v = posisi(vUv + vec2(cos(sudut), sin(sudut)) * rPx * t * px) - P;
+                        float vv = dot(v, v);
+                        float dekat = 0.02 + 0.006 * -P.z;
+                        if (vv < dekat * dekat) continue;
+                        occ += max(0.0, 1.0 - vv / (radius * radius)) * max(0.0, dot(v, N) * inversesqrt(vv + 1e-4) - 0.15);
+                    }
+                    gl_FragColor = vec4(vec3(clamp(1.0 - kuat * occ / 7.0, 0.0, 1.0)), 1.0);
+                }`, { tDepth: { value: null }, near: { value: 0.1 }, far: { value: 1000 }, ukuran: { value: new THREE.Vector2() },
+                      proj: { value: new THREE.Matrix4() }, projInv: { value: new THREE.Matrix4() }, radius: { value: 0.6 }, kuat: { value: 2.6 } });
+            /* Blur yang menghormati kedalaman, supaya AO tidak "bocor" melewati tepi benda. */
+            fx.mBlurAO = bahan(umum + `
+                uniform sampler2D tAO; uniform vec2 arah;
+                void main() {
+                    float z0 = jarakZ(vUv), s = 0.0, w = 0.0;
+                    for (int i = -4; i <= 4; i++) {
+                        vec2 uv = vUv + arah * float(i);
+                        float dz = (jarakZ(uv) - z0) / (0.04 * z0 + 0.02);
+                        float bobot = exp(-float(i * i) / 10.0 - dz * dz);
+                        s += texture2D(tAO, uv).r * bobot; w += bobot;
+                    }
+                    gl_FragColor = vec4(vec3(s / max(w, 1e-4)), 1.0);
+                }`, { tDepth: { value: null }, near: { value: 0.1 }, far: { value: 1000 }, tAO: { value: null }, arah: { value: new THREE.Vector2() } });
+            fx.mTerang = bahan(`
+                uniform sampler2D tWarna; uniform vec2 px; uniform float ambang; varying vec2 vUv;
+                void main() {
+                    vec3 c = 0.25 * (texture2D(tWarna, vUv + vec2(-px.x, -px.y)).rgb + texture2D(tWarna, vUv + vec2(px.x, -px.y)).rgb +
+                                     texture2D(tWarna, vUv + vec2(-px.x, px.y)).rgb + texture2D(tWarna, vUv + vec2(px.x, px.y)).rgb);
+                    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+                    gl_FragColor = vec4(c * smoothstep(ambang, 1.0, l), 1.0);
+                }`, { tWarna: { value: null }, px: { value: new THREE.Vector2() }, ambang: { value: 0.78 } });
+            fx.mBlur = bahan(`
+                uniform sampler2D tInput; uniform vec2 arah; varying vec2 vUv;
+                void main() {
+                    vec3 s = texture2D(tInput, vUv).rgb * 0.2270;
+                    s += (texture2D(tInput, vUv + arah * 1.3846).rgb + texture2D(tInput, vUv - arah * 1.3846).rgb) * 0.3162;
+                    s += (texture2D(tInput, vUv + arah * 3.2308).rgb + texture2D(tInput, vUv - arah * 3.2308).rgb) * 0.0703;
+                    gl_FragColor = vec4(s, 1.0);
+                }`, { tInput: { value: null }, arah: { value: new THREE.Vector2() } });
+            fx.mGabung = bahan(`
+                uniform sampler2D tWarna; uniform sampler2D tAO; uniform sampler2D tSinar;
+                uniform float kuatAO; uniform float kuatSinar; uniform float kontras; uniform float saturasi; uniform float hangat; uniform float vignette; uniform vec2 aspek;
+                varying vec2 vUv;
+                void main() {
+                    vec3 c = texture2D(tWarna, vUv).rgb;
+                    vec3 lin = pow(c, vec3(2.2));
+                    lin *= mix(1.0, texture2D(tAO, vUv).r, kuatAO);
+                    lin += pow(texture2D(tSinar, vUv).rgb, vec3(2.2)) * kuatSinar;
+                    c = pow(max(lin, 0.0), vec3(1.0 / 2.2));
+                    c *= vec3(1.0 + hangat, 1.0 + hangat * 0.25, 1.0 - hangat);
+                    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+                    c = clamp(mix(vec3(l), c, saturasi), 0.0, 1.0);
+                    c = mix(c, c * c * (3.0 - 2.0 * c), kontras);
+                    vec2 d = (vUv - 0.5) * aspek;
+                    c *= 1.0 - vignette * dot(d, d);
+                    gl_FragColor = vec4(c, 1.0);
+                }`, { tWarna: { value: null }, tAO: { value: null }, tSinar: { value: null }, kuatAO: { value: 0.85 }, kuatSinar: { value: 0.5 },
+                      kontras: { value: 0.2 }, saturasi: { value: 1.02 }, hangat: { value: 0.012 }, vignette: { value: 0.3 }, aspek: { value: new THREE.Vector2(1, 1) } });
+            fx.mFXAA = bahan(`
+                uniform sampler2D tInput; uniform vec2 px; varying vec2 vUv;
+                float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+                void main() {
+                    vec3 nw = texture2D(tInput, vUv + vec2(-px.x, -px.y)).rgb, ne = texture2D(tInput, vUv + vec2(px.x, -px.y)).rgb;
+                    vec3 sw = texture2D(tInput, vUv + vec2(-px.x, px.y)).rgb, se = texture2D(tInput, vUv + vec2(px.x, px.y)).rgb;
+                    vec3 m = texture2D(tInput, vUv).rgb;
+                    float lNW = luma(nw), lNE = luma(ne), lSW = luma(sw), lSE = luma(se), lM = luma(m);
+                    float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE))), lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+                    vec2 arah = vec2(-((lNW + lNE) - (lSW + lSE)), (lNW + lSW) - (lNE + lSE));
+                    float kurang = max((lNW + lNE + lSW + lSE) * 0.03125, 0.0078125);
+                    arah = clamp(arah / (min(abs(arah.x), abs(arah.y)) + kurang), -8.0, 8.0) * px;
+                    vec3 a = 0.5 * (texture2D(tInput, vUv - arah / 6.0).rgb + texture2D(tInput, vUv + arah / 6.0).rgb);
+                    vec3 b = a * 0.5 + 0.25 * (texture2D(tInput, vUv - arah * 0.5).rgb + texture2D(tInput, vUv + arah * 0.5).rgb);
+                    float lB = luma(b);
+                    gl_FragColor = vec4((lB < lMin || lB > lMax) ? a : b, 1.0);
+                }`, { tInput: { value: null }, px: { value: new THREE.Vector2() } });
+            return fx;
+        }
+        function ukurFX(fx, w, h) {
+            fx.w = w; fx.h = h;
+            const w2 = Math.max(1, Math.round(w / 2)), h2 = Math.max(1, Math.round(h / 2));
+            const w4 = Math.max(1, Math.round(w / 4)), h4 = Math.max(1, Math.round(h / 4));
+            fx.adegan.setSize(w, h); fx.akhir.setSize(w, h);
+            fx.ao.setSize(w2, h2); fx.ao2.setSize(w2, h2);
+            fx.sinar.setSize(w4, h4); fx.sinar2.setSize(w4, h4);
+            fx.w2 = w2; fx.h2 = h2; fx.w4 = w4; fx.h4 = h4;
+        }
+        /* Kekuatan efek mengikuti suasana: malam hari lampu lebih berpendar. */
+        function aturFXSuasana(fx) {
+            const malam = (typeof suasana !== 'undefined' && suasana === 'malam');
+            /* Siang hari ambang tinggi: dinding putih yang terang tidak boleh ikut berpendar. */
+            fx.mGabung.uniforms.kuatSinar.value = malam ? 0.8 : 0.3;
+            fx.mTerang.uniforms.ambang.value = malam ? 0.7 : 0.93;
+        }
+        function renderFX() {
+            if (!FX) { try { FX = bikinFX(); } catch (e) { console.warn('Efek sinematik dimatikan:', e); fxGagal = true; } if (!FX) return false; }
+            const w = renderer.domElement.width, h = renderer.domElement.height;
+            if (w !== FX.w || h !== FX.h) ukurFX(FX, w, h);
+            const jalankan = (m, t) => { FX.quad.material = m; renderer.setRenderTarget(t); renderer.render(FX.panggung, FX.kamera); };
+            renderer.setRenderTarget(FX.adegan);
+            renderer.render(scene, camera);
+            const kd = FX.adegan.depthTexture;
+            const ao = FX.mAO.uniforms;
+            ao.tDepth.value = kd; ao.near.value = camera.near; ao.far.value = camera.far;
+            ao.ukuran.value.set(w, h); ao.proj.value.copy(camera.projectionMatrix); ao.projInv.value.copy(camera.projectionMatrixInverse);
+            jalankan(FX.mAO, FX.ao);
+            const b = FX.mBlurAO.uniforms;
+            b.tDepth.value = kd; b.near.value = camera.near; b.far.value = camera.far;
+            b.tAO.value = FX.ao.texture; b.arah.value.set(1.5 / FX.w2, 0); jalankan(FX.mBlurAO, FX.ao2);
+            b.tAO.value = FX.ao2.texture; b.arah.value.set(0, 1.5 / FX.h2); jalankan(FX.mBlurAO, FX.ao);
+            aturFXSuasana(FX);
+            FX.mTerang.uniforms.tWarna.value = FX.adegan.texture; FX.mTerang.uniforms.px.value.set(1 / w, 1 / h);
+            jalankan(FX.mTerang, FX.sinar);
+            const bl = FX.mBlur.uniforms;
+            for (let i = 0; i < 2; i++) {
+                bl.tInput.value = FX.sinar.texture; bl.arah.value.set((1 + i) / FX.w4, 0); jalankan(FX.mBlur, FX.sinar2);
+                bl.tInput.value = FX.sinar2.texture; bl.arah.value.set(0, (1 + i) / FX.h4); jalankan(FX.mBlur, FX.sinar);
+            }
+            const g = FX.mGabung.uniforms;
+            g.tWarna.value = FX.adegan.texture; g.tAO.value = FX.ao.texture; g.tSinar.value = FX.sinar.texture;
+            g.aspek.value.set(w / Math.max(w, h) * 1.2, h / Math.max(w, h) * 1.2);
+            jalankan(FX.mGabung, FX.akhir);
+            FX.mFXAA.uniforms.tInput.value = FX.akhir.texture; FX.mFXAA.uniforms.px.value.set(1 / w, 1 / h);
+            jalankan(FX.mFXAA, null);
+            return true;
+        }
+        function renderAdegan() {
+            if (fxAktif() && renderFX()) return;
+            renderer.setRenderTarget(null);
+            renderer.render(scene, camera);
+        }
+        /* Resolusi dibatasi di tablet/ponsel saat efek aktif: layar iPad bisa 4 juta piksel,
+           dan efek memproses setiap piksel beberapa kali. */
+        function aturResolusi() {
+            const dpr = window.devicePixelRatio || 1;
+            const batas = (fxAktif() && (navigator.maxTouchPoints || 0) > 1) ? 1.5 : 2;
+            if (Math.abs(renderer.getPixelRatio() - Math.min(dpr, batas)) > 0.01) { renderer.setPixelRatio(Math.min(dpr, batas)); resizeViewports(); }
+        }
+        function aturKualitas(nilai) {
+            kualitasRender = (nilai === 'standar') ? 'standar' : 'sinematik';
+            const sel = document.getElementById('kualitasSel'); if (sel) sel.value = kualitasRender;
+            aturResolusi();
+        }
+
         /* Nyala/padam lampu memudar 0,3 detik, seperti lampu sungguhan, bukan meloncat. */
         var animasiCahaya = [];
         var _jamCahaya = null;
@@ -2369,7 +2585,7 @@
             requestAnimationFrame(animate); 
             majukanAnimasiCahaya();
             /* animate() sudah berjalan sebelum blok POV dideklarasikan, jadi harus dijaga. */
-            if (typeof POV !== 'undefined' && POV.aktif) { updateJalan(); renderer.render(scene, camera); return; }
+            if (typeof POV !== 'undefined' && POV.aktif) { updateJalan(); renderAdegan(); return; }
             controls.update(); 
             
             if (selectedItem && selectedItem.lineIndex === undefined && !selectedItem.isWall) {
@@ -2400,7 +2616,7 @@
             
             updateWalkers();
 
-            renderer.render(scene, camera); 
+            renderAdegan();
         } 
         animate();
 
@@ -2662,7 +2878,7 @@
         }
 
         /* ---------- WARNA, MATERIAL, PBR ---------- */
-        let pbrAktif = false;
+        let pbrAktif = true;   /* bawaan sinematik: material PBR */
 
         /* Warna yang dipilih pengguna selalu sRGB; shader butuh linear. */
         const sRGB = (c) => new THREE.Color(c).convertSRGBToLinear();
@@ -2694,6 +2910,7 @@
             bata:    { roughness: 0.93, metalness: 0.0 },
             beton:   { roughness: 0.88, metalness: 0.0 },
             plester: { roughness: 0.95, metalness: 0.0 },
+            cat:     { roughness: 0.86, metalness: 0.0 },
             batu:    { roughness: 0.90, metalness: 0.0 },
             daun:    { roughness: 0.76, metalness: 0.0 },
             polos:   { roughness: 0.80, metalness: 0.0 }
@@ -2714,7 +2931,7 @@
             return { pbr: pbrAktif, expo: v('expo'), sunInt: v('sunInt'), sunTemp: v('sunTemp'), sunAzim: v('sunAzim'),
                      sunElev: v('sunElev'), amb: v('ambInt'), mutu: v('shadowQ'), halus: v('shadowSoft'),
                      bayangan: document.getElementById('chkShadow').checked, matahari: document.getElementById('chkSun').checked,
-                     suasana: suasana, suasanaSel: document.getElementById('suasanaSel').value };
+                     suasana: suasana, suasanaSel: document.getElementById('suasanaSel').value, kualitas: kualitasRender };
         }
         function terapkanPengaturanRender(r) {
             if (!r) return;
@@ -2733,8 +2950,11 @@
             if (r.bayangan !== undefined) document.getElementById('chkShadow').checked = r.bayangan;
             if (r.matahari !== undefined) document.getElementById('chkSun').checked = r.matahari;
             if (r.suasana && PRESET_SUASANA[r.suasana]) suasana = r.suasana;
+            aturKualitas(r.kualitas || 'sinematik');
             document.getElementById('suasanaSel').value = r.suasanaSel || suasana;
             perbaruiTombolWaktu();
+            /* Proyek lama (sebelum ada pilihan kualitas) ikut naik ke tampilan sinematik + PBR. */
+            if (r.kualitas === undefined) r.pbr = true;
             pbrAktif = !!r.pbr;
             document.getElementById('chkPBR').checked = pbrAktif;
             siapkanLingkungan();
@@ -2742,7 +2962,7 @@
         }
 
         function bahanTembok(bahan, warna) {
-            if (!bahan || bahan === 'cat') return matPolos(warna, null, 'plester');
+            if (!bahan || bahan === 'cat') return matTeks('cat', new THREE.Color(warna).getHex(), 1);
             return matTeks(bahan, new THREE.Color(warna).getHex(), ULANG_BAHAN[bahan] || 3);
         }
         function bahanPelat(bahan, warna) {
@@ -2786,7 +3006,7 @@
         const SKALA_TEKSTUR = {
             bata: 1.20, keramik: 1.20, parket: 1.60, beton: 3.00, plester: 2.50,
             batu: 1.80, marmer: 2.40, granit: 1.10, kayu: 1.30, karpet: 1.00,
-            kain: 0.70, logam: 1.20, daun: 0.45
+            kain: 0.70, logam: 1.20, daun: 0.45, cat: 2.2
         };
         const skalaTekstur = (jenis) => SKALA_TEKSTUR[jenis] || 1.5;
 
@@ -2794,7 +3014,7 @@
         const KUAT_NORMAL = {
             bata: 1.0, batu: 1.0, keramik: 0.45, parket: 0.5, beton: 0.55,
             plester: 0.4, kayu: 0.45, karpet: 0.8, kain: 0.6, granit: 0.3,
-            marmer: 0.2, logam: 0.25, daun: 0.5
+            marmer: 0.2, logam: 0.25, daun: 0.5, cat: 0.18
         };
 
         /* Petakan ulang UV sebuah mesh memakai proyeksi kotak dalam satuan meter:
@@ -2869,30 +3089,86 @@
             return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 100000) / 100000; };
         }
 
+        /* Noise nilai yang berulang sempurna (periodik) pada kedua sumbu: dipakai supaya
+           tekstur bersambung mulus saat diulang. Pola lama memakai gradien bebas yang
+           terpotong di tepi kanvas, sehingga sambungan antar ulangan terlihat. */
+        function noisePeriodik(benih, nx, ny) {
+            const rnd = acakTetap(benih), t = new Float32Array(nx * ny);
+            for (let i = 0; i < t.length; i++) t[i] = rnd();
+            return (x, y) => {
+                const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi;
+                const x0 = ((xi % nx) + nx) % nx, y0 = ((yi % ny) + ny) % ny, x1 = (x0 + 1) % nx, y1 = (y0 + 1) % ny;
+                const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+                const a = t[y0 * nx + x0], b = t[y0 * nx + x1], c = t[y1 * nx + x0], d = t[y1 * nx + x1];
+                return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+            };
+        }
+        /* fbm periodik: u, v dalam [0,1) satu ulangan tekstur; px/py = jumlah sel oktaf pertama. */
+        function fbmPeriodik(benih, px, py, oktaf) {
+            const ns = [];
+            for (let o = 0; o < oktaf; o++) ns.push(noisePeriodik(benih + o * 131, px << o, py << o));
+            return (u, v) => {
+                let s = 0, a = 0.5, tot = 0;
+                for (let o = 0; o < oktaf; o++) { s += ns[o](u * (px << o), v * (py << o)) * a; tot += a; a *= 0.5; }
+                return s / tot;
+            };
+        }
+        /* Serat kayu: garis tumbuh (early/late wood) yang dibelokkan noise, lengkung "katedral",
+           serat halus memanjang dan pori-pori - semuanya periodik. Arah serat = sumbu U. */
+        function lukisKayu(g, S, warnaDasar) {
+            const c = new THREE.Color(warnaDasar);
+            const R = c.r * 255, G = c.g * 255, B = c.b * 255;
+            const lekuk = fbmPeriodik(warnaDasar + 11, 2, 3, 4);
+            const tumbuh = fbmPeriodik(warnaDasar + 29, 1, 6, 3);
+            const serat = fbmPeriodik(warnaDasar + 47, 3, 96, 3);
+            const pori = noisePeriodik(warnaDasar + 71, 24, 256);
+            const img = g.createImageData(S, S), d = img.data;
+            for (let y = 0; y < S; y++) {
+                const v = y / S;
+                for (let x = 0; x < S; x++) {
+                    const u = x / S;
+                    const w = lekuk(u, v);
+                    const cincin = v * 26 + w * 2.4 + tumbuh(u, v) * 1.3;
+                    const f = cincin - Math.floor(cincin);
+                    const akhir = Math.pow(Math.max(0, Math.sin(f * Math.PI)), 3);        /* pita gelap latewood */
+                    const halus = serat(u, v) - 0.5;
+                    const p = pori(u * 24, v * 256) > 0.88 ? 0.07 : 0;
+                    const k = 1.04 - 0.13 * akhir - 0.16 * halus - 0.10 * (w - 0.5) - p;
+                    const i = (y * S + x) * 4;
+                    /* bagian gelap sedikit lebih merah-cokelat, seperti kayu sungguhan */
+                    d[i] = Math.min(255, R * k * (1 + 0.04 * akhir));
+                    d[i + 1] = Math.min(255, G * k * (1 - 0.03 * akhir));
+                    d[i + 2] = Math.min(255, B * k * (1 - 0.08 * akhir));
+                    d[i + 3] = 255;
+                }
+            }
+            g.putImageData(img, 0, 0);
+        }
+        /* Variasi warna lembut berskala besar, periodik - pengganti bercak gradien lama. */
+        function lukisBercak(g, S, benih, kuat, sel) {
+            const f = fbmPeriodik(benih, sel, sel, 4);
+            const img = g.getImageData(0, 0, S, S), d = img.data;
+            for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+                const k = 1 + (f(x / S, y / S) - 0.5) * 2 * kuat;
+                const i = (y * S + x) * 4;
+                d[i] = Math.min(255, d[i] * k); d[i + 1] = Math.min(255, d[i + 1] * k); d[i + 2] = Math.min(255, d[i + 2] * k);
+            }
+            g.putImageData(img, 0, 0);
+        }
+
         function kanvasTekstur(jenis, warnaDasar) {
             const kunci = jenis + '_' + warnaDasar;
             if (!_kanvasCache[kunci]) {
                 const S = 512, cv = document.createElement('canvas');
                 cv.width = cv.height = S;
-                const g = cv.getContext('2d');
+                const g = cv.getContext('2d', { willReadFrequently: true });
                 const hex = '#' + warnaDasar.toString(16).padStart(6, '0');
                 g.fillStyle = hex; g.fillRect(0, 0, S, S);
                 const rnd = acakTetap(warnaDasar + jenis.length * 7919);
 
                 /* Bercak besar yang tidak seirama dengan pola utama: inilah yang
                    memecah kesan "ubin berulang" saat bidangnya luas. */
-                const bercakBesar = (kuat) => {
-                    g.save(); g.globalCompositeOperation = 'overlay';
-                    for (let i = 0; i < 26; i++) {
-                        const r = S * (0.18 + rnd() * 0.42);
-                        const grad = g.createRadialGradient(rnd() * S, rnd() * S, 0, rnd() * S, rnd() * S, r);
-                        const t = rnd() < 0.5 ? 255 : 0;
-                        grad.addColorStop(0, 'rgba(' + t + ',' + t + ',' + t + ',' + (kuat * (0.4 + rnd() * 0.6)) + ')');
-                        grad.addColorStop(1, 'rgba(' + t + ',' + t + ',' + t + ',0)');
-                        g.fillStyle = grad; g.fillRect(0, 0, S, S);
-                    }
-                    g.restore();
-                };
+                const bercakBesar = (kuat) => lukisBercak(g, S, warnaDasar + jenis.length * 37, kuat * 0.9, 3);
                 /* Butiran halus supaya permukaan tidak terlihat rata seperti plastik. */
                 const butiran = (kuat, ukuran) => {
                     const n = Math.round(S * S * 0.09);
@@ -2904,24 +3180,11 @@
                 };
 
                 if (jenis === 'kayu') {
-                    for (let i = 0; i < 70; i++) {
-                        const y = Math.random() * S;
-                        g.strokeStyle = 'rgba(0,0,0,' + (0.03 + Math.random() * 0.09) + ')';
-                        g.lineWidth = 0.5 + Math.random() * 2.5;
-                        g.beginPath();
-                        for (let x = 0; x <= S; x += 8) {
-                            const yy = y + Math.sin((x / S) * Math.PI * 2 + i) * 3;
-                            x === 0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
-                        }
-                        g.stroke();
-                    }
-                    for (let i = 0; i < 3; i++) {
-                        const cx = Math.random() * S, cy = Math.random() * S;
-                        for (let r = 2; r < 14; r += 3) {
-                            g.strokeStyle = 'rgba(0,0,0,0.06)'; g.lineWidth = 1.5;
-                            g.beginPath(); g.ellipse(cx, cy, r, r * 0.6, 0.4, 0, Math.PI * 2); g.stroke();
-                        }
-                    }
+                    lukisKayu(g, S, warnaDasar);
+                } else if (jenis === 'cat') {
+                    /* Cat dinding: hampir rata, hanya tekstur rol halus dan bintik kecil. */
+                    lukisBercak(g, S, warnaDasar + 5, 0.035, 4);
+                    butiran(0.025, 1.5);
                 } else if (jenis === 'kain') {
                     for (let i = 0; i < S; i += 3) {
                         g.fillStyle = 'rgba(255,255,255,0.05)'; g.fillRect(i, 0, 1.5, S);
@@ -2987,8 +3250,8 @@
                         const v = (rnd() - 0.5) * 0.07;
                         g.fillStyle = 'rgba(' + (v > 0 ? '255,255,255' : '0,0,0') + ',' + Math.abs(v) + ')';
                         g.fillRect(x, y, w, h);
-                        for (let k = 0; k < 6; k++) {
-                            g.strokeStyle = 'rgba(0,0,0,' + (0.015 + rnd() * 0.025) + ')';
+                        for (let k = 0; k < 2; k++) {
+                            g.strokeStyle = 'rgba(0,0,0,' + (0.006 + rnd() * 0.01) + ')';
                             g.lineWidth = 0.6 + rnd() * 1.4;
                             g.beginPath();
                             let px = x + rnd() * w, py = y;
@@ -3148,15 +3411,29 @@
         function siapkanLingkungan() {
             if (!pbrAktif) { scene.environment = null; return; }
             if (!petaLingkungan) {
+                /* Lingkungan interior, bukan langit terbuka: plafon terang, dinding krem hangat,
+                   dua bidang jendela yang terang dan lantai lebih gelap. Inilah yang dipantulkan
+                   keramik mengilap, logam kulkas dan kaca - jauh lebih meyakinkan di dalam
+                   ruangan daripada pantulan langit biru. */
                 const S = 256, cv = document.createElement('canvas');
                 cv.width = S * 2; cv.height = S;
                 const g = cv.getContext('2d');
                 const grad = g.createLinearGradient(0, 0, 0, S);
-                grad.addColorStop(0.00, '#7fa8de');
-                grad.addColorStop(0.46, '#dfeaf7');
-                grad.addColorStop(0.52, '#9c9184');
-                grad.addColorStop(1.00, '#46403a');
+                grad.addColorStop(0.00, '#fbfaf7');
+                grad.addColorStop(0.30, '#ece8e2');
+                grad.addColorStop(0.50, '#cfcac3');
+                grad.addColorStop(0.56, '#8c857c');
+                grad.addColorStop(1.00, '#48443f');
                 g.fillStyle = grad; g.fillRect(0, 0, S * 2, S);
+                for (const [x, w] of [[S * 0.18, S * 0.34], [S * 1.18, S * 0.22]]) {
+                    const jg = g.createLinearGradient(0, S * 0.22, 0, S * 0.5);
+                    jg.addColorStop(0, '#ffffff'); jg.addColorStop(1, '#f3f6fb');
+                    g.fillStyle = jg; g.fillRect(x, S * 0.2, w, S * 0.3);
+                    g.fillStyle = 'rgba(90,80,70,0.8)'; g.fillRect(x + w / 2 - 2, S * 0.2, 4, S * 0.3);
+                }
+                const lampu = g.createRadialGradient(S, S * 0.06, 0, S, S * 0.06, S * 0.16);
+                lampu.addColorStop(0, '#ffffff'); lampu.addColorStop(1, 'rgba(255,250,240,0)');
+                g.fillStyle = lampu; g.fillRect(0, 0, S * 2, S * 0.3);
                 const tex = new THREE.CanvasTexture(cv);
                 tex.mapping = THREE.EquirectangularReflectionMapping;
                 tex.encoding = THREE.sRGBEncoding;
@@ -3167,14 +3444,54 @@
             }
             scene.environment = petaLingkungan;
         }
+        /* Peta kekasaran PBR diturunkan dari kecerahan tekstur: nat keramik dan celah parket
+           kusam sementara permukaan ubinnya mengilap; pita gelap serat kayu sedikit lebih kasar. */
+        const _kasarCache = {};
+        const ATURAN_KASAR = {
+            keramik: (l, rata) => l < rata * 0.86 ? 0.92 : 0.12,
+            parket:  (l, rata) => l < rata * 0.55 ? 0.95 : 0.38 + (1 - l / rata) * 0.25,
+            kayu:    (l, rata) => 0.52 + Math.max(0, 1 - l / rata) * 0.45,
+            marmer:  (l, rata) => 0.16 + Math.max(0, 1 - l / rata) * 0.2,
+            granit:  (l, rata) => 0.3 + Math.abs(1 - l / rata) * 0.25
+        };
+        function bikinKasar(jenis, warnaDasar) {
+            const aturan = ATURAN_KASAR[jenis];
+            if (!aturan) return null;
+            const kunci = jenis + '_' + warnaDasar;
+            if (!_kasarCache[kunci]) {
+                const src = kanvasTekstur(jenis, warnaDasar), S = src.width;
+                const data = src.getContext('2d').getImageData(0, 0, S, S).data;
+                let jumlah = 0;
+                const L = new Float32Array(S * S);
+                for (let i = 0; i < S * S; i++) { L[i] = data[i * 4] * 0.299 + data[i * 4 + 1] * 0.587 + data[i * 4 + 2] * 0.114; jumlah += L[i]; }
+                const rata = jumlah / (S * S) || 1;
+                const out = document.createElement('canvas'); out.width = out.height = S;
+                const og = out.getContext('2d'), img = og.createImageData(S, S);
+                for (let i = 0; i < S * S; i++) {
+                    const r = Math.max(0.04, Math.min(1, aturan(L[i], rata))) * 255;
+                    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = r; img.data[i * 4 + 3] = 255;
+                }
+                og.putImageData(img, 0, 0);
+                const t = new THREE.CanvasTexture(out);
+                t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                const r = 1 / skalaTekstur(jenis);
+                t.repeat.set(r, r);
+                _kasarCache[kunci] = t;
+            }
+            return _kasarCache[kunci];
+        }
         function matTeks(jenis, warna, ulang, extra) {
             const opt = Object.assign({ map: bikinTekstur(jenis, warna, ulang) }, extra || {});
-            if (!pbrAktif) return matCepat(opt, jenis);
+            if (!pbrAktif) { delete opt.roughness; delete opt.metalness; return matCepat(opt, jenis); }
             const sifat = PBR_SIFAT[jenis] || PBR_SIFAT.polos;
             opt.normalMap = bikinNormal(jenis, warna, ulang);
             const kuat = KUAT_NORMAL[jenis] !== undefined ? KUAT_NORMAL[jenis] : 0.5;
             opt.normalScale = new THREE.Vector2(kuat, kuat);
-            if (opt.roughness === undefined) opt.roughness = sifat.roughness;
+            if (opt.roughness === undefined) {
+                const kasar = bikinKasar(jenis, warna);
+                if (kasar) { opt.roughnessMap = kasar; opt.roughness = 1; }
+                else opt.roughness = sifat.roughness;
+            }
             if (opt.metalness === undefined) opt.metalness = sifat.metalness;
             if (opt.envMapIntensity === undefined) opt.envMapIntensity = kuatLingkungan;
             return new THREE.MeshStandardMaterial(opt);
@@ -3199,6 +3516,10 @@
            cahaya yang memantul dari permukaan ruangan. Tanpa itu, menyalakan lampu hanya
            menerangi lantai tepat di bawahnya dan suasana ruangan tidak berubah. */
         const FAKTOR_PANTUL = 0.26;
+        /* Warna lampu = suhu Kelvin yang sedikit di-"white balance", seperti mata dan kamera
+           menyesuaikan diri: 3000 K tampak putih hangat, bukan oranye pekat. */
+        const _putih = new THREE.Color(1, 1, 1);
+        function warnaLampu(kelvin) { return warnaKelvin(kelvin).lerp(_putih, 0.35); }
         function kuatLampu(obj, bawaan) { return (obj && obj.lightIntensity !== undefined) ? obj.lightIntensity : bawaan; }
         function lampuNyala(obj, kuat) { return (!obj || obj.lightOn !== false) && kuat > 0; }
         function tandaiCahaya(cahaya, kuatPenuh, nyala) {
@@ -3235,7 +3556,7 @@
 
         function createFurnitureMesh(type, variant = 0, obj = null) {
             const group = new THREE.Group(); 
-            let matWood = matTeks('kayu', 0x8b5a2b, 2);
+            let matWood = matTeks('kayu', 0x7d5536, 2);   /* kenari alami, tidak terlalu oranye */
             let matWoodDark = matTeks('kayu', 0x5c4033, 2);
             let matFabric = matTeks('kain', 0x34495e, 3);
             let matCarpet = matTeks('karpet', 0x9b59b6, 4);
@@ -3316,7 +3637,7 @@
                bisa diganti pengguna lewat "Material / Texture". */
             if (obj && (obj.warna || obj.bahan) && MATERIAL_UTAMA[type]) {
                 const slot = MATERIAL_UTAMA[type];
-                const bawaanWarna = { kain: 0x34495e, kayu: 0x8b5a2b, karpet: 0x9b59b6, logam: 0x7f8c8d, putih: 0xecf0f1, hijau: 0x2e8b57, hitam: 0x111111 };
+                const bawaanWarna = { kain: 0x34495e, kayu: 0x7d5536, karpet: 0x9b59b6, logam: 0x7f8c8d, putih: 0xecf0f1, hijau: 0x2e8b57, hitam: 0x111111 };
                 const teksSlot = { kayu: 'kayu', kain: 'kain', karpet: 'karpet', logam: 'logam', putih: 'marmer', hijau: 'daun', hitam: null };
                 const hx = obj.warna ? new THREE.Color(obj.warna).getHex() : bawaanWarna[slot];
                 const jenis = (obj.bahan && obj.bahan !== 'bawaan') ? obj.bahan : teksSlot[slot];
@@ -3493,7 +3814,7 @@
             else if (type === 'spot_light' || type === 'area_light') {
                 /* Lampu plafon. Geometri dirancang untuk plafon 2,75 m; bangunLantai menggesernya
                    supaya menempel ke plafon lantai yang sebenarnya. */
-                const warna = warnaKelvin((obj && obj.lightTemp) || 3000);
+                const warna = warnaLampu((obj && obj.lightTemp) || 3500);
                 const kuat = kuatLampu(obj, [1.6, 2.6, 3.6][variant] || 1.6);
                 const nyala = lampuNyala(obj, kuat);
                 const mauBayangan = !obj || obj.lightShadow !== false;
@@ -3579,28 +3900,62 @@
                 if (variant === 2) { const braket = new THREE.Mesh(new THREE.BoxGeometry(W - 0.1, 0.03, 0.03), matMetal); braket.position.set(0, dasar - 0.02, -D / 2 + 0.02); group.add(braket); }
             }
             else if (type === 'kitchen_set') {
-                const bikinKabinet = (w, d, x, z, putar) => {
+                /* Kabinet dapur: plint mundur, pintu berjarak 3 mm dengan tarikan batang, meja
+                   batu, bak cuci cekung, keran leher angsa, backsplash keramik dan kabinet atas
+                   berpintu. */
+                const matMeja = matTeks('marmer', 0xeeebe6, 2);
+                const matBack = matTeks('keramik', 0xf4f1ec, 6);
+                const matInox = matTeks('logam', 0xc9ccd0, 1);
+                const tarikan = (g, x, y, z, tegak) => {
+                    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, tegak ? 0.16 : 0.2, 10), matInox);
+                    if (!tegak) b.rotation.z = Math.PI / 2;
+                    b.position.set(x, y, z); g.add(b);
+                    for (const o of [-1, 1]) {
+                        const k = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.025, 8), matInox);
+                        k.rotation.x = Math.PI / 2;
+                        k.position.set(x + (tegak ? 0 : o * 0.08), y + (tegak ? o * 0.06 : 0), z - 0.012); g.add(k);
+                    }
+                };
+                const bikinKabinet = (w, d, x, z, putar, bakCuci) => {
                     const g = new THREE.Group();
-                    const badan = new THREE.Mesh(new THREE.BoxGeometry(w, 0.85, d), matWood); badan.position.y = 0.425; g.add(badan);
-                    const meja = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.05, d + 0.04), matWhite); meja.position.y = 0.875; g.add(meja);
-                    const pintu = Math.max(1, Math.round(w / 0.5));
-                    for (let i = 0; i < pintu; i++) {
-                        const lw = w / pintu - 0.04;
-                        const px = -w / 2 + (w / pintu) * (i + 0.5);
-                        const p = new THREE.Mesh(new THREE.BoxGeometry(lw, 0.72, 0.02), matWoodDark); p.position.set(px, 0.43, d / 2 + 0.01); g.add(p);
-                        const t = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.12, 8), matMetal); t.rotation.z = Math.PI / 2; t.position.set(px, 0.72, d / 2 + 0.035); g.add(t);
+                    const plint = new THREE.Mesh(new THREE.BoxGeometry(w - 0.02, 0.1, d - 0.08), matWoodDark); plint.position.set(0, 0.05, -0.03); g.add(plint);
+                    const badan = new THREE.Mesh(new THREE.BoxGeometry(w, 0.76, d - 0.02), matWood); badan.position.set(0, 0.48, -0.01); g.add(badan);
+                    const meja = new THREE.Mesh(new THREE.BoxGeometry(w + 0.03, 0.04, d + 0.03), matMeja); meja.position.set(0, 0.88, 0.005); g.add(meja);
+                    const jml = Math.max(1, Math.round(w / 0.5));
+                    const lw = w / jml;
+                    for (let i = 0; i < jml; i++) {
+                        const px = -w / 2 + lw * (i + 0.5);
+                        const pintu = new THREE.Mesh(new THREE.BoxGeometry(lw - 0.006, 0.7, 0.02), matWood);
+                        pintu.position.set(px, 0.47, d / 2 + 0.001); g.add(pintu);
+                        tarikan(g, px + (i % 2 ? -1 : 1) * (lw / 2 - 0.06), 0.72, d / 2 + 0.03, true);
+                    }
+                    if (bakCuci !== undefined) {
+                        const bak = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.012, 0.38), matInox); bak.position.set(bakCuci, 0.9, 0); g.add(bak);
+                        const lubang = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.004, 0.32), matPolos(0x3a3d41, null, 'logam')); lubang.position.set(bakCuci, 0.907, 0); g.add(lubang);
+                        const tiang = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.018, 0.3, 14), matInox); tiang.position.set(bakCuci, 1.05, -0.22); g.add(tiang);
+                        const leher = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.012, 10, 20, Math.PI), matInox);
+                        leher.rotation.y = Math.PI / 2; leher.position.set(bakCuci, 1.2, -0.13); g.add(leher);
+                        const mulut = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.05, 10), matInox); mulut.position.set(bakCuci, 1.18, -0.04); g.add(mulut);
+                        const tuas = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.09), matInox); tuas.position.set(bakCuci + 0.035, 1.15, -0.2); tuas.rotation.x = 0.4; g.add(tuas);
                     }
                     g.position.set(x, 0, z); g.rotation.y = putar || 0; return g;
                 };
-                group.add(bikinKabinet(2.0, 0.6, 0, 0, 0));
-                const sink = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.4), matMetal); sink.position.set(-0.5, 0.885, 0); group.add(sink);
-                const keran = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.28, 8), matMetal); keran.position.set(-0.5, 1.04, -0.18); group.add(keran);
-                const atas = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.65, 0.35), matWood); atas.position.set(0, 1.85, -0.12); group.add(atas);
+                group.add(bikinKabinet(2.0, 0.6, 0, 0, 0, -0.45));
+                /* backsplash di antara meja dan kabinet atas */
+                const back = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.62, 0.012), matBack); back.position.set(0, 1.21, -0.29); group.add(back);
+                const atas = new THREE.Group();
+                const badanAtas = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.7, 0.33), matWood); badanAtas.position.set(0, 1.87, -0.135); atas.add(badanAtas);
+                for (let i = 0; i < 4; i++) {
+                    const px = -0.75 + i * 0.5;
+                    const pintu = new THREE.Mesh(new THREE.BoxGeometry(0.494, 0.68, 0.02), matWood); pintu.position.set(px, 1.87, 0.036); atas.add(pintu);
+                    tarikan(atas, px + (i % 2 ? -1 : 1) * 0.19, 1.6, 0.06, true);
+                }
+                group.add(atas);
                 if (variant === 1) group.add(bikinKabinet(1.4, 0.6, -1.0 - 0.3, 0.7 + 0.3, Math.PI / 2));
                 if (variant === 2) {
-                    const island = bikinKabinet(1.6, 0.8, 0, 1.6, 0); group.add(island);
+                    group.add(bikinKabinet(1.6, 0.8, 0, 1.6, 0));
                     for (const x of [-0.45, 0.45]) {
-                        const kursi = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 14), matWoodDark); kursi.position.set(x, 0.68, 2.25); group.add(kursi);
+                        const kursi = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 20), matWoodDark); kursi.position.set(x, 0.68, 2.25); group.add(kursi);
                         const kaki = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.66, 10), matMetal); kaki.position.set(x, 0.33, 2.25); group.add(kaki);
                     }
                 }
@@ -3618,17 +3973,30 @@
                     }
                 }
             } else if (type === 'fridge') {
+                /* Kulkas baja tahan karat: badan disikat halus, celah pintu, gagang batang panjang,
+                   kisi ventilasi di bawah. */
                 const W = variant === 2 ? 1.1 : 0.8, H = 1.8, D = 0.7;
-                const body = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), matMetal); body.position.y = H / 2; group.add(body);
+                /* Baja tahan karat: sebagian logam (bukan cermin penuh) supaya tetap tampak perak
+                   terang, bukan memantulkan warna ruangan saja. */
+                const matInox = matTeks('logam', 0xd3d6d9, 1, { metalness: 0.62, roughness: 0.32 });
+                const matGagangK = matPolos(0xe2e4e6, { metalness: 0.9, roughness: 0.2 }, 'logam');
+                const body = new THREE.Mesh(new THREE.BoxGeometry(W, H - 0.08, D - 0.04), matInox); body.position.set(0, H / 2 + 0.04, -0.02); group.add(body);
+                const kaki = new THREE.Mesh(new THREE.BoxGeometry(W - 0.04, 0.08, D - 0.1), matBlack); kaki.position.set(0, 0.04, -0.03); group.add(kaki);
+                const kisi = new THREE.Mesh(new THREE.BoxGeometry(W - 0.1, 0.05, 0.01), matPolos(0x2a2b2d)); kisi.position.set(0, 0.06, D / 2 - 0.05); group.add(kisi);
+                const pintu = (w, h, x, y) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w - 0.006, h - 0.006, 0.05), matInox); m.position.set(x, y, D / 2 - 0.02); group.add(m); };
+                const gagang = (x, y, pjg) => {
+                    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, pjg, 12), matGagangK); b.position.set(x, y, D / 2 + 0.05); group.add(b);
+                    for (const o of [-1, 1]) { const k = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.05), matGagangK); k.position.set(x, y + o * (pjg / 2 - 0.03), D / 2 + 0.025); group.add(k); }
+                };
                 if (variant === 2) {
-                    for (const x of [-W / 4, W / 4]) { const p = new THREE.Mesh(new THREE.BoxGeometry(W / 2 - 0.02, H - 0.06, 0.02), matWhite); p.position.set(x, H / 2, D / 2 + 0.01); group.add(p); }
-                    for (const x of [-0.03, 0.03]) { const h = new THREE.Mesh(new THREE.BoxGeometry(0.03, 1.2, 0.04), matWhite); h.position.set(x, 1.05, D / 2 + 0.04); group.add(h); }
+                    pintu(W / 2, H - 0.1, -W / 4, H / 2 + 0.05); pintu(W / 2, H - 0.1, W / 4, H / 2 + 0.05);
+                    gagang(-0.05, 1.05, 0.9); gagang(0.05, 1.05, 0.9);
                 } else if (variant === 1) {
-                    const garis = new THREE.Mesh(new THREE.BoxGeometry(W, 0.02, 0.02), matWhite); garis.position.set(0, 1.25, D / 2 + 0.01); group.add(garis);
-                    const h1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.3, 0.04), matWhite); h1.position.set(W / 2 - 0.1, 1.4, D / 2 + 0.03); group.add(h1);
-                    const h2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.04), matWhite); h2.position.set(W / 2 - 0.1, 0.95, D / 2 + 0.03); group.add(h2);
+                    pintu(W, 0.52, 0, H - 0.3); pintu(W, H - 0.62, 0, (H - 0.62) / 2 + 0.06);
+                    gagang(W / 2 - 0.07, H - 0.34, 0.3); gagang(W / 2 - 0.07, 1.0, 0.7);
                 } else {
-                    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.4, 0.04), matWhite); handle.position.set(0.35, 1.1, 0.37); group.add(handle);
+                    pintu(W, H - 0.1, 0, H / 2 + 0.05);
+                    gagang(W / 2 - 0.07, 1.05, 0.95);
                 }
             } 
             else if (type === 'toilet') {
@@ -3684,7 +4052,7 @@
                 const kuatL = kuatLampu(obj, 1.8);
                 const hidup = lampuNyala(obj, kuatL);
                 const bayanganL = !obj || obj.lightShadow !== false;
-                const warnaL = warnaKelvin((obj && obj.lightTemp) || 2700);
+                const warnaL = warnaLampu((obj && obj.lightTemp) || 3000);
                 const matKapMati = matTeks('kain', 0xf1e9da, 2, { side: THREE.DoubleSide });
                 /* Kap kain terbuka atas-bawah (bukan tabung tertutup), jadi bohlam memancar
                    ke plafon dan lantai seperti lampu berdiri sungguhan. */
@@ -3782,14 +4150,19 @@
                 }
             }
             else if (type === 'painting') {
-                const bikin = (w, h, x, y) => {
-                    const bingkai = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, h + 0.08, 0.05), matWood);
+                /* Lukisan: bingkai, passe-partout putih, dan gambar sungguhan di kanvas. */
+                const bikin = (w, h, x, y, k) => {
+                    const bingkai = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, h + 0.08, 0.04), matWoodDark);
                     bingkai.position.set(x, y, 0); group.add(bingkai);
-                    const kanvas = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.02),
-                        matPolos(variant === 1 ? 0xc2703f : 0x6f8fa8, null, 'kain'));
-                    kanvas.position.set(x, y, 0.03); group.add(kanvas);
+                    const pp = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.01), matPolos(0xf3f0ea));
+                    pp.position.set(x, y, 0.021); group.add(pp);
+                    const geo = new THREE.PlaneGeometry(w * 0.8, h * 0.8); geo.userData.uvMeter = true;
+                    const gambar = new THREE.Mesh(geo, pbrAktif
+                        ? new THREE.MeshStandardMaterial({ map: teksturLukisan(variant * 3 + (k || 0)), roughness: 0.8, envMapIntensity: kuatLingkungan })
+                        : new THREE.MeshPhongMaterial({ map: teksturLukisan(variant * 3 + (k || 0)), shininess: 4 }));
+                    gambar.position.set(x, y, 0.027); group.add(gambar);
                 };
-                if (variant === 2) { bikin(0.5, 0.7, -0.62, 1.6); bikin(0.5, 0.7, 0, 1.6); bikin(0.5, 0.7, 0.62, 1.6); }
+                if (variant === 2) { bikin(0.5, 0.7, -0.62, 1.6, 0); bikin(0.5, 0.7, 0, 1.6, 1); bikin(0.5, 0.7, 0.62, 1.6, 2); }
                 else if (variant === 1) bikin(1.0, 1.0, 0, 1.6);
                 else bikin(1.2, 0.8, 0, 1.6);
             }
@@ -3867,7 +4240,7 @@
                 const kuatP = kuatLampu(obj, 2.0);
                 const hidupP = lampuNyala(obj, kuatP);
                 const bayanganP = !obj || obj.lightShadow !== false;
-                const warnaP = warnaKelvin((obj && obj.lightTemp) || 2700);
+                const warnaP = warnaLampu((obj && obj.lightTemp) || 3000);
                 const matMatiP = matPolos(0xf2efe8, null, 'keramik');
                 let yLampu = 2.1;
                 if (variant === 1) {
@@ -4529,7 +4902,9 @@
                     X0 = Math.min(X0, pt.x - 0.3); X1 = Math.max(X1, pt.x + 0.3);
                     Z0 = Math.min(Z0, pt.z - 0.3); Z1 = Math.max(Z1, pt.z + 0.3);
                 }));
-                grup.add(bikinPelat(X0, Z0, X1, Z1, voidLantai, matFloor, 0.001));
+                const pelat = bikinPelat(X0, Z0, X1, Z1, voidLantai, matFloor, 0.001);
+                if (indexLantai > 0) pelat.userData.pelatAtas = true;
+                grup.add(pelat);
                 if (indexLantai > 0) {
                     /* Plafon lantai di bawahnya: bidang plester putih di sisi bawah pelat.
                        Tanpa ini plafon memperlihatkan keramik lantai atas. */
@@ -5175,6 +5550,46 @@
             const geo = new THREE.BufferGeometry().copy(bidang);
             geo.computeVertexNormals();
             return geo;
+        }
+
+        /* Gambar lukisan: lanskap senja, abstrak bidang warna, atau garis botani - dibuat
+           sekali per jenis lalu dipakai bersama. */
+        var _teksturLukisan = {};
+        function teksturLukisan(n) {
+            const jenis = n % 4;
+            if (_teksturLukisan[jenis]) return _teksturLukisan[jenis];
+            const c = document.createElement('canvas'); c.width = 384; c.height = 384;
+            const g = c.getContext('2d'), S = 384;
+            if (jenis === 0) {
+                let gr = g.createLinearGradient(0, 0, 0, S * 0.62);
+                gr.addColorStop(0, '#2c3e66'); gr.addColorStop(0.6, '#d9825b'); gr.addColorStop(1, '#f2c48d');
+                g.fillStyle = gr; g.fillRect(0, 0, S, S);
+                g.fillStyle = '#5a4a6e'; g.beginPath(); g.moveTo(0, S * 0.62);
+                [[70, 0.42], [150, 0.55], [240, 0.36], [320, 0.5], [384, 0.44], [384, 0.62]].forEach(([x, y]) => g.lineTo(x, S * y)); g.fill();
+                gr = g.createLinearGradient(0, S * 0.6, 0, S); gr.addColorStop(0, '#b38a4e'); gr.addColorStop(1, '#6b4f2a');
+                g.fillStyle = gr; g.fillRect(0, S * 0.62, S, S);
+                for (let i = 0; i < 900; i++) { g.fillStyle = 'rgba(60,40,20,' + Math.random() * 0.3 + ')'; g.fillRect(Math.random() * S, S * 0.62 + Math.random() * S * 0.38, 1, 3 + Math.random() * 5); }
+            } else if (jenis === 1) {
+                g.fillStyle = '#e9e1d3'; g.fillRect(0, 0, S, S);
+                [['#c8643b', 40, 40, 190, 220], ['#27455c', 170, 150, 180, 190], ['#d9b44a', 60, 250, 120, 100]].forEach(([w, x, y, a, b]) => { g.fillStyle = w; g.globalAlpha = 0.92; g.fillRect(x, y, a, b); });
+                g.globalAlpha = 1;
+            } else if (jenis === 2) {
+                g.fillStyle = '#f1ece2'; g.fillRect(0, 0, S, S);
+                g.strokeStyle = '#3f5a3a'; g.lineWidth = 3;
+                g.beginPath(); g.moveTo(S / 2, S * 0.9); g.bezierCurveTo(S * 0.45, S * 0.6, S * 0.55, S * 0.35, S / 2, S * 0.12); g.stroke();
+                for (let i = 0; i < 9; i++) {
+                    const y = S * (0.82 - i * 0.075), sisi = i % 2 ? 1 : -1;
+                    g.fillStyle = 'rgba(80,120,70,0.85)';
+                    g.beginPath(); g.ellipse(S / 2 + sisi * 34, y, 36, 12, sisi * 0.5, 0, Math.PI * 2); g.fill();
+                }
+            } else {
+                const gr = g.createRadialGradient(S * 0.4, S * 0.4, 10, S / 2, S / 2, S * 0.7);
+                gr.addColorStop(0, '#f4d7a1'); gr.addColorStop(0.5, '#b86a4b'); gr.addColorStop(1, '#3b2a3f');
+                g.fillStyle = gr; g.fillRect(0, 0, S, S);
+            }
+            const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+            _teksturLukisan[jenis] = t;
+            return t;
         }
 
         /* Gambar siaran di layar TV yang menyala. Dibuat sekali lalu dipakai bersama. */
