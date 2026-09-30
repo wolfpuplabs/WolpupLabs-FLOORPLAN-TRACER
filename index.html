@@ -366,7 +366,7 @@
                     <option value="cepat" id="optSqFast">Fast</option>
                     <option value="seimbang" id="optSqBal" selected>Balanced</option>
                     <option value="halus" id="optSqHigh">High</option>
-                    <option value="lembut" id="optSqSoft">Very Soft (VSM)</option>
+                    <option value="lembut" id="optSqSoft">Very Soft</option>
                 </select>
                 <label><span id="txtLblShadowSoft">Shadow Softness:</span> <span id="valShadowSoft">3</span></label>
                 <input type="range" id="shadowSoft" min="0" max="14" step="1" value="3">
@@ -872,7 +872,7 @@
                 voidTraceHint: "Trace: ketuk tiap sudut lubang, lalu ketuk lagi titik pertama (atau tekan ESC) untuk menutup bentuknya.",
                 voidTracePoly: "Bentuknya hasil trace, jadi Lebar/Dalam tidak dipakai. Rotasi dan skala tetap bisa.",
                 lblSunTemp: "Warna Matahari:", lblAmbient: "Cahaya Langit:", lblExposure: "Exposure:",
-                lblShadowQ: "Mutu Bayangan:", sqFast: "Cepat", sqBal: "Seimbang", sqHigh: "Tinggi", sqSoft: "Sangat Halus (VSM)",
+                lblShadowQ: "Mutu Bayangan:", sqFast: "Cepat", sqBal: "Seimbang", sqHigh: "Tinggi", sqSoft: "Sangat Halus",
                 lblShadowSoft: "Kelembutan Bayangan:", lblPBR: "Material PBR",
                 pbrHint: "Permukaan berbasis fisika: roughness, metalness, peta normal, dan pantulan lingkungan.",
                 lblLightTemp: "Warna Lampu:", lblWallMat: "Finishing Tembok:", lblObjMat: "Material / Tekstur:",
@@ -925,7 +925,7 @@
                 voidTraceHint: "Trace: tap each corner of the opening, then tap the first point again (or press ESC) to close the shape.",
                 voidTracePoly: "This shape was traced, so Width/Depth do not apply. Rotation and scale still work.",
                 lblSunTemp: "Sun Color:", lblAmbient: "Ambient / Sky:", lblExposure: "Exposure:",
-                lblShadowQ: "Shadow Quality:", sqFast: "Fast", sqBal: "Balanced", sqHigh: "High", sqSoft: "Very Soft (VSM)",
+                lblShadowQ: "Shadow Quality:", sqFast: "Fast", sqBal: "Balanced", sqHigh: "High", sqSoft: "Very Soft",
                 lblShadowSoft: "Shadow Softness:", lblPBR: "PBR Materials",
                 pbrHint: "Physically based surfaces: roughness, metalness, normal maps and environment reflections.",
                 lblLightTemp: "Light Color:", lblWallMat: "Wall Finish:", lblObjMat: "Material / Texture:",
@@ -2236,10 +2236,64 @@
             });
         }
         /* Saat berjalan di dalam denah, jendela memperlihatkan langit sesuai waktunya. */
+        /* Langit panorama yang terlihat dari jendela saat berjalan: gradien langit sesuai waktu,
+           matahari/bulan di arah sinar matahari yang sebenarnya, awan, dan bintang di malam
+           hari. Dibuat ulang hanya bila waktu atau arah matahari berubah. */
+        var _langit = { kunci: '', tekstur: null };
+        function teksturLangit() {
+            const az = parseFloat(document.getElementById('sunAzim').value) || 0;
+            const el = parseFloat(document.getElementById('sunElev').value) || 45;
+            const kunci = suasana + '|' + az + '|' + el;
+            if (_langit.kunci === kunci && _langit.tekstur) return _langit.tekstur;
+            const W = 1024, H = 512, c = document.createElement('canvas'); c.width = W; c.height = H;
+            const g = c.getContext('2d');
+            const malam = suasana === 'malam', sore = suasana === 'sore';
+            const cakrawala = H / 2;
+            let gr = g.createLinearGradient(0, 0, 0, cakrawala);
+            if (malam) { gr.addColorStop(0, '#02040b'); gr.addColorStop(1, '#16213b'); }
+            else if (sore) { gr.addColorStop(0, '#3c5f9a'); gr.addColorStop(0.65, '#e3a06e'); gr.addColorStop(1, '#f7cf93'); }
+            else { gr.addColorStop(0, '#4f86d1'); gr.addColorStop(0.7, '#a9c8ea'); gr.addColorStop(1, '#e3edf6'); }
+            g.fillStyle = gr; g.fillRect(0, 0, W, cakrawala);
+            gr = g.createLinearGradient(0, cakrawala, 0, H);
+            if (malam) { gr.addColorStop(0, '#10131a'); gr.addColorStop(1, '#050608'); }
+            else if (sore) { gr.addColorStop(0, '#8a7560'); gr.addColorStop(1, '#3d3226'); }
+            else { gr.addColorStop(0, '#a7ad9c'); gr.addColorStop(1, '#5d6353'); }
+            g.fillStyle = gr; g.fillRect(0, cakrawala, W, H - cakrawala);
+            const rnd = acakTetap(1234);
+            if (malam) {
+                for (let i = 0; i < 900; i++) { g.fillStyle = 'rgba(255,255,255,' + (0.3 + rnd() * 0.7) + ')'; const r = rnd() < 0.95 ? 0.7 : 1.4; g.fillRect(rnd() * W, rnd() * cakrawala * 0.95, r, r); }
+            } else {
+                /* awan lembut, digambar dua kali (+W) supaya bersambung di tepi panorama */
+                for (let i = 0; i < 26; i++) {
+                    const x = rnd() * W, y = cakrawala * (0.35 + rnd() * 0.55), rx = 40 + rnd() * 120, ry = 8 + rnd() * 18;
+                    for (const dx of [0, -W, W]) {
+                        const cg = g.createRadialGradient(x + dx, y, 0, x + dx, y, rx);
+                        cg.addColorStop(0, sore ? 'rgba(255,225,200,0.55)' : 'rgba(255,255,255,0.6)'); cg.addColorStop(1, 'rgba(255,255,255,0)');
+                        g.fillStyle = cg; g.save(); g.translate(x + dx, y); g.scale(1, ry / rx); g.translate(-(x + dx), -y);
+                        g.beginPath(); g.arc(x + dx, y, rx, 0, Math.PI * 2); g.fill(); g.restore();
+                    }
+                }
+            }
+            /* posisi matahari: arah yang sama dengan sunLight (lihat updateSun) */
+            const a = THREE.MathUtils.degToRad(az), e = THREE.MathUtils.degToRad(el);
+            const dx = Math.cos(e) * Math.sin(a), dy = Math.sin(e), dz = Math.cos(e) * Math.cos(a);
+            const sx = (Math.atan2(dz, dx) / (Math.PI * 2) + 0.5) * W, sy = (0.5 - Math.asin(dy) / Math.PI) * H;
+            for (const off of [0, -W, W]) {
+                const rg = g.createRadialGradient(sx + off, sy, 0, sx + off, sy, malam ? 40 : 160);
+                rg.addColorStop(0, malam ? 'rgba(235,240,255,1)' : 'rgba(255,252,240,1)');
+                rg.addColorStop(malam ? 0.25 : 0.08, malam ? 'rgba(220,230,255,0.9)' : 'rgba(255,245,220,0.95)');
+                rg.addColorStop(1, 'rgba(255,240,210,0)');
+                g.fillStyle = rg; g.fillRect(sx + off - 170, sy - 170, 340, 340);
+            }
+            if (_langit.tekstur) _langit.tekstur.dispose();
+            const t = new THREE.CanvasTexture(c);
+            t.mapping = THREE.EquirectangularReflectionMapping; t.encoding = THREE.sRGBEncoding;
+            _langit.kunci = kunci; _langit.tekstur = t;
+            return t;
+        }
         function aturLatarJalan() {
             if (typeof POV === 'undefined' || !POV.aktif) { scene.background = null; return; }
-            const ps = PRESET_SUASANA[suasana] || PRESET_SUASANA.siang;
-            scene.background = new THREE.Color(ps.latar);   /* warna latar tidak melewati konversi sRGB di r128 */
+            scene.background = teksturLangit();
         }
         function perbaruiTombolWaktu() {
             const el = document.getElementById('walkWaktu');
@@ -2286,11 +2340,15 @@
             c.updateProjectionMatrix();
         }
 
+        /* Semua preset memakai PCF dengan radius. VSM dihapus: di three.js r128 VSM tidak
+           didukung untuk lampu titik (bayangan lampu jadi bentuk X / segitiga aneh) dan
+           cahaya "bocor" menjadi garis-garis. PCFSoft juga mengabaikan radius, jadi
+           kelembutan bayangan sekarang benar-benar diatur oleh slider. */
         const SHADOW_PRESET = {
-            cepat:    { type: THREE.PCFShadowMap,     ukuran: 1024, radius: 1 },
-            seimbang: { type: THREE.PCFSoftShadowMap, ukuran: 2048, radius: 3 },
-            halus:    { type: THREE.PCFSoftShadowMap, ukuran: 4096, radius: 5 },
-            lembut:   { type: THREE.VSMShadowMap,     ukuran: 2048, radius: 8 }
+            cepat:    { type: THREE.PCFShadowMap, ukuran: 1024, radius: 1.2 },
+            seimbang: { type: THREE.PCFShadowMap, ukuran: 2048, radius: 2.2 },
+            halus:    { type: THREE.PCFShadowMap, ukuran: 4096, radius: 2.8 },
+            lembut:   { type: THREE.PCFShadowMap, ukuran: 2048, radius: 4.0 }
         };
         let mutuBayangan = 'seimbang';
 
@@ -2314,13 +2372,16 @@
             if (!cahaya.shadow) return;
             const u = ukuranPetaBayangan(cahaya, preset);
             cahaya.shadow.mapSize.set(u, u);
-            cahaya.shadow.radius = Math.max(0.5, preset.radius * (0.4 + halus / 6));
+            /* Radius dibatasi: PCF r128 memakai 17 sampel, radius terlalu besar tampak berbintik.
+               Peta lampu lebih kecil (texel lebih besar), jadi batasnya lebih rendah. */
+            const batasR = cahaya.isDirectionalLight ? 6 : 3;
+            cahaya.shadow.radius = Math.min(batasR, Math.max(0.8, preset.radius * (0.5 + halus / 8)));
             if (preset.type === THREE.VSMShadowMap) {
                 cahaya.shadow.bias = 0;
                 cahaya.shadow.normalBias = 0;
             } else {
-                cahaya.shadow.bias = cahaya.isDirectionalLight ? -0.0004 : -0.001;
-                cahaya.shadow.normalBias = 0.045;
+                cahaya.shadow.bias = cahaya.isDirectionalLight ? -0.0003 : -0.002;
+                cahaya.shadow.normalBias = cahaya.isDirectionalLight ? 0.03 : 0.05;
             }
             if (cahaya.shadow.map) { cahaya.shadow.map.dispose(); cahaya.shadow.map = null; }
         }
@@ -2397,6 +2458,7 @@
             };
             const fx = {
                 adegan: target(true), ao: target(false), ao2: target(false), sinar: target(false), sinar2: target(false), akhir: target(false),
+                vol: target(false), vol2: target(false),
                 quad: new THREE.Mesh(new THREE.PlaneGeometry(2, 2)), kamera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
                 w: 0, h: 0
             };
@@ -2406,11 +2468,11 @@
             const umum = '#include <packing>\nuniform sampler2D tDepth; uniform float near; uniform float far; varying vec2 vUv;\n' +
                 'float jarakZ(vec2 uv) { return -perspectiveDepthToViewZ(texture2D(tDepth, uv).x, near, far); }\n';
             fx.mAO = bahan(umum + `
-                uniform vec2 ukuran; uniform mat4 proj; uniform mat4 projInv; uniform float radius; uniform float kuat;
+                uniform vec2 ukuran; uniform mat4 proj; uniform mat4 projInv; uniform float radius; uniform float kuat; uniform sampler2D tWarna;
                 vec3 posisi(vec2 uv) { float d = texture2D(tDepth, uv).x; vec4 v = projInv * vec4(vec3(uv, d) * 2.0 - 1.0, 1.0); return v.xyz / v.w; }
                 void main() {
                     float d = texture2D(tDepth, vUv).x;
-                    if (d > 0.99999) { gl_FragColor = vec4(1.0); return; }
+                    if (d > 0.99999) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
                     vec3 P = posisi(vUv);
                     /* Normal dari selisih kedalaman dengan jarak 2 piksel: jarak 1 piksel terlalu
                        peka terhadap anak tangga kuantisasi kedalaman pada dinding miring. */
@@ -2420,33 +2482,73 @@
                     px = 1.0 / ukuran;
                     vec3 N = normalize(cross(abs(pr.z) < abs(pl.z) ? pr : pl, abs(pu.z) < abs(pd.z) ? pu : pd));
                     float rPx = clamp(radius * proj[1][1] * 0.5 * ukuran.y / max(0.05, -P.z), 3.0, 120.0);
-                    float a0 = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 6.2831853;
+                    /* interleaved gradient noise: hash sin() berpresisi rendah di GPU seluler membentuk
+                       garis-garis tegak pada AO */
+                    float a0 = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) * 6.2831853;
                     float occ = 0.0;
+                    vec3 gi = vec3(0.0);
                     for (int i = 0; i < 14; i++) {
                         float t = (float(i) + 0.5) / 14.0;
                         float sudut = a0 + t * 19.0;
-                        vec3 v = posisi(vUv + vec2(cos(sudut), sin(sudut)) * rPx * t * px) - P;
+                        vec2 uvS = vUv + vec2(cos(sudut), sin(sudut)) * rPx * t * px;
+                        vec3 v = posisi(uvS) - P;
                         float vv = dot(v, v);
                         float dekat = 0.02 + 0.006 * -P.z;
                         if (vv < dekat * dekat) continue;
-                        occ += max(0.0, 1.0 - vv / (radius * radius)) * max(0.0, dot(v, N) * inversesqrt(vv + 1e-4) - 0.15);
+                        float jatuh = max(0.0, 1.0 - vv / (radius * radius));
+                        float kos = dot(v, N) * inversesqrt(vv + 1e-4);
+                        occ += jatuh * max(0.0, kos - 0.25);
+                        /* GI layar: permukaan terang di dekatnya memantulkan warnanya ke titik ini
+                           (dinding merah menghangatkan lantai, lantai kayu mewarnai kaki dinding). */
+                        gi += pow(texture2D(tWarna, uvS).rgb, vec3(2.2)) * jatuh * max(0.0, kos - 0.2);
                     }
-                    gl_FragColor = vec4(vec3(clamp(1.0 - kuat * occ / 7.0, 0.0, 1.0)), 1.0);
+                    gl_FragColor = vec4(gi / 7.0, clamp(1.0 - kuat * occ / 7.0, 0.0, 1.0));
                 }`, { tDepth: { value: null }, near: { value: 0.1 }, far: { value: 1000 }, ukuran: { value: new THREE.Vector2() },
-                      proj: { value: new THREE.Matrix4() }, projInv: { value: new THREE.Matrix4() }, radius: { value: 0.6 }, kuat: { value: 2.6 } });
+                      proj: { value: new THREE.Matrix4() }, projInv: { value: new THREE.Matrix4() }, radius: { value: 0.6 }, kuat: { value: 3.0 }, tWarna: { value: null } });
             /* Blur yang menghormati kedalaman, supaya AO tidak "bocor" melewati tepi benda. */
             fx.mBlurAO = bahan(umum + `
                 uniform sampler2D tAO; uniform vec2 arah;
                 void main() {
-                    float z0 = jarakZ(vUv), s = 0.0, w = 0.0;
+                    float z0 = jarakZ(vUv), w = 0.0;
+                    vec4 s = vec4(0.0);
                     for (int i = -4; i <= 4; i++) {
                         vec2 uv = vUv + arah * float(i);
-                        float dz = (jarakZ(uv) - z0) / (0.04 * z0 + 0.02);
+                        /* toleransi cukup longgar: pada dinding yang menjauh ke samping kedalaman berubah
+                           cepat, dan toleransi ketat membuat blur mendatar gagal (AO jadi bergaris tegak) */
+                        float dz = (jarakZ(uv) - z0) / (0.14 * z0 + 0.05);
                         float bobot = exp(-float(i * i) / 10.0 - dz * dz);
-                        s += texture2D(tAO, uv).r * bobot; w += bobot;
+                        s += texture2D(tAO, uv) * bobot; w += bobot;
                     }
-                    gl_FragColor = vec4(vec3(s / max(w, 1e-4)), 1.0);
+                    gl_FragColor = s / max(w, 1e-4);
                 }`, { tDepth: { value: null }, near: { value: 0.1 }, far: { value: 1000 }, tAO: { value: null }, arah: { value: new THREE.Vector2() } });
+            /* Cahaya volumetrik: setiap piksel menelusuri sinar pandang dan mengecek peta bayangan
+               matahari di sepanjang jalan. Udara yang terkena matahari berpendar - berkas sinar
+               yang masuk lewat jendela terlihat seperti di foto sungguhan. */
+            fx.mVol = bahan(umum + `
+                uniform mat4 projInv; uniform mat4 kamDunia; uniform mat4 matBayang; uniform sampler2D tBayang;
+                uniform vec3 posKam; uniform vec3 arahSurya; uniform float jarakMaks; uniform float rapat;
+                void main() {
+                    float d = texture2D(tDepth, vUv).x;
+                    vec4 v = projInv * vec4(vec3(vUv, d) * 2.0 - 1.0, 1.0); v /= v.w;
+                    vec3 pw = (kamDunia * vec4(v.xyz, 1.0)).xyz;
+                    vec3 arah = pw - posKam; float L = length(arah); arah /= max(L, 1e-4); L = min(L, jarakMaks);
+                    float langkah = L / 24.0;
+                    float t = langkah * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+                    float kena = 0.0;
+                    for (int i = 0; i < 24; i++) {
+                        vec4 sc = matBayang * vec4(posKam + arah * t, 1.0);
+                        vec3 sb = sc.xyz / sc.w;
+                        if (sb.x > 0.0 && sb.x < 1.0 && sb.y > 0.0 && sb.y < 1.0 && sb.z < 1.0)
+                            kena += step(sb.z - 0.0015, unpackRGBAToDepth(texture2D(tBayang, sb.xy)));
+                        t += langkah;
+                    }
+                    /* hamburan Henyey-Greenstein: lebih terang saat memandang ke arah matahari */
+                    float g = 0.55, c = dot(arah, arahSurya);
+                    float fase = (1.0 - g * g) / pow(1.0 + g * g - 2.0 * g * c, 1.5) * 0.25;
+                    gl_FragColor = vec4(vec3(kena / 24.0 * L * rapat * fase), 1.0);
+                }`, { tDepth: { value: null }, near: { value: 0.1 }, far: { value: 1000 }, projInv: { value: new THREE.Matrix4() },
+                      kamDunia: { value: new THREE.Matrix4() }, matBayang: { value: new THREE.Matrix4() }, tBayang: { value: null },
+                      posKam: { value: new THREE.Vector3() }, arahSurya: { value: new THREE.Vector3() }, jarakMaks: { value: 10 }, rapat: { value: 0.2 } });
             fx.mTerang = bahan(`
                 uniform sampler2D tWarna; uniform vec2 px; uniform float ambang; varying vec2 vUv;
                 void main() {
@@ -2464,13 +2566,20 @@
                     gl_FragColor = vec4(s, 1.0);
                 }`, { tInput: { value: null }, arah: { value: new THREE.Vector2() } });
             fx.mGabung = bahan(`
-                uniform sampler2D tWarna; uniform sampler2D tAO; uniform sampler2D tSinar;
-                uniform float kuatAO; uniform float kuatSinar; uniform float kontras; uniform float saturasi; uniform float hangat; uniform float vignette; uniform vec2 aspek;
+                uniform sampler2D tWarna; uniform sampler2D tAO; uniform sampler2D tSinar; uniform sampler2D tVol;
+                uniform float kuatAO; uniform float kuatSinar; uniform float kuatGI; uniform float kuatVol; uniform vec3 warnaSurya; uniform float kontras; uniform float saturasi; uniform float hangat; uniform float vignette; uniform vec2 aspek;
                 varying vec2 vUv;
                 void main() {
                     vec3 c = texture2D(tWarna, vUv).rgb;
                     vec3 lin = pow(c, vec3(2.2));
-                    lin *= mix(1.0, texture2D(tAO, vUv).r, kuatAO);
+                    vec4 aogi = texture2D(tAO, vUv);
+                    /* warna permukaan diperkirakan dari kroma pikselnya sendiri, supaya pantulan juga
+                       sampai ke bagian yang teduh */
+                    float lum = dot(lin, vec3(0.2126, 0.7152, 0.0722));
+                    vec3 albedo = clamp(lin / max(lum, 0.06), 0.0, 2.0) * 0.3;
+                    lin *= mix(1.0, aogi.a, kuatAO);
+                    lin += aogi.rgb * albedo * kuatGI;
+                    lin += texture2D(tVol, vUv).rgb * warnaSurya * kuatVol;
                     lin += pow(texture2D(tSinar, vUv).rgb, vec3(2.2)) * kuatSinar;
                     c = pow(max(lin, 0.0), vec3(1.0 / 2.2));
                     c *= vec3(1.0 + hangat, 1.0 + hangat * 0.25, 1.0 - hangat);
@@ -2480,7 +2589,8 @@
                     vec2 d = (vUv - 0.5) * aspek;
                     c *= 1.0 - vignette * dot(d, d);
                     gl_FragColor = vec4(c, 1.0);
-                }`, { tWarna: { value: null }, tAO: { value: null }, tSinar: { value: null }, kuatAO: { value: 0.85 }, kuatSinar: { value: 0.5 },
+                }`, { tWarna: { value: null }, tAO: { value: null }, tSinar: { value: null }, tVol: { value: null }, kuatAO: { value: 0.85 }, kuatSinar: { value: 0.5 },
+                      kuatGI: { value: 0.9 }, kuatVol: { value: 0.0 }, warnaSurya: { value: new THREE.Color(1, 1, 1) },
                       kontras: { value: 0.2 }, saturasi: { value: 1.02 }, hangat: { value: 0.012 }, vignette: { value: 0.3 }, aspek: { value: new THREE.Vector2(1, 1) } });
             fx.mFXAA = bahan(`
                 uniform sampler2D tInput; uniform vec2 px; varying vec2 vUv;
@@ -2508,6 +2618,7 @@
             fx.adegan.setSize(w, h); fx.akhir.setSize(w, h);
             fx.ao.setSize(w2, h2); fx.ao2.setSize(w2, h2);
             fx.sinar.setSize(w4, h4); fx.sinar2.setSize(w4, h4);
+            fx.vol.setSize(w4, h4); fx.vol2.setSize(w4, h4);
             fx.w2 = w2; fx.h2 = h2; fx.w4 = w4; fx.h4 = h4;
         }
         /* Kekuatan efek mengikuti suasana: malam hari lampu lebih berpendar. */
@@ -2528,6 +2639,7 @@
             const ao = FX.mAO.uniforms;
             ao.tDepth.value = kd; ao.near.value = camera.near; ao.far.value = camera.far;
             ao.ukuran.value.set(w, h); ao.proj.value.copy(camera.projectionMatrix); ao.projInv.value.copy(camera.projectionMatrixInverse);
+            ao.tWarna.value = FX.adegan.texture;
             jalankan(FX.mAO, FX.ao);
             const b = FX.mBlurAO.uniforms;
             b.tDepth.value = kd; b.near.value = camera.near; b.far.value = camera.far;
@@ -2541,7 +2653,24 @@
                 bl.tInput.value = FX.sinar.texture; bl.arah.value.set((1 + i) / FX.w4, 0); jalankan(FX.mBlur, FX.sinar2);
                 bl.tInput.value = FX.sinar2.texture; bl.arah.value.set(0, (1 + i) / FX.h4); jalankan(FX.mBlur, FX.sinar);
             }
+            /* Berkas cahaya volumetrik: hanya saat berjalan di dalam denah dan matahari punya
+               peta bayangan (di tampilan editor dari luar rumah efek ini hanya jadi kabut). */
             const g = FX.mGabung.uniforms;
+            const peta = sunLight.shadow && sunLight.shadow.map;
+            const volAktif = typeof POV !== 'undefined' && POV.aktif && sunLight.visible && sunLight.castShadow && peta && sunLight.intensity > 0.3;
+            if (volAktif) {
+                const vu = FX.mVol.uniforms;
+                vu.tDepth.value = kd; vu.projInv.value.copy(camera.projectionMatrixInverse); vu.kamDunia.value.copy(camera.matrixWorld);
+                vu.matBayang.value.copy(sunLight.shadow.matrix); vu.tBayang.value = peta.texture;
+                vu.posKam.value.setFromMatrixPosition(camera.matrixWorld);
+                vu.arahSurya.value.copy(sunLight.position).sub(sunLight.target.position).normalize();
+                jalankan(FX.mVol, FX.vol);
+                bl.tInput.value = FX.vol.texture; bl.arah.value.set(1 / FX.w4, 0); jalankan(FX.mBlur, FX.vol2);
+                bl.tInput.value = FX.vol2.texture; bl.arah.value.set(0, 1 / FX.h4); jalankan(FX.mBlur, FX.vol);
+                g.warnaSurya.value.copy(sunLight.color).multiplyScalar(sunLight.intensity);
+            }
+            g.kuatVol.value = volAktif ? 1.3 : 0.0;
+            g.tVol.value = FX.vol.texture;
             g.tWarna.value = FX.adegan.texture; g.tAO.value = FX.ao.texture; g.tSinar.value = FX.sinar.texture;
             g.aspek.value.set(w / Math.max(w, h) * 1.2, h / Math.max(w, h) * 1.2);
             jalankan(FX.mGabung, FX.akhir);
@@ -3014,7 +3143,7 @@
         const KUAT_NORMAL = {
             bata: 1.0, batu: 1.0, keramik: 0.45, parket: 0.5, beton: 0.55,
             plester: 0.4, kayu: 0.45, karpet: 0.8, kain: 0.6, granit: 0.3,
-            marmer: 0.2, logam: 0.25, daun: 0.5, cat: 0.18
+            marmer: 0.2, logam: 0.05, daun: 0.5, cat: 0.18
         };
 
         /* Petakan ulang UV sebuah mesh memakai proyeksi kotak dalam satuan meter:
@@ -3134,7 +3263,9 @@
                     const halus = serat(u, v) - 0.5;
                     const p = pori(u * 24, v * 256) > 0.88 ? 0.07 : 0;
                     const k = 1.04 - 0.13 * akhir - 0.16 * halus - 0.10 * (w - 0.5) - p;
-                    const i = (y * S + x) * 4;
+                    /* ditulis tertransposisi: serat membujur searah V, jadi tegak pada pintu,
+                       panel dan kaki - arah serat yang lazim pada perabot */
+                    const i = (x * S + y) * 4;
                     /* bagian gelap sedikit lebih merah-cokelat, seperti kayu sungguhan */
                     d[i] = Math.min(255, R * k * (1 + 0.04 * akhir));
                     d[i + 1] = Math.min(255, G * k * (1 - 0.03 * akhir));
@@ -3201,11 +3332,16 @@
                         g.fillRect(Math.random() * S, Math.random() * S, 2, 3);
                     }
                 } else if (jenis === 'logam') {
-                    for (let i = 0; i < 900; i++) {
-                        const t = Math.random() < 0.5 ? 255 : 0;
-                        g.fillStyle = 'rgba(' + t + ',' + t + ',' + t + ',' + Math.random() * 0.09 + ')';
-                        g.fillRect(0, Math.random() * S, S, 1);
+                    /* Logam disikat: goresan sangat halus dan rapat, kontras rendah. Dulu garis
+                       lebar berkontras tinggi sehingga kulkas tampak seperti kayu bergaris. */
+                    const sikat = fbmPeriodik(warnaDasar + 3, 2, 96, 3), halus = noisePeriodik(warnaDasar + 9, 64, 64);
+                    const img = g.getImageData(0, 0, S, S), d = img.data;
+                    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+                        const k = 1 + (sikat(x / S, y / S) - 0.5) * 0.028 + (halus(x / S * 64, y / S * 64) - 0.5) * 0.02;
+                        const i = (y * S + x) * 4;
+                        d[i] = Math.min(255, d[i] * k); d[i + 1] = Math.min(255, d[i + 1] * k); d[i + 2] = Math.min(255, d[i + 2] * k);
                     }
+                    g.putImageData(img, 0, 0);
                 } else if (jenis === 'marmer') {
                     for (let i = 0; i < 16; i++) {
                         g.strokeStyle = 'rgba(0,0,0,' + (0.04 + Math.random() * 0.06) + ')';
@@ -3411,32 +3547,37 @@
         function siapkanLingkungan() {
             if (!pbrAktif) { scene.environment = null; return; }
             if (!petaLingkungan) {
-                /* Lingkungan interior, bukan langit terbuka: plafon terang, dinding krem hangat,
-                   dua bidang jendela yang terang dan lantai lebih gelap. Inilah yang dipantulkan
-                   keramik mengilap, logam kulkas dan kaca - jauh lebih meyakinkan di dalam
-                   ruangan daripada pantulan langit biru. */
-                const S = 256, cv = document.createElement('canvas');
-                cv.width = S * 2; cv.height = S;
-                const g = cv.getContext('2d');
-                const grad = g.createLinearGradient(0, 0, 0, S);
-                grad.addColorStop(0.00, '#fbfaf7');
-                grad.addColorStop(0.30, '#ece8e2');
-                grad.addColorStop(0.50, '#cfcac3');
-                grad.addColorStop(0.56, '#8c857c');
-                grad.addColorStop(1.00, '#48443f');
-                g.fillStyle = grad; g.fillRect(0, 0, S * 2, S);
-                for (const [x, w] of [[S * 0.18, S * 0.34], [S * 1.18, S * 0.22]]) {
-                    const jg = g.createLinearGradient(0, S * 0.22, 0, S * 0.5);
-                    jg.addColorStop(0, '#ffffff'); jg.addColorStop(1, '#f3f6fb');
-                    g.fillStyle = jg; g.fillRect(x, S * 0.2, w, S * 0.3);
-                    g.fillStyle = 'rgba(90,80,70,0.8)'; g.fillRect(x + w / 2 - 2, S * 0.2, 4, S * 0.3);
+                /* HDRI interior prosedural: radiansi sungguhan (bukan warna 0-1), disimpan RGBE
+                   seperti file .hdr. Jendela 5-7x lebih terang dari dinding dan lampu plafon jauh
+                   lebih terang lagi, jadi keramik, kaca dan logam memantulkan sorotan terang yang
+                   meyakinkan - tidak kusam seperti pantulan gambar biasa. */
+                const W = 256, H = 128, data = new Uint8Array(W * H * 4);
+                const halus = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+                for (let y = 0; y < H; y++) {
+                    const teta = ((y + 0.5) / H - 0.5) * Math.PI;          /* baris 0 = bawah */
+                    for (let x = 0; x < W; x++) {
+                        const phi = ((x + 0.5) / W - 0.5) * Math.PI * 2;
+                        const plafon = halus(0.75, 1.0, teta), lantai = halus(-0.05, -0.35, teta);
+                        let r = 0.62, g = 0.58, b = 0.53;                    /* dinding */
+                        r += (0.95 - r) * plafon; g += (0.93 - g) * plafon; b += (0.9 - b) * plafon;
+                        r += (0.28 - r) * lantai; g += (0.24 - g) * lantai; b += (0.2 - b) * lantai;
+                        const jendela = (p0, p1, t0, t1, k) => {
+                            if (phi > p0 && phi < p1 && teta > t0 && teta < t1) { r = 0.95 * k; g = 1.0 * k; b = 1.1 * k; }
+                        };
+                        jendela(-2.4, -1.65, 0.05, 0.6, 7);
+                        jendela(0.55, 1.05, 0.0, 0.62, 5);
+                        if (teta > 1.3) { const k = 1 + halus(1.3, 1.5, teta) * 13; r *= k; g *= k * 0.98; b *= k * 0.94; }
+                        const m = Math.max(r, g, b), i = (y * W + x) * 4;
+                        if (m < 1e-6) { data[i] = data[i + 1] = data[i + 2] = data[i + 3] = 0; continue; }
+                        const e = Math.floor(Math.log2(m)) + 1, f = 256 / Math.pow(2, e);
+                        data[i] = r * f; data[i + 1] = g * f; data[i + 2] = b * f; data[i + 3] = e + 128;
+                    }
                 }
-                const lampu = g.createRadialGradient(S, S * 0.06, 0, S, S * 0.06, S * 0.16);
-                lampu.addColorStop(0, '#ffffff'); lampu.addColorStop(1, 'rgba(255,250,240,0)');
-                g.fillStyle = lampu; g.fillRect(0, 0, S * 2, S * 0.3);
-                const tex = new THREE.CanvasTexture(cv);
+                const tex = new THREE.DataTexture(data, W, H, THREE.RGBAFormat, THREE.UnsignedByteType);
+                tex.encoding = THREE.RGBEEncoding;
                 tex.mapping = THREE.EquirectangularReflectionMapping;
-                tex.encoding = THREE.sRGBEncoding;
+                tex.minFilter = tex.magFilter = THREE.NearestFilter;
+                tex.generateMipmaps = false; tex.flipY = false; tex.needsUpdate = true;
                 const pmrem = new THREE.PMREMGenerator(renderer);
                 pmrem.compileEquirectangularShader();
                 petaLingkungan = pmrem.fromEquirectangular(tex).texture;
@@ -4484,7 +4625,11 @@
             modelGroup.updateMatrixWorld(true);
             floorGroups.forEach(g => { if (g) petakanUVLantai(g); });
 
-            if (window.transformControl) updateTransformControlSelection(selectedItem);
+            /* Di mode jalan tidak ada gizmo, meski ada objek yang masih terpilih. */
+            if (window.transformControl) {
+                if (typeof POV !== 'undefined' && POV.aktif) transformControl.detach();
+                else updateTransformControlSelection(selectedItem);
+            }
             if (typeof POV !== 'undefined' && POV.aktif) kumpulkanPenghalang();
             if (charactersOn) { characterGroup.position.y = floorBaseY(currentFloor); buildWalkGrid(); }
             updateSun();
