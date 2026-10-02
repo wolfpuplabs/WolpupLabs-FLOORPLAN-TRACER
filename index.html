@@ -175,7 +175,7 @@
         .empty-tips { text-align: left; margin: 0; padding: 0 0 0 16px; font-size: 11.5px; line-height: 1.5; }
         .empty-tips li { margin-bottom: 6px; }
         .sel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-        .sel-ico { width: 34px; height: 34px; border-radius: 10px; background: var(--accent-soft); display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
+        .sel-ico { width: 44px; height: 44px; border-radius: 10px; background: var(--accent-soft); display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
         .sel-name { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Daftar lantai */
@@ -236,7 +236,10 @@
         .kt-grp { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin: 10px 2px 6px; }
         .kt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
         .kt-item { flex-direction: column; min-height: 70px; padding: 6px 4px; gap: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); font-weight: 600; font-size: 10.5px; line-height: 1.2; text-align: center; }
-        .kt-item .em { font-size: 24px; line-height: 1; }
+        .kt-item .em { font-size: 24px; line-height: 1; width: 64px; height: 56px; display: grid; place-items: center; }
+        .kt-item .em img, .sel-ico img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .kt-item { min-height: 92px; }
+        .sel-ico { overflow: hidden; }
         .kt-item:hover { background: var(--accent-soft); border-color: #c9d8ff; color: var(--accent-2); }
         .kt-kosong { padding: 18px 4px; color: var(--muted); text-align: center; }
 
@@ -1610,7 +1613,12 @@
             if (mode === 'select') {
                 let clickedItem = null; let minDist = 30 / scale;
                 openings.forEach(op => { let l = lines[op.lineIndex]; if(l) { const cx = l.start.x + (l.end.x - l.start.x) * op.ratio; const cy = l.start.y + (l.end.y - l.start.y) * op.ratio; if (Math.hypot(cx - x, cy - y) < minDist) { clickedItem = op; minDist = Math.hypot(cx - x, cy - y); } } });
-                freeObjects.forEach(obj => { if (Math.hypot(obj.x - x, obj.y - y) < minDist) { clickedItem = obj; minDist = Math.hypot(obj.x - x, obj.y - y); } });
+                const bukaanDekat = clickedItem, jarakBukaan = minDist;
+                /* Objek terpilih bila titik ketuk ada di dalam tapak simbolnya; yang terkecil menang
+                   (kursi di atas karpet). Tanpa simbol, pakai jarak ke titik pusat seperti dulu. */
+                const diDalam = objekDiTapak(x, y);
+                if (diDalam && !(bukaanDekat && jarakBukaan < 12 / scale)) clickedItem = diDalam;
+                else freeObjects.forEach(obj => { if (Math.hypot(obj.x - x, obj.y - y) < minDist) { clickedItem = obj; minDist = Math.hypot(obj.x - x, obj.y - y); } });
                 if (!clickedItem) { let wallHit = findNearestLine(x, y, 15 / scale); if (wallHit) { clickedItem = { isWall: true, index: wallHit.index, ...lines[wallHit.index] }; } }
 
                 if (clickedItem) { 
@@ -2257,7 +2265,9 @@
                 } ctx.restore();
             });
 
-            freeObjects.forEach(obj => {
+            /* Urutan gambar seperti denah: karpet paling bawah, lampu plafon paling atas. */
+            const lapisan = (o) => o.type === 'carpet' ? 0 : (['spot_light', 'area_light', 'pendant_lamp'].indexOf(o.type) >= 0 ? 2 : 1);
+            freeObjects.slice().sort((a, b) => lapisan(a) - lapisan(b)).forEach(obj => {
                 ctx.save(); ctx.translate(obj.x, obj.y); ctx.rotate((obj.rotationY !== undefined ? obj.rotationY : (obj.rotation || 0)) * Math.PI / 180); 
                 const sX = obj.scaleX !== undefined ? obj.scaleX : (obj.scaleVal || 1.0);
                 const sZ = obj.scaleZ !== undefined ? obj.scaleZ : (obj.scaleVal || 1.0);
@@ -2269,6 +2279,8 @@
                     gambarVoid2D(obj, sX, sZ);
                 } else if (obj.type === 'stairs') { 
                     gambarTangga2D(obj, sX, sZ);
+                } else if (gambarSimbol2D(obj, sX, sZ)) {
+                    /* simbol denah tampak atas sudah digambar */
                 } else { 
                     const sizeX = (30 / scale) * sX; const sizeZ = (30 / scale) * sZ;
                     let color = '#06b6d4';
@@ -6927,7 +6939,7 @@
         /* Kepala objek terpilih + tombol "Edit" mengambang untuk layar sempit */
         function tampilkanKepalaObjek(item) {
             const tipe = item.isWall ? 'wall' : item.type;
-            document.getElementById('selIcon').textContent = EMOJI_OBJEK[tipe] || '◻️';
+            pasangThumbnail(document.getElementById('selIcon'), tipe);
             document.getElementById('selTitle').textContent = namaTipe(tipe);
             pilihTab('edit');
             perbaruiChipEdit();
@@ -6965,7 +6977,8 @@
                 opsi.forEach(o => {
                     const b = document.createElement('button'); b.className = 'kt-item'; b.type = 'button';
                     b.innerHTML = '<span class="em"></span><span class="nm"></span>';
-                    b.querySelector('.em').textContent = EMOJI_OBJEK[o.value] || '◻️';
+                    b.dataset.tipe = o.value;
+                    pasangThumbnail(b.querySelector('.em'), o.value);
                     b.querySelector('.nm').textContent = o.textContent;
                     b.addEventListener('click', () => { furnitureSelect.value = o.value; furnitureSelect.dispatchEvent(new Event('change')); });
                     grid.appendChild(b); ada++;
@@ -7038,6 +7051,232 @@
 
         terapkanTeksUI(texts[currentLang]);
         updateToggleIcon();
+
+        /* ---------- THUMBNAIL KATALOG & SIMBOL DENAH ----------
+           Keduanya dibuat dari model 3D yang sama dengan yang tampil di tampilan 3D, jadi selalu
+           cocok dengan varian dan ukuran sebenarnya - termasuk model 3D yang diimpor.
+           - Thumbnail: render perspektif 3/4 kecil dengan cahaya studio.
+           - Simbol denah: render ortografis tampak atas bergaya gambar kerja: isian putih
+             (permukaan rendah sedikit abu-abu) dan garis tepi gelap, digambar seukuran aslinya. */
+        var _thumb = {}, _simbol = {}, _antreanGambar = [], _antreanJalan = false;
+        function kunciThumb(tipe) { return tipe + '|' + (pbrAktif ? 1 : 0); }
+        function kunciSimbol(obj) {
+            const custom = obj.type === 'custom_glb' || obj.type === 'custom_obj';
+            if (custom && !customModels[obj.modelId]) return null;
+            return obj.type + '|' + (obj.variant || 0) + '|' + (custom ? obj.modelId : '') + '|' + Math.round(1 / scale3D);
+        }
+        function bangunMeshGambar(obj) {
+            if (obj.type === 'custom_glb' || obj.type === 'custom_obj') {
+                const asli = customModels[obj.modelId];
+                if (!asli) return null;
+                const m = asli.clone(); m.userData.berbagi = true; return m;
+            }
+            return createFurnitureMesh(obj.type, obj.variant || 0, null);
+        }
+        function siapkanGrupGambar(mesh) {
+            const g = new THREE.Group(); g.add(mesh);
+            const lampu = []; g.traverse(o => { if (o.isLight) lampu.push(o); });
+            lampu.forEach(l => l.parent.remove(l));
+            g.updateMatrixWorld(true);
+            return g;
+        }
+        function bacaTarget(target, w, h) {
+            const px = new Uint8Array(w * h * 4);
+            renderer.readRenderTargetPixels(target, 0, 0, w, h, px);
+            const img = new ImageData(w, h);
+            for (let y = 0; y < h; y++) img.data.set(px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4);
+            return img;
+        }
+        function denganRenderer(fn) {
+            const t0 = renderer.getRenderTarget(), warna = renderer.getClearColor(new THREE.Color()), alfa = renderer.getClearAlpha();
+            const expo = renderer.toneMappingExposure;
+            try { return fn(); }
+            finally { renderer.setRenderTarget(t0); renderer.setClearColor(warna, alfa); renderer.toneMappingExposure = expo; }
+        }
+        /* Model impor memakai geometri bersama dengan aslinya: jangan dilepas. */
+        function buangGrupGambar(g) {
+            let berbagi = false;
+            g.traverse(o => { if (o.userData.berbagi) berbagi = true; });
+            if (!berbagi) buangSumberDaya(g);
+        }
+
+        function buatThumbnail(tipe) {
+            const mesh = bangunMeshGambar({ type: tipe, variant: 0 });
+            if (!mesh) return null;
+            const g = siapkanGrupGambar(mesh);
+            const kotak = new THREE.Box3().setFromObject(g);
+            if (kotak.isEmpty()) { buangGrupGambar(g); return null; }
+            const pusat = kotak.getCenter(new THREE.Vector3()), r = Math.max(0.15, kotak.getSize(new THREE.Vector3()).length() / 2);
+            const adegan = new THREE.Scene();
+            adegan.add(g);
+            adegan.add(new THREE.HemisphereLight(0xffffff, 0x8f8a84, pbrAktif ? 0.55 : 0.9));
+            const matahari = new THREE.DirectionalLight(0xffffff, pbrAktif ? 1.6 : 1.0); matahari.position.set(3, 6, 5); adegan.add(matahari);
+            const isi = new THREE.DirectionalLight(0xdfe8ff, 0.35); isi.position.set(-4, 2, -1); adegan.add(isi);
+            if (pbrAktif && petaLingkungan) adegan.environment = petaLingkungan;
+            const kam = new THREE.PerspectiveCamera(28, 1, 0.05, 200);
+            const arah = new THREE.Vector3(0.62, 0.55, 1).normalize();
+            kam.position.copy(pusat).addScaledVector(arah, r / Math.sin(THREE.MathUtils.degToRad(14)) * 1.02);
+            kam.lookAt(pusat);
+            const S = 256, target = new THREE.WebGLRenderTarget(S, S, { format: THREE.RGBAFormat });
+            target.texture.encoding = THREE.sRGBEncoding;
+            const img = denganRenderer(() => {
+                renderer.toneMappingExposure = 1.0;
+                renderer.setClearColor(0x000000, 0);
+                renderer.setRenderTarget(target); renderer.clear(); renderer.render(adegan, kam);
+                return bacaTarget(target, S, S);
+            });
+            target.dispose(); buangGrupGambar(g);
+            const besar = document.createElement('canvas'); besar.width = besar.height = S; besar.getContext('2d').putImageData(img, 0, 0);
+            const kecil = document.createElement('canvas'); kecil.width = kecil.height = 128;
+            const kg = kecil.getContext('2d'); kg.imageSmoothingQuality = 'high'; kg.drawImage(besar, 0, 0, 128, 128);
+            return kecil.toDataURL('image/png');
+        }
+
+        var _matSimbol = null, _matGaris = null, _matDalam = null;
+        function buatSimbol(obj) {
+            const mesh = bangunMeshGambar(obj);
+            if (!mesh) return null;
+            const g = siapkanGrupGambar(mesh);
+            const kotak = new THREE.Box3().setFromObject(g);
+            if (kotak.isEmpty()) { buangGrupGambar(g); return null; }
+            if (!_matSimbol) {
+                const vs = 'varying float vY; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vY = w.y; gl_Position = projectionMatrix * viewMatrix * w; }';
+                _matSimbol = new THREE.ShaderMaterial({
+                    vertexShader: vs, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2,
+                    uniforms: { yMaks: { value: 1 } },
+                    fragmentShader: 'uniform float yMaks; varying float vY; void main() { float t = clamp(vY / yMaks, 0.0, 1.0); gl_FragColor = vec4(mix(vec3(0.85, 0.865, 0.88), vec3(1.0), t), 1.0); }'
+                });
+                _matDalam = _matSimbol.clone(); _matDalam.colorWrite = false;
+                _matGaris = new THREE.LineBasicMaterial({ color: 0x353b45, toneMapped: false });
+            }
+            _matSimbol.uniforms.yMaks.value = _matDalam.uniforms.yMaks.value = Math.max(0.35, kotak.max.y);
+            const adegan = new THREE.Scene(), muka = [], garis = [];
+            g.traverse(o => {
+                if (!o.isMesh || !o.visible || !o.geometry) return;
+                let tampak = true; for (let n = o; n; n = n.parent) if (n.visible === false) tampak = false;
+                if (!tampak) return;
+                const m = new THREE.Mesh(o.geometry, _matSimbol); m.matrixAutoUpdate = false; m.matrix.copy(o.matrixWorld); adegan.add(m); muka.push(m);
+                const eg = new THREE.EdgesGeometry(o.geometry, 30);
+                const l = new THREE.LineSegments(eg, _matGaris); l.matrixAutoUpdate = false; l.matrix.copy(o.matrixWorld); adegan.add(l); garis.push(l);
+            });
+            const w = Math.max(0.04, kotak.max.x - kotak.min.x), d = Math.max(0.04, kotak.max.z - kotak.min.z);
+            /* Resolusi mengikuti kanvas denah (1 m = 1/scale3D piksel kanvas), sedikit di atasnya.
+               Gambar yang jauh lebih tajam justru kehilangan garis saat diperkecil. */
+            const ppm = Math.min(1.5 / scale3D, 900 / Math.max(w, d)), pad = 4;
+            const W = Math.ceil(w * ppm) + pad * 2, H = Math.ceil(d * ppm) + pad * 2;
+            const cx = (kotak.min.x + kotak.max.x) / 2, cz = (kotak.min.z + kotak.max.z) / 2;
+            const kam = new THREE.OrthographicCamera(-W / 2 / ppm, W / 2 / ppm, H / 2 / ppm, -H / 2 / ppm, 0.01, kotak.max.y - kotak.min.y + 20);
+            kam.up.set(0, 0, -1); kam.position.set(cx, kotak.max.y + 5, cz); kam.lookAt(cx, kotak.min.y, cz); kam.updateMatrixWorld();
+            const target = new THREE.WebGLRenderTarget(W, H, { format: THREE.RGBAFormat, depthBuffer: true });
+            const [isi, tepi] = denganRenderer(() => {
+                renderer.setClearColor(0x000000, 0); renderer.setRenderTarget(target);
+                garis.forEach(l => l.visible = false);
+                renderer.clear(); renderer.render(adegan, kam);
+                const a = bacaTarget(target, W, H);
+                garis.forEach(l => l.visible = true); muka.forEach(m => m.material = _matDalam);
+                renderer.clear(); renderer.render(adegan, kam);
+                return [a, bacaTarget(target, W, H)];
+            });
+            target.dispose(); garis.forEach(l => l.geometry.dispose()); buangGrupGambar(g);
+            const kanvas = document.createElement('canvas'); kanvas.width = W; kanvas.height = H;
+            const kg = kanvas.getContext('2d'); kg.putImageData(isi, 0, 0);
+            const lap = document.createElement('canvas'); lap.width = W; lap.height = H; lap.getContext('2d').putImageData(tepi, 0, 0);
+            /* garis dipertebal 2 piksel supaya tetap terbaca saat denah diperkecil */
+            [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([dx, dy]) => kg.drawImage(lap, dx, dy));
+            return { kanvas, w, d, cx, cz, gw: W / ppm, gh: H / ppm };
+        }
+
+        /* Antrean: gambar dibuat sedikit demi sedikit tiap frame supaya UI tidak tersendat. */
+        function antreGambar(job) {
+            if (_antreanGambar.some(j => j.kunci === job.kunci)) return;
+            _antreanGambar.push(job);
+            if (!_antreanJalan) { _antreanJalan = true; requestAnimationFrame(jalankanAntrean); }
+        }
+        function jalankanAntrean() {
+            const mulai = performance.now();
+            let adaSimbol = false;
+            while (_antreanGambar.length && performance.now() - mulai < 14) {
+                const job = _antreanGambar.shift();
+                try {
+                    if (job.jenis === 'thumb') {
+                        _thumb[job.kunci] = buatThumbnail(job.tipe) || 'gagal';
+                        document.querySelectorAll('[data-thumb="' + job.tipe + '"]').forEach(el => pasangThumbnail(el, job.tipe));
+                    } else {
+                        _simbol[job.kunci] = buatSimbol(job.obj) || 'gagal';
+                        adaSimbol = true;
+                    }
+                } catch (e) { console.warn('Gagal membuat gambar objek:', e); if (job.jenis === 'thumb') _thumb[job.kunci] = 'gagal'; else _simbol[job.kunci] = 'gagal'; }
+            }
+            if (adaSimbol) draw2D();
+            if (_antreanGambar.length) requestAnimationFrame(jalankanAntrean); else _antreanJalan = false;
+        }
+
+        function pasangThumbnail(el, tipe) {
+            if (!el) return;
+            el.dataset.thumb = tipe;
+            const k = kunciThumb(tipe), t = _thumb[k];
+            if (t && t !== 'gagal') {
+                let img = el.querySelector('img');
+                if (!img) { el.textContent = ''; img = document.createElement('img'); img.alt = ''; el.appendChild(img); }
+                if (img.src !== t) img.src = t;
+                return;
+            }
+            el.textContent = EMOJI_OBJEK[tipe] || '◻️';
+            if (!t && tipe !== 'wall' && tipe !== 'door' && tipe !== 'window' && tipe !== 'void' && tipe !== 'stairs' && tipe.indexOf('custom') !== 0)
+                antreGambar({ jenis: 'thumb', kunci: k, tipe: tipe });
+        }
+
+        function simbolObjek(obj) {
+            const k = kunciSimbol(obj);
+            if (!k) return null;
+            const sim = _simbol[k];
+            if (sim === 'gagal') return null;
+            if (!sim) { antreGambar({ jenis: 'simbol', kunci: k, obj: { type: obj.type, variant: obj.variant || 0, modelId: obj.modelId } }); return null; }
+            return sim;
+        }
+        function gambarSimbol2D(obj, sX, sZ) {
+            if (!_simbol || typeof renderer === 'undefined') return false;
+            const sim = simbolObjek(obj);
+            if (!sim) return false;
+            const k = 1 / scale3D;
+            ctx.save();
+            ctx.scale(sX, sZ);
+            const bayangan = ctx.shadowBlur; ctx.shadowBlur = 0;
+            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(sim.kanvas, (sim.cx - sim.gw / 2) * k, (sim.cz - sim.gh / 2) * k, sim.gw * k, sim.gh * k);
+            if (obj === selectedItem) {
+                ctx.shadowBlur = bayangan;
+                ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2 / scale / Math.max(0.2, Math.min(Math.abs(sX), Math.abs(sZ)));
+                ctx.setLineDash([6 / scale, 4 / scale]);
+                const m = 4 / scale;
+                ctx.strokeRect((sim.cx - sim.w / 2) * k - m, (sim.cz - sim.d / 2) * k - m, sim.w * k + m * 2, sim.d * k + m * 2);
+                ctx.setLineDash([]);
+            }
+            ctx.restore();
+            return true;
+        }
+        /* Objek bebas (selain tangga & void) yang tapaknya memuat titik (x, y) kanvas. */
+        function objekDiTapak(x, y) {
+            if (!_simbol) return null;
+            let pilih = null, luasMin = Infinity;
+            const k = 1 / scale3D, m = 4 / scale;
+            freeObjects.forEach(obj => {
+                if (obj.type === 'stairs' || obj.type === 'void') return;
+                const kun = kunciSimbol(obj), sim = kun && _simbol[kun];
+                if (!sim || sim === 'gagal') return;
+                const th = (obj.rotationY !== undefined ? obj.rotationY : (obj.rotation || 0)) * Math.PI / 180;
+                const px = x - obj.x, py = y - obj.y, c = Math.cos(th), s = Math.sin(th);
+                let lx = px * c + py * s, ly = -px * s + py * c;
+                if (obj.flipX) lx = -lx; if (obj.flipZ) ly = -ly;
+                const sX = Math.abs(obj.scaleX !== undefined ? obj.scaleX : (obj.scaleVal || 1)) || 1, sZ = Math.abs(obj.scaleZ !== undefined ? obj.scaleZ : (obj.scaleVal || 1)) || 1;
+                lx /= sX; ly /= sZ;
+                if (Math.abs(lx - sim.cx * k) <= sim.w * k / 2 + m / sX && Math.abs(ly - sim.cz * k) <= sim.d * k / 2 + m / sZ) {
+                    const luas = sim.w * sim.d * sX * sZ;
+                    if (luas < luasMin) { luasMin = luas; pilih = obj; }
+                }
+            });
+            return pilih;
+        }
     </script>
 </body>
 </html>
