@@ -23,62 +23,234 @@
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     
     <style>
-        * { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        input[type="number"], input[type="text"], select { -webkit-user-select: text; user-select: text; }
+        /* ---------- DASAR & TOKEN ---------- */
+        :root {
+            --bg: #eef0f3; --panel: #ffffff; --panel-2: #f7f8fa; --line: #e3e6ea; --line-2: #d3d7dd;
+            --text: #1d2330; --muted: #6b7380; --accent: #2563eb; --accent-2: #1d4ed8; --accent-soft: #e8efff;
+            --danger: #dc2626; --danger-soft: #fdecec; --ok: #10b981;
+            --r: 8px; --ctl: 32px; --topbar: 48px; --rail: 64px; --panel-w: 248px;
+        }
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        input[type="number"], input[type="text"], input[type="search"], select { -webkit-user-select: text; user-select: text; }
         html { height: 100%; overflow: hidden; }
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Helvetica, sans-serif; background: #d4d4d8; display: flex; flex-direction: row; height: 100dvh; width: 100vw; touch-action: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overscroll-behavior: none; }
+        body { margin: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; color: var(--text); background: var(--bg); display: flex; flex-direction: column; height: 100dvh; width: 100vw; touch-action: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overscroll-behavior: none; }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-        /* --- SIDEBAR STYLE --- */
-        #sidebar { width: 160px; background: #ffffff; border-right: 1px solid #c8c8cc; display: flex; flex-direction: column; transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 100; flex-shrink: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); position: relative; }
-        #sidebar.collapsed { margin-left: -160px; }
-        #sidebarToggleBtn { position: absolute; top: 20px; right: -32px; width: 32px; height: 50px; background: #ffffff; border: 1px solid #c8c8cc; border-left: none; border-radius: 0 8px 8px 0; cursor: pointer; z-index: 60; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #3f3f46; box-shadow: 4px 0 6px rgba(0,0,0,0.05); transition: 0.2s; }
-        #sidebarToggleBtn:hover { background: #f4f4f5; color: #2563eb; }
-        .sidebar-header { padding: 12px 10px; border-bottom: 1px solid #e4e4e7; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; background: #fafafa; }
-        .app-brand { display: flex; align-items: center; gap: 6px; width: 100%; }
-        .app-brand h3 { margin: 0; font-size: 13px; color: #18181b; line-height: 1.2; word-wrap: break-word;}
-        .lang-btn-group { display: flex; width: 100%; border: 1px solid #d4d4d8; border-radius: 6px; overflow: hidden; background: #e4e4e7; }
-        .lang-btn { flex: 1; padding: 4px 0; font-size: 10px; font-weight: bold; border: none; background: transparent; color: #71717a; cursor: pointer; text-align: center; }
-        .lang-btn.active { background: #2563eb; color: #ffffff; }
-        .sidebar-content { flex: 1; overflow-y: auto; }
-        .sidebar-section { padding: 12px 10px; border-bottom: 1px solid #e4e4e7; }
-        .sidebar-section h4 { margin: 0 0 10px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; font-weight: 700; }
-        .sidebar-section label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 4px; color: #3f3f46; }
-        button, select, input[type="number"], input[type="file"]::file-selector-button { padding: 6px 8px; cursor: pointer; border: 1px solid #d4d4d8; background: #ffffff; border-radius: 4px; font-size: 11px; color: #3f3f46; transition: 0.15s; width: 100%; }
-        input[type="file"] { width: 100%; font-size: 10px; margin-bottom: 8px; }
-        input[type="file"]::file-selector-button { background: #f4f4f5; width: auto; margin-right: 6px; padding: 4px 6px;}
-        input[type="number"] { cursor: text; background: #fff; width: 100%; margin-bottom: 8px;}
-        input[type="range"] { width: 100%; margin-bottom: 10px; accent-color: #2563eb; }
-        button:hover, select:hover { background: #e4e4e7; }
+        button, select, input[type="number"], input[type="search"] { font: inherit; color: var(--text); }
+        button { min-height: var(--ctl); padding: 0 10px; cursor: pointer; border: 1px solid var(--line-2); background: var(--panel); border-radius: var(--r); font-size: 12px; font-weight: 600; transition: background .15s, border-color .15s, color .15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        button:hover { background: var(--panel-2); }
         button:disabled { cursor: not-allowed; opacity: 0.4; }
-        button.active { background: #2563eb; color: white; border-color: #1d4ed8; font-weight: 600; }
-        
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-        .tool-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; height: 55px; padding: 6px; line-height: 1; }
-        .tool-btn svg { width: 20px; height: 20px; stroke-width: 1.8; }
-        .tool-btn span { font-size: 10px; font-weight: 600; }
-        .tool-btn-wide { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; height: 36px; grid-column: span 2; }
-        .tool-btn-wide svg { width: 16px; height: 16px; stroke-width: 2; }
-        .tool-btn-wide span { font-size: 11px; font-weight: 600; }
-        .btn-row { display: flex; gap: 6px; margin-bottom: 8px; }
-        .btn-danger { background: #fee2e2; color: #dc2626; border-color: #fca5a5; font-weight: 600; }
-        .btn-danger:hover { background: #fecaca; }
-        .btn-primary { background: #10b981; color: white; border-color: #059669; font-weight: bold; }
-        .btn-primary:hover { background: #059669; }
-        .btn-purple { background: #8b5cf6; color: white; border-color: #7c3aed; font-weight: bold; }
-        .btn-purple:hover { background: #7c3aed; }
-        .edit-btn-secondary { background: #e4e4e7; color: #18181b; width: 100%; border: none; font-weight: 600; margin-bottom: 10px; }
-        .edit-btn-secondary:hover { background: #d4d4d8; }
-        #emptySelectionMsg { font-size: 11px; color: #71717a; text-align: center; padding: 10px 0; font-style: italic; }
-        #wallLineControls { background: #f4f4f5; padding: 8px; border-radius: 6px; margin-bottom: 10px; border: 1px dashed #a1a1aa; text-align: center; }
+        button.active { background: var(--accent); color: #fff; border-color: var(--accent-2); }
+        select, input[type="number"] { width: 100%; height: var(--ctl); padding: 0 8px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--panel); font-size: 12px; }
+        select { cursor: pointer; }
+        input[type="number"] { cursor: text; }
+        input[type="range"] { width: 100%; margin: 2px 0 0; accent-color: var(--accent); height: 22px; }
+        input[type="color"] { width: 34px; height: var(--ctl); padding: 2px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--panel); cursor: pointer; flex-shrink: 0; }
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
 
-        /* --- MODE JALAN (POV) --- */
+        /* Ikon garis lewat mask CSS: tetap tampil walau teks tombol diganti lewat innerText. */
+        .ico::before { content: ''; width: 16px; height: 16px; flex-shrink: 0; background: currentColor; -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat; }
+        .ico.only { padding: 0; width: var(--ctl); }
+        .i-file   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16M4 12h16M4 18h16'/%3E%3C/svg%3E"); }
+        .i-image  { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-5-5L5 21'/%3E%3C/svg%3E"); }
+        .i-open   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3C/svg%3E"); }
+        .i-save   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7 10l5 5 5-5M5 21h14'/%3E%3C/svg%3E"); }
+        .i-cube   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8l-9-5-9 5v8l9 5z'/%3E%3Cpath d='M3.3 7 12 12l8.7-5M12 22V12'/%3E%3C/svg%3E"); }
+        .i-ar     { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2'/%3E%3Cpath d='M12 7l5 3v5l-5 3-5-3v-5z'/%3E%3C/svg%3E"); }
+        .i-export { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15V3M7 8l5-5 5 5M5 21h14'/%3E%3C/svg%3E"); }
+        .i-reset  { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12a9 9 0 1 0 3-6.7L3 8'/%3E%3Cpath d='M3 3v5h5'/%3E%3C/svg%3E"); }
+        .i-undo   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 14 4 9l5-5'/%3E%3Cpath d='M4 9h11a5 5 0 0 1 0 10h-3'/%3E%3C/svg%3E"); }
+        .i-redo   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 14 5-5-5-5'/%3E%3Cpath d='M20 9H9a5 5 0 0 0 0 10h3'/%3E%3C/svg%3E"); }
+        .i-help   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01'/%3E%3C/svg%3E"); }
+        .i-split  { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2'/%3E%3Cpath d='M12 4v16'/%3E%3C/svg%3E"); }
+        .i-close  { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E"); }
+        .i-plus   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E"); }
+        .i-minus  { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M5 12h14'/%3E%3C/svg%3E"); }
+        .i-fit    { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4'/%3E%3C/svg%3E"); }
+        .i-copy   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='12' height='12' rx='2'/%3E%3Cpath d='M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1'/%3E%3C/svg%3E"); }
+        .i-trash  { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14'/%3E%3C/svg%3E"); }
+        .i-edit   { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h4L19 9l-4-4L4 16z'/%3E%3C/svg%3E"); }
+
+        /* ---------- BAR ATAS ---------- */
+        #topbar { height: var(--topbar); flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: var(--panel); border-bottom: 1px solid var(--line); z-index: 120; position: relative; }
+        .tb-brand { display: flex; align-items: center; gap: 8px; margin-right: 6px; }
+        .tb-brand h3 { margin: 0; font-size: 14px; font-weight: 700; white-space: nowrap; letter-spacing: -0.1px; }
+        .tb-btn { border-color: transparent; background: transparent; }
+        .tb-btn:hover { background: var(--panel-2); border-color: var(--line); }
+        .tb-spacer { flex: 1; }
+        .caret { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; opacity: .6; }
+        .menu-wrap { position: relative; }
+        .menu { display: none; position: absolute; top: calc(100% + 6px); left: 0; min-width: 230px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 23, 42, .18); padding: 6px; z-index: 200; }
+        .menu.open { display: block; }
+        .mn-head { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); padding: 8px 10px 4px; }
+        .mn-item { width: 100%; justify-content: flex-start; border: none; background: transparent; min-height: 36px; font-weight: 500; border-radius: 8px; padding: 0 10px; }
+        .mn-item:hover { background: var(--accent-soft); color: var(--accent-2); }
+        .mn-item.mn-danger { color: var(--danger); }
+        .mn-item.mn-danger:hover { background: var(--danger-soft); color: var(--danger); }
+        .mn-sep { height: 1px; background: var(--line); margin: 6px 4px; }
+
+        .seg { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 2px; gap: 2px; }
+        .seg > button { min-height: 28px; border: none; background: transparent; border-radius: 7px; padding: 0 10px; font-size: 12px; color: var(--muted); }
+        .seg > button.ico.only { width: 34px; }
+        .seg > button:hover { background: rgba(0,0,0,.04); color: var(--text); }
+        .seg > button.active { background: var(--panel); color: var(--accent-2); box-shadow: 0 1px 3px rgba(15,23,42,.15); }
+        .seg-full { display: flex; width: 100%; }
+        .seg-full > button { flex: 1; padding: 0 4px; }
+        .lang-btn-group { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--panel-2); padding: 2px; gap: 2px; }
+        .lang-btn { min-height: 28px; padding: 0 8px; font-size: 11px; font-weight: 700; border: none; background: transparent; color: var(--muted); border-radius: 7px; }
+        .lang-btn.active { background: var(--accent); color: #fff; }
+
+        /* ---------- BARIS APLIKASI ---------- */
+        #app-row { flex: 1; display: flex; min-height: 0; position: relative; }
+
+        /* Rel alat */
+        #toolrail { width: var(--rail); flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 6px; overflow-y: auto; z-index: 110; }
+        .rail-btn { flex-direction: column; gap: 3px; min-height: 50px; padding: 5px 2px; border: 1px solid transparent; background: transparent; border-radius: 10px; color: #3c4452; flex-shrink: 0; }
+        .rail-btn svg { width: 20px; height: 20px; stroke-width: 1.8; }
+        .rail-btn span { font-size: 9.5px; font-weight: 600; line-height: 1.15; text-align: center; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+        .rail-btn:hover { background: var(--panel-2); }
+        .rail-btn.active { background: var(--accent-soft); color: var(--accent-2); border-color: #c9d8ff; }
+        .rail-panel { min-height: 38px; }
+        .rail-panel.active { background: var(--panel-2); color: var(--text); border-color: var(--line); }
+        .rail-toggle.active { background: #e7f8f1; color: #047857; border-color: #b4ead4; }
+        .rail-sep { height: 1px; background: var(--line); margin: 4px 6px; flex-shrink: 0; }
+
+        /* Panel bertab */
+        #sidebar { width: var(--panel-w); flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; z-index: 100; transition: margin-left .3s cubic-bezier(.25,1,.5,1), transform .3s cubic-bezier(.25,1,.5,1); min-height: 0; }
+        #sidebar.collapsed { margin-left: calc(-1 * var(--panel-w)); }
+        .tabs { display: flex; align-items: center; gap: 2px; padding: 8px 8px 0; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+        .tab { flex: 1; min-height: 34px; border: none; border-bottom: 2px solid transparent; border-radius: 8px 8px 0 0; background: transparent; color: var(--muted); font-size: 12px; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .tab:hover { background: var(--panel-2); color: var(--text); }
+        .tab.active { color: var(--accent-2); border-bottom-color: var(--accent); background: transparent; }
+        .panel-close { display: none; border: none; background: transparent; min-height: 30px; width: 30px; }
+        .sidebar-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .tab-body { display: none; padding: 12px; }
+        .tab-body.active { display: block; }
+        .group-lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin: 14px 0 8px; }
+        .tab-body > .group-lbl:first-child, #freeObjectControls > .group-lbl:first-child { margin-top: 2px; }
+        .field { margin-bottom: 10px; }
+        .field-lbl, .wall-grid label { display: block; font-size: 11px; font-weight: 600; color: #4b5260; margin-bottom: 4px; }
+        .sl { margin-bottom: 8px; }
+        .sl-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11.5px; font-weight: 600; color: #4b5260; }
+        .sl-row b { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; background: var(--panel-2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 6px; font-size: 11px; }
+        .switch { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 600; color: #3c4452; min-height: 34px; cursor: pointer; }
+        .switch input { order: 2; appearance: none; -webkit-appearance: none; width: 38px; height: 22px; border-radius: 11px; background: #cfd4db; position: relative; cursor: pointer; flex-shrink: 0; transition: background .15s; margin: 0; }
+        .switch input::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+        .switch input:checked { background: var(--accent); }
+        .switch input:checked::after { transform: translateX(16px); }
+        .switch input:disabled { opacity: .45; }
+        .hint { font-size: 11px; color: var(--muted); line-height: 1.4; margin: 2px 0 10px; }
+        .info-box { font-size: 11px; line-height: 1.45; margin-bottom: 10px; padding: 8px 10px; border-radius: var(--r); background: #eef2ff; color: #3730a3; }
+        .stat { font-size: 12px; color: #4b5260; margin-bottom: 4px; }
+        .stat b { color: var(--accent-2); }
+        .btn-row { display: flex; gap: 6px; margin-bottom: 10px; }
+        .btn-row > button { flex: 1; padding: 0 6px; min-width: 0; white-space: nowrap; }
+        #delFloorBtn { flex: 0 0 var(--ctl); padding: 0; }
+        #delFloorBtn span { display: none; }
+        .edit-btn-secondary { width: 100%; background: var(--panel-2); border-color: var(--line); margin-bottom: 10px; }
+        .edit-btn-secondary:hover { background: #eceef2; }
+        .btn-danger { background: var(--danger-soft); color: var(--danger); border-color: #f5c2c2; }
+        .btn-danger:hover { background: #fbd9d9; }
+        #delObjBtn { width: 100%; margin-top: 8px; }
+        .wall-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 10px; }
+        .mat-row { display: flex; gap: 6px; }
+        .mat-row select { flex: 1; }
+        .color-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .color-field { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: #4b5260; margin-bottom: 10px; cursor: pointer; }
+        .color-pair .color-field { margin: 0; }
+        details.more { border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; margin: 6px 0 10px; background: var(--panel-2); }
+        details.more > summary { min-height: 36px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; color: #3c4452; }
+        details.more > summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); margin: -3px 4px 0; opacity: .6; transition: transform .2s; }
+        details.more[open] > summary::after { transform: rotate(-135deg); margin-top: 3px; }
+        details.more[open] { padding-bottom: 6px; }
+        input.kelvin { accent-color: #f59e0b; }
+        #editVoidRailing, #editStairRailing { margin-bottom: 10px; }
+
+        /* Status kosong & kepala objek terpilih */
+        #emptyState { text-align: center; padding: 18px 6px 6px; color: var(--muted); }
+        .empty-ico { width: 44px; height: 44px; margin: 0 auto 10px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+        .empty-ico svg { width: 22px; height: 22px; stroke-width: 1.8; }
+        #emptySelectionMsg { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+        .empty-tips { text-align: left; margin: 0; padding: 0 0 0 16px; font-size: 11.5px; line-height: 1.5; }
+        .empty-tips li { margin-bottom: 6px; }
+        .sel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+        .sel-ico { width: 34px; height: 34px; border-radius: 10px; background: var(--accent-soft); display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
+        .sel-name { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* Daftar lantai */
+        .floor-list { display: flex; flex-direction: column-reverse; gap: 4px; margin-bottom: 8px; max-height: 190px; overflow-y: auto; }
+        .floor-item { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); cursor: pointer; font-size: 12px; font-weight: 600; }
+        .floor-item:hover { background: var(--panel-2); }
+        .floor-item.active { background: var(--accent-soft); color: var(--accent-2); border-color: #c9d8ff; }
+        .floor-item .fl-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .floor-item .fl-meta { font-size: 10.5px; opacity: .7; font-weight: 500; }
+        .floor-item .fl-eye { min-height: 26px; width: 26px; padding: 0; background: transparent; border: none; font-size: 13px; color: inherit; opacity: .75; }
+        .floor-item .fl-eye:hover { opacity: 1; background: rgba(0,0,0,.05); }
+
+        /* ---------- AREA KERJA ---------- */
+        #main-container { display: flex; flex: 1; overflow: hidden; flex-direction: row; position: relative; min-width: 0; }
+        #workspace-container, #render-container { flex: 1; min-width: 0; min-height: 0; height: 100%; position: relative; }
+        #workspace-container { background: #e7e9ec; overflow: hidden; border-right: 1px solid var(--line-2); touch-action: none; cursor: crosshair; }
+        #workspace { transform-origin: 0 0; position: relative; }
+        #floorplan-img { display: none; max-width: none; pointer-events: none; }
+        #draw-canvas { position: absolute; top: 0; left: 0; }
+        #render-container { background: #18181b; position: relative; container-type: size; container-name: tiga; }
+        /* toolbar 3D menyesuaikan lebar panel 3D-nya sendiri, bukan lebar layar */
+        @container tiga (max-width: 600px) { #transformUI .lbl { display: none; } #transformUI .seg.dark > button, #btnPaint { padding: 0 8px; } }
+        @container tiga (max-width: 360px) { #btnTrSpace, #btnWalk { padding: 0 8px; font-size: 11px; } #transformUI { gap: 4px; padding: 4px; } }
+        body.lihat-2d #render-container, body.lihat-3d #workspace-container { display: none; }
+        body.lihat-2d #workspace-container { border-right: none; }
+
+        .float-ctl { position: absolute; display: flex; gap: 4px; padding: 4px; background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 4px 14px rgba(15,23,42,.12); z-index: 20; }
+        .float-ctl > button { border: none; background: transparent; min-height: 32px; }
+        .float-ctl > button:hover { background: var(--panel-2); }
+        #zoomCtl { left: 12px; bottom: 12px; }
+        #hintBar { position: absolute; left: 12px; right: 12px; top: 12px; margin: 0 auto; width: fit-content; max-width: 560px; padding: 7px 14px; background: rgba(29,35,48,.86); color: #fff; border-radius: 18px; font-size: 12px; font-weight: 500; line-height: 1.35; text-align: center; pointer-events: none; z-index: 20; box-shadow: 0 4px 14px rgba(0,0,0,.18); transition: opacity .25s; }
+        #hintBar:empty { opacity: 0; }
+        #hintBar b { color: #fde68a; font-weight: 700; }
+        #editChip { display: none; position: absolute; right: 12px; bottom: 12px; z-index: 20; background: var(--accent); color: #fff; border: none; border-radius: 20px; min-height: 40px; padding: 0 16px; box-shadow: 0 6px 16px rgba(37,99,235,.35); }
+        #editChip.show { display: inline-flex; }
+
+        /* Toolbar 3D */
+        #transformUI { position: absolute; top: 10px; right: 10px; left: auto; z-index: 10; display: flex; align-items: center; gap: 6px; padding: 5px; background: rgba(24,24,27,.88); border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.3); max-width: calc(100% - 20px); flex-wrap: wrap; justify-content: flex-end; }
+        #transformUI button { border: none; color: #fff; min-height: 32px; border-radius: 8px; font-weight: 600; }
+        #transformUI svg { width: 16px; height: 16px; stroke-width: 2; }
+        #transformUI .seg.dark { background: rgba(255,255,255,.08); border: none; padding: 2px; gap: 2px; }
+        #transformUI .seg.dark > button { background: transparent; color: #d4d4d8; padding: 0 9px; }
+        #transformUI .seg.dark > button.active { background: var(--accent); color: #fff; box-shadow: none; }
+        .paint-grp { display: flex; align-items: center; gap: 3px; background: rgba(255,255,255,.08); border-radius: 9px; padding: 2px; }
+        .paint-grp input[type="color"] { width: 28px; height: 28px; border: none; background: transparent; padding: 1px; }
+        #btnPaint { background: transparent; padding: 0 9px; }
+        #btnTrSpace { background: #ca8a04; padding: 0 10px; font-size: 11.5px; }
+        #btnWalk { background: var(--ok); padding: 0 14px; font-weight: 700; }
+
+        /* Katalog furnitur */
+        #katalog { display: none; position: absolute; top: calc(var(--topbar) + 8px); left: calc(var(--rail) + 8px); width: 340px; max-width: calc(100vw - var(--rail) - 16px); max-height: calc(100% - var(--topbar) - 16px); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 16px 40px rgba(15,23,42,.22); z-index: 210; flex-direction: column; }
+        #katalog.open { display: flex; }
+        .kt-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px; border-bottom: 1px solid var(--line); }
+        .kt-head b { font-size: 13px; white-space: nowrap; }
+        .kt-head input { flex: 1; min-width: 0; height: 32px; border: 1px solid var(--line-2); border-radius: 8px; padding: 0 10px; font-size: 12px; }
+        .kt-head button { border: none; background: transparent; }
+        .kt-body { overflow-y: auto; padding: 4px 10px 10px; }
+        .kt-grp { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin: 10px 2px 6px; }
+        .kt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .kt-item { flex-direction: column; min-height: 70px; padding: 6px 4px; gap: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); font-weight: 600; font-size: 10.5px; line-height: 1.2; text-align: center; }
+        .kt-item .em { font-size: 24px; line-height: 1; }
+        .kt-item:hover { background: var(--accent-soft); border-color: #c9d8ff; color: var(--accent-2); }
+        .kt-kosong { padding: 18px 4px; color: var(--muted); text-align: center; }
+
+        /* ---------- MODE JALAN (POV) ---------- */
+        body.mode-jalan #topbar,
+        body.mode-jalan #toolrail,
         body.mode-jalan #sidebar,
+        body.mode-jalan #katalog,
         body.mode-jalan #workspace-container,
         body.mode-jalan #helpBtnToggle { display: none !important; }
         body.mode-jalan #main-container { flex-direction: row !important; }
-        body.mode-jalan #render-container { flex: 1 1 100% !important; width: 100% !important; height: 100% !important; border: none !important; }
+        body.mode-jalan #render-container { display: block !important; flex: 1 1 100% !important; width: 100% !important; height: 100% !important; border: none !important; }
+        body.mode-jalan #transformUI { display: none !important; }
         #walkFull { position: absolute; top: 12px; right: 92px; width: auto; padding: 8px 14px; background: rgba(24,24,27,0.8); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; font-weight: 600; font-size: 12px; pointer-events: auto; cursor: pointer; }
-
         #walkUI { display: none; position: absolute; inset: 0; z-index: 14; pointer-events: none; touch-action: none; }
         #walkCross { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; opacity: 0.75; }
         #walkCross::before, #walkCross::after { content: ''; position: absolute; background: #fff; box-shadow: 0 0 3px rgba(0,0,0,0.8); }
@@ -96,40 +268,14 @@
         #walkInfo { position: absolute; top: 12px; left: 12px; padding: 6px 12px; background: rgba(24,24,27,0.72); color: #e4e4e7; border-radius: 8px; font-size: 11px; line-height: 1.5; max-width: 60%; }
         #walkInfo b { color: #fff; }
 
-        /* --- FLOOR (LANTAI) MANAGER --- */
-        .floor-list { display: flex; flex-direction: column-reverse; gap: 4px; margin-bottom: 8px; max-height: 168px; overflow-y: auto; }
-        .floor-item { display: flex; align-items: center; gap: 4px; padding: 5px 6px; border: 1px solid #d4d4d8; border-radius: 5px; background: #ffffff; cursor: pointer; font-size: 11px; color: #3f3f46; }
-        .floor-item:hover { background: #f4f4f5; }
-        .floor-item.active { background: #2563eb; color: #ffffff; border-color: #1d4ed8; font-weight: 700; }
-        .floor-item.active:hover { background: #1d4ed8; }
-        .floor-item .fl-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .floor-item .fl-meta { font-size: 9px; opacity: 0.7; }
-        .floor-item .fl-eye { width: auto; padding: 0 3px; background: transparent; border: none; font-size: 12px; line-height: 1; color: inherit; opacity: 0.8; }
-        .floor-item .fl-eye:hover { background: transparent; opacity: 1; }
-        .wall-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0 4px 0; text-align: left; }
-        .wall-grid label { margin-bottom: 2px; font-size: 10px; }
-        .wall-grid input[type="number"] { margin-bottom: 0; }
-
-        /* --- MAIN AREA --- */
-        #main-container { display: flex; flex: 1; overflow: hidden; flex-direction: row; position: relative; height: 100%; }
-        #workspace-container, #render-container { flex: 1; min-width: 0; min-height: 0; height: 100%; position: relative; }
-        #workspace-container { background: #e4e4e7; overflow: hidden; border-right: 2px solid #a1a1aa; touch-action: none; cursor: crosshair; box-shadow: inset 0 0 20px rgba(0,0,0,0.05); }
-        #workspace { transform-origin: 0 0; position: relative; }
-        #floorplan-img { display: none; max-width: none; pointer-events: none; }
-        #draw-canvas { position: absolute; top: 0; left: 0; }
-        #render-container { background: #18181b; position: relative; }
-
-        /* --- MODALS --- */
-        #helpBtnToggle { position: absolute; bottom: 20px; right: 20px; width: 45px; height: 45px; border-radius: 50%; background-color: #2563eb; color: white; font-size: 20px; font-weight: bold; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 30; display: flex; justify-content: center; align-items: center; cursor: pointer; padding: 0; transition: transform 0.2s; }
-        #helpBtnToggle:hover { transform: scale(1.1); background-color: #1d4ed8; }
-        #helpModal { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-        .help-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; }
-        .help-content h3 { margin-top: 0; color: #18181b; font-size: 18px; border-bottom: 2px solid #e4e4e7; padding-bottom: 10px;}
-        .help-content ul { padding-left: 20px; color: #3f3f46; font-size: 14px; line-height: 1.6; }
+        /* ---------- MODAL ---------- */
+        #helpModal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 300; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .help-content { background: white; padding: 22px 24px; border-radius: 16px; width: 92%; max-width: 460px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25); position: relative; }
+        .help-content h3 { margin: 0 0 8px; font-size: 17px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+        .help-content ul { padding-left: 18px; color: #3c4452; font-size: 13px; line-height: 1.6; margin: 10px 0 0; }
         .help-content li { margin-bottom: 10px; }
-        .close-help { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #71717a; padding: 0; width: auto; line-height: 1; }
-        .close-help:hover { color: #ef4444; }
-
+        .close-help { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); padding: 0; width: 32px; min-height: 32px; line-height: 1; }
+        .close-help:hover { color: var(--danger); background: transparent; }
         #ar-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 15, 20, 0.85); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; }
         .ar-container { width: 90vw; height: 75vh; max-height: 800px; background-color: #18181b; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); border: 1px solid #3f3f46; position: relative; overflow: hidden; }
         model-viewer { width: 100%; height: 100%; background-color: transparent; outline: none; }
@@ -138,459 +284,490 @@
         #arViewBtn { width: auto; background-color: white; color: #2563eb; border-radius: 30px; border: none; position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); padding: 12px 24px; font-weight: bold; font-size: 14px; box-shadow: 0 8px 25px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.2s; z-index: 1002; }
         #arViewBtn:hover { transform: translateX(-50%) scale(1.05); }
 
+        /* ---------- LAYAR SEMPIT (tablet tegak, ponsel) ---------- */
         @media (max-width: 1100px) {
             #main-container { flex-direction: column; }
-            #sidebar { position: absolute; height: 100%; left: 0; top: 0; margin-left: 0; transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.4); }
-            #sidebar.collapsed { margin-left: 0; transform: translateX(-100%); }
-            #workspace-container { flex: none; height: 50%; width: 100%; border-right: none; border-bottom: 2px solid #a1a1aa; }
-            #render-container { flex: none; height: 50%; width: 100%; }
+            #sidebar { position: absolute; top: 0; bottom: 0; left: var(--rail); margin-left: 0; transform: translateX(0); box-shadow: 8px 0 24px rgba(15,23,42,.18); }
+            #sidebar.collapsed { margin-left: 0; transform: translateX(calc(-100% - var(--rail))); }
+            .panel-close { display: inline-flex; }
+            #workspace-container { flex: 1 1 50%; height: auto; width: 100%; border-right: none; border-bottom: 1px solid var(--line-2); }
+            #render-container { flex: 1 1 50%; height: auto; width: 100%; }
+            #transformUI .lbl { display: none; }
+        }
+        @media (max-width: 640px) {
+            :root { --rail: 56px; --panel-w: 272px; --topbar: 46px; }
+            #topbar { gap: 3px; padding: 0 6px; }
+            .tb-brand h3, #btnFileMenu .tb-lbl { display: none; }
+            .tb-brand { margin-right: 2px; }
+            .seg > button { padding: 0 7px; }
+            .lang-btn { padding: 0 6px; }
+            #toolrail { padding: 4px; }
+            .rail-btn { min-height: 46px; }
+            .rail-btn span { font-size: 9px; }
+            #katalog { left: calc(var(--rail) + 6px); width: auto; right: 6px; }
+            .kt-grid { grid-template-columns: repeat(3, 1fr); }
+            #hintBar { font-size: 11px; top: 8px; padding: 6px 12px; left: 8px; right: 8px; }
+            #zoomCtl { left: 8px; bottom: 8px; }
+            #zoomCtl #txtFit { display: none; }
+            #btnFit { padding: 0; width: 32px; }
         }
     </style>
 </head>
 <body>
 
-    <div id="sidebar">
-        <button id="sidebarToggleBtn" title="Toggle Sidebar">&lt;</button>
-        
-        <div class="sidebar-header">
-            <div class="app-brand">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32" style="flex-shrink: 0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 136, 255, 0.25);">
-                    <defs>
-                      <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#40C4FF"/>
-                        <stop offset="100%" stop-color="#0088FF"/>
-                      </linearGradient>
-                      <linearGradient id="tracerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#FFEA00"/>
-                        <stop offset="100%" stop-color="#FFB300"/>
-                      </linearGradient>
-                    </defs>
-                    <rect width="512" height="512" rx="120" fill="url(#bgGradient)"/>
-                    <path d="M 160 220 L 160 380 C 160 395 170 405 185 405 L 327 405 C 342 405 352 395 352 380 L 352 220" fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M 110 240 L 256 110 L 402 240" fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M 160 195 L 160 110 L 200 110 L 200 155" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M 216 405 L 216 320 C 216 305 226 295 241 295 L 271 295 C 286 295 296 305 296 405" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M 70 330 C 120 380 180 340 210 260 C 240 180 320 220 370 280 C 400 316 440 290 440 290" fill="none" stroke="url(#tracerGradient)" stroke-width="24" stroke-dasharray="0 40" stroke-linecap="round"/>
-                    <path d="M 415 255 L 465 285 L 425 325 Z" fill="#FFB300" stroke="#FFB300" stroke-width="8" stroke-linejoin="round"/>
-                </svg>
-                <h3 id="txtTitle">Floorplan Tracer</h3>
-            </div>
-            <div class="lang-btn-group">
-                <button class="lang-btn" id="btnLangID">ID</button>
-                <button class="lang-btn active" id="btnLangEN">EN</button>
+    <!-- ===== BAR ATAS: identitas, file, undo/redo, tampilan, bahasa, bantuan ===== -->
+    <header id="topbar">
+        <div class="tb-brand">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="28" height="28" style="flex-shrink: 0; border-radius: 7px;">
+                <defs>
+                  <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#40C4FF"/>
+                    <stop offset="100%" stop-color="#0088FF"/>
+                  </linearGradient>
+                  <linearGradient id="tracerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#FFEA00"/>
+                    <stop offset="100%" stop-color="#FFB300"/>
+                  </linearGradient>
+                </defs>
+                <rect width="512" height="512" rx="120" fill="url(#bgGradient)"/>
+                <path d="M 160 220 L 160 380 C 160 395 170 405 185 405 L 327 405 C 342 405 352 395 352 380 L 352 220" fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 110 240 L 256 110 L 402 240" fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 160 195 L 160 110 L 200 110 L 200 155" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 216 405 L 216 320 C 216 305 226 295 241 295 L 271 295 C 286 295 296 305 296 405" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 70 330 C 120 380 180 340 210 260 C 240 180 320 220 370 280 C 400 316 440 290 440 290" fill="none" stroke="url(#tracerGradient)" stroke-width="24" stroke-dasharray="0 40" stroke-linecap="round"/>
+                <path d="M 415 255 L 465 285 L 425 325 Z" fill="#FFB300" stroke="#FFB300" stroke-width="8" stroke-linejoin="round"/>
+            </svg>
+            <h3 id="txtTitle">Floorplan Tracer</h3>
+        </div>
+
+        <div class="menu-wrap">
+            <button id="btnFileMenu" class="tb-btn ico i-file" aria-haspopup="true" aria-expanded="false"><span id="txtFileMenu" class="tb-lbl">File</span><span class="caret"></span></button>
+            <div id="fileMenu" class="menu" role="menu">
+                <div class="mn-head" id="txtSec1">File &amp; System</div>
+                <button class="mn-item ico i-image" id="mnUpload" role="menuitem"><span id="txtLblUpload">Upload floorplan image</span></button>
+                <button class="mn-item ico i-open" id="mnOpen" role="menuitem"><span id="txtLblLoadProj">Open project</span></button>
+                <button class="mn-item ico i-save" id="saveProjBtn" role="menuitem">Save Project (.json)</button>
+                <button class="mn-item ico i-cube" id="mnImport3D" role="menuitem"><span id="txtLblLoad3D">Import 3D model</span></button>
+                <div class="mn-sep"></div>
+                <div class="mn-head" id="txtSec5">Output</div>
+                <button class="mn-item ico i-ar" id="arBtn" role="menuitem">View AR</button>
+                <button class="mn-item ico i-export" id="exportBtn" role="menuitem">Export GLB</button>
+                <button class="mn-item ico i-export" id="exportObjBtn" role="menuitem">Export OBJ</button>
+                <div class="mn-sep"></div>
+                <button class="mn-item ico i-reset mn-danger" id="clearBtn" role="menuitem">Reset Plan</button>
             </div>
         </div>
-        
-        <div class="sidebar-content">
-            <div class="sidebar-section">
-                <h4 id="txtSec1">File & System</h4>
-                <label id="txtLblUpload">Upload Floorplan:</label>
-                <input type="file" id="upload" accept="image/*">
-                
-                <button id="saveProjBtn" style="margin-bottom: 8px; font-weight: bold; background: #e0f2fe; color: #0369a1; border-color: #7dd3fc;">Save Project (.json)</button>
-                <label id="txtLblLoadProj" style="margin-top: 4px;">Load Project:</label>
-                <input type="file" id="loadProj" accept=".json" style="margin-bottom: 8px;">
+        <button id="undoBtn" class="tb-btn ico i-undo only" disabled title="Undo" aria-label="Undo"></button>
+        <button id="redoBtn" class="tb-btn ico i-redo only" disabled title="Redo" aria-label="Redo"></button>
 
-                <label id="txtLblLoad3D" style="margin-top: 8px; color: #8b5cf6;">Upload 3D (.glb, .gltf, .obj):</label>
-                <input type="file" id="upload3DModel" accept=".glb,.gltf,.obj" style="margin-bottom: 12px;">
+        <div class="tb-spacer"></div>
 
-                <div class="btn-row">
-                    <button id="undoBtn" disabled style="flex:1;">Undo</button>
-                    <button id="redoBtn" disabled style="flex:1;">Redo</button>
-                </div>
-                <button id="clearBtn" class="btn-danger">Reset Plan</button>
+        <div class="seg" id="viewSeg" role="group">
+            <button data-view="2d" id="viewBtn2d" title="2D">2D</button>
+            <button data-view="split" id="viewBtnSplit" class="active ico i-split only" title="2D + 3D" aria-label="2D + 3D"></button>
+            <button data-view="3d" id="viewBtn3d" title="3D">3D</button>
+        </div>
+        <div class="lang-btn-group">
+            <button class="lang-btn" id="btnLangID">ID</button>
+            <button class="lang-btn active" id="btnLangEN">EN</button>
+        </div>
+        <button id="helpBtnToggle" class="tb-btn ico i-help only" title="Guide" aria-label="Guide"></button>
+
+        <input type="file" id="upload" accept="image/*" hidden>
+        <input type="file" id="loadProj" accept=".json" hidden>
+        <input type="file" id="upload3DModel" accept=".glb,.gltf,.obj" hidden>
+    </header>
+
+    <div id="app-row">
+        <!-- ===== REL ALAT ===== -->
+        <nav id="toolrail" aria-labelledby="txtSec2">
+            <span id="txtSec2" class="sr-only">Draw Tools</span>
+            <button id="sidebarToggleBtn" class="rail-btn rail-panel active" title="Panel">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16"></path></svg>
+            </button>
+            <div class="rail-sep"></div>
+            <button id="modeSelect" class="tool-btn rail-btn">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path></svg>
+                <span id="txtModeSelect">Select/Edit</span>
+            </button>
+            <button id="modeWall" class="tool-btn rail-btn active">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="M4 8h16"></path><path d="M4 16h16"></path><path d="M10 4v4"></path><path d="M14 8v8"></path><path d="M8 16v4"></path><path d="M16 16v4"></path></svg>
+                <span id="txtModeWall">Wall</span>
+            </button>
+            <button id="modeDoor" class="tool-btn rail-btn">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16"></path><path d="M14 12v.01"></path><path d="M4 20h16"></path></svg>
+                <span id="txtModeDoor">Door</span>
+            </button>
+            <button id="modeWindow" class="tool-btn rail-btn">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M3 12h18"></path><path d="M12 3v18"></path></svg>
+                <span id="txtModeWindow">Window</span>
+            </button>
+            <button id="modeStairs" class="tool-btn rail-btn">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h5v-5h5v-5h5V6h3"></path></svg>
+                <span id="txtModeStairs">Stairs</span>
+            </button>
+            <button id="modeVoid" class="tool-btn rail-btn">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M8 8h8v8H8z" stroke-dasharray="2 2"></path></svg>
+                <span id="txtModeVoid">Void (Box)</span>
+            </button>
+            <button id="modeVoidTrace" class="tool-btn rail-btn">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14l4-9 6 5 5-3v10z" stroke-dasharray="3 2"></path><circle cx="4" cy="14" r="1.6"></circle><circle cx="8" cy="5" r="1.6"></circle><circle cx="14" cy="10" r="1.6"></circle><circle cx="19" cy="7" r="1.6"></circle></svg>
+                <span id="txtModeVoidTrace">Void (Trace)</span>
+            </button>
+            <button id="modeFurniture" class="tool-btn rail-btn" aria-haspopup="true">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"></path><path d="M3 13a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v4H3z"></path><path d="M5 17v2M19 17v2"></path></svg>
+                <span id="txtModeFurniture">Furniture</span>
+            </button>
+            <div class="rail-sep"></div>
+            <button id="btnSnap" class="rail-btn rail-toggle active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15"></path><path d="m5 8 4 4"></path><path d="m12 15 4 4"></path></svg>
+                <span id="txtBtnSnap">Snap</span>
+            </button>
+            <button id="btnCharacter" class="rail-btn rail-toggle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"></circle><path d="M12 8v6"></path><path d="M9 22l3-8 3 8"></path><path d="M7 11h10"></path></svg>
+                <span id="txtBtnCharacter">People</span>
+            </button>
+        </nav>
+
+        <!-- ===== PANEL BERTAB ===== -->
+        <aside id="sidebar">
+            <div class="tabs" role="tablist">
+                <button class="tab active" data-tab="edit" id="tabEdit" role="tab"><span id="txtSec4">Properties</span></button>
+                <button class="tab" data-tab="floor" id="tabFloor" role="tab"><span id="txtTabFloor">Floors</span></button>
+                <button class="tab" data-tab="light" id="tabLight" role="tab"><span id="txtTabLight">Light</span></button>
+                <button class="panel-close ico i-close only" id="btnPanelClose" aria-label="Close"></button>
             </div>
 
-            <div class="sidebar-section">
-                <h4 id="txtSecFloor">Floors / Levels</h4>
-                <div id="floorList" class="floor-list"></div>
-                <div class="btn-row">
-                    <button id="addFloorBtn" style="flex:1;" title="Add floor above">+ <span id="txtAddFloor">Add</span></button>
-                    <button id="dupFloorBtn" style="flex:1;" title="Duplicate active floor"><span id="txtDupFloor">Copy</span></button>
-                    <button id="delFloorBtn" class="btn-danger" style="flex:1;"><span id="txtDelFloor">Del</span></button>
+            <div class="sidebar-content">
+            <!-- ---------- TAB PROPERTI ---------- -->
+            <section class="tab-body active" data-body="edit">
+                <div id="emptyState">
+                    <div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path></svg></div>
+                    <div id="emptySelectionMsg">Select object on canvas.</div>
+                    <ul class="empty-tips">
+                        <li id="txtTip1">Pick <b>Select</b> on the left, then tap a wall, door or object.</li>
+                        <li id="txtTip2">Drag in the 2D plan to move things; use the 3D gizmo for height and rotation.</li>
+                        <li id="txtTip3">Two fingers or the mouse wheel zoom the plan. <b>Fit</b> brings everything back into view.</li>
+                    </ul>
                 </div>
-                <label id="txtLblFloorMat">Floor Finish (active level):</label>
-                <select id="floorMat" style="margin-bottom: 6px;"></select>
-                <input type="color" id="floorMatColor" value="#d4d4d8" style="width:100%; height:28px; padding:2px; margin-bottom:10px; cursor:pointer;">
-                <label id="txtLblFloorView">Other Floors (3D):</label>
-                <select id="floorViewMode" style="margin-bottom: 8px;">
-                    <option value="ghost" id="optFvGhost">Ghost (transparent)</option>
-                    <option value="solid" id="optFvSolid">Solid</option>
-                    <option value="hidden" id="optFvHidden">Hidden</option>
-                </select>
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
-                    <input type="checkbox" id="chkFloorRef" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
-                    <span id="txtLblFloorRef">2D Underlay Ref</span>
-                </label>
-            </div>
 
-            <div class="sidebar-section">
-                <h4 id="txtSec2">Draw Tools</h4>
-                <div class="grid-2">
-                    <button id="modeSelect" class="tool-btn">
-                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path></svg>
-                        <span id="txtModeSelect">Select/Edit</span>
-                    </button>
-                    <button id="modeWall" class="tool-btn active">
-                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="M4 8h16"></path><path d="M4 16h16"></path><path d="M10 4v4"></path><path d="M14 8v8"></path><path d="M8 16v4"></path><path d="M16 16v4"></path></svg>
-                        <span id="txtModeWall">Wall</span>
-                    </button>
-                    <button id="modeDoor" class="tool-btn">
-                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16"></path><path d="M14 12v.01"></path></svg>
-                        <span id="txtModeDoor">Door</span>
-                    </button>
-                    <button id="modeWindow" class="tool-btn">
-                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M3 12h18"></path><path d="M12 3v18"></path></svg>
-                        <span id="txtModeWindow">Window</span>
-                    </button>
-                    <button id="modeStairs" class="tool-btn-wide">
-                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h5v-5h5v-5h5V6"></path></svg>
-                        <span id="txtModeStairs">Stairs</span>
-                    </button>
-                    <button id="modeVoid" class="tool-btn">
-                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M8 8h8v8H8z" stroke-dasharray="2 2"></path><path d="M3 3l5 5"></path><path d="M21 21l-5-5"></path></svg>
-                        <span id="txtModeVoid">Void (Box)</span>
-                    </button>
-                    <button id="modeVoidTrace" class="tool-btn">
-                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14l4-9 6 5 5-3v10z" stroke-dasharray="3 2"></path><circle cx="4" cy="14" r="1.6"></circle><circle cx="8" cy="5" r="1.6"></circle><circle cx="14" cy="10" r="1.6"></circle><circle cx="19" cy="7" r="1.6"></circle></svg>
-                        <span id="txtModeVoidTrace">Void (Trace)</span>
-                    </button>
-                </div>
-                
-                <select id="furnitureSelect" style="margin-bottom: 12px; margin-top: 4px;">
-                    <option value="" id="txtOptDefault">+ Add Furniture...</option>
-                    <optgroup label="Living Area" id="optGrp1">
-                        <option value="bed" id="optBed">Bed</option>
-                        <option value="sofa" id="optSofa">Sofa</option>
-                        <option value="table" id="optTable">Table</option>
-                        <option value="chair" id="optChair">Chair</option>
-                        <option value="tv" id="optTv">TV</option>
-                        <option value="buffet" id="optBuffet">Sideboard</option>
-                        <option value="wardrobe" id="optWardrobe">Wardrobe</option>
-                        <option value="bookshelf" id="optBookshelf">Bookshelf / Partition</option>
-                        <option value="head_cabinet" id="optHeadCab">Head Cabinet</option>
-                        <option value="desk" id="optDesk">Desk / Work Table</option>
-                    </optgroup>
-                    <optgroup label="Kitchen" id="optGrp2">
-                        <option value="kitchen_set" id="optKitchen">Kitchen Set</option>
-                        <option value="stove" id="optStove">Stove</option>
-                        <option value="fridge" id="optFridge">Fridge</option>
-                    </optgroup>
-                    <optgroup label="Bathroom" id="optGrp3">
-                        <option value="toilet" id="optToilet">Toilet/WC</option>
-                        <option value="shower" id="optShower">Shower</option>
-                        <option value="bathtub" id="optBathtub">Bathtub</option>
-                        <option value="washbasin" id="optWashbasin">Washbasin / Sink</option>
-                    </optgroup>
-                    <optgroup label="Utility" id="optGrp6">
-                        <option value="washing_machine" id="optWashing">Washing Machine</option>
-                        <option value="ac_unit" id="optAc">Air Conditioner</option>
-                    </optgroup>
-                    <optgroup label="Lighting" id="optGrp5">
-                        <option value="spot_light" id="optSpot">Spotlight</option>
-                        <option value="area_light" id="optArea">Area Panel</option>
-                        <option value="pendant_lamp" id="optPendant">Pendant Lamp</option>
-                    </optgroup>
-                    <optgroup label="Decor & Plants" id="optGrp4">
-                        <option value="standing_lamp" id="optLamp">Standing Lamp</option>
-                        <option value="carpet" id="optCarpet">Carpet</option>
-                        <option value="curtain" id="optCurtain">Curtain</option>
-                        <option value="plant" id="optPlant">Indoor Plant</option>
-                        <option value="tree" id="optTree">Tree</option>
-                        <option value="painting" id="optPainting">Painting / Wall Art</option>
-                        <option value="mirror" id="optMirror">Mirror</option>
-                        <option value="wall_clock" id="optClock">Wall Clock</option>
-                        <option value="vase" id="optVase">Vase</option>
-                        <option value="fireplace" id="optFireplace">Fireplace</option>
-                    </optgroup>
-                </select>
-
-                <button id="btnSnap" class="active" style="margin-bottom: 12px; display: flex; justify-content: center; align-items: center; gap: 6px; transition: all 0.2s;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15"></path><path d="m5 8 4 4"></path><path d="m12 15 4 4"></path></svg>
-                    <span id="txtBtnSnap">Snap (Magnet)</span>
-                </button>
-
-                <button id="btnCharacter" style="margin-bottom: 12px; display: flex; justify-content: center; align-items: center; gap: 6px; transition: all 0.2s;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"></circle><path d="M12 8v6"></path><path d="M9 22l3-8 3 8"></path><path d="M7 11h10"></path></svg>
-                    <span id="txtBtnCharacter">Add Character</span>
-                </button>
-
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label id="txtLblWallH" style="margin:0;">Wall Height (m)</label>
-                    <input type="number" id="valWallH" value="3.0" step="0.1">
-                    <label id="txtLblWallT" style="margin-top: 4px; margin-bottom:0;">Wall Thick (m)</label>
-                    <input type="number" id="valWallT" value="0.15" step="0.05">
-                    <label style="margin-top: 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: #3f3f46;">
-                        <input type="checkbox" id="chkShowRoof" style="margin:0; width: 14px; height: 14px; cursor: pointer;">
-                        <span id="txtLblRoof">Show Roof</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <h4 id="txtSecLight">Lighting</h4>
-                <label id="txtLblKualitas">Render Quality:</label>
-                <select id="kualitasSel" style="margin-bottom: 8px;">
-                    <option value="sinematik" id="optKualitasSin">Cinematic</option>
-                    <option value="standar" id="optKualitasStd">Standard (fast)</option>
-                </select>
-                <label id="txtLblSuasana">Time of Day:</label>
-                <select id="suasanaSel" style="margin-bottom: 8px;">
-                    <option value="siang" id="optWaktuSiang">Day</option>
-                    <option value="sore" id="optWaktuSore">Golden Hour</option>
-                    <option value="malam" id="optWaktuMalam">Night</option>
-                    <option value="kustom" id="optWaktuKustom">Custom</option>
-                </select>
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
-                    <input type="checkbox" id="chkShadow" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
-                    <span id="txtLblShadow">Enable Shadows</span>
-                </label>
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
-                    <input type="checkbox" id="chkSun" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
-                    <span id="txtLblSun">Sun</span>
-                </label>
-                <label><span id="txtLblSunInt">Sun Intensity:</span> <span id="valSunInt">1.15</span></label>
-                <input type="range" id="sunInt" min="0" max="3" step="0.05" value="1.15">
-                <label><span id="txtLblSunAzim">Sun Direction:</span> <span id="valSunAzim">45</span>&deg;</label>
-                <input type="range" id="sunAzim" min="0" max="360" step="5" value="45">
-                <label><span id="txtLblSunElev">Sun Height:</span> <span id="valSunElev">55</span>&deg;</label>
-                <input type="range" id="sunElev" min="5" max="90" step="1" value="55">
-                <label><span id="txtLblSunTemp">Sun Color:</span> <span id="valSunTemp">5200</span> K</label>
-                <input type="range" id="sunTemp" min="2000" max="10000" step="100" value="5200">
-                <label><span id="txtLblAmbient">Ambient / Sky:</span> <span id="valAmbient">0.45</span></label>
-                <input type="range" id="ambInt" min="0" max="2" step="0.05" value="0.45">
-                <label><span id="txtLblExposure">Exposure:</span> <span id="valExposure">1.00</span></label>
-                <input type="range" id="expo" min="0.3" max="2.5" step="0.05" value="1">
-                <label id="txtLblShadowQ">Shadow Quality:</label>
-                <select id="shadowQ" style="margin-bottom: 8px;">
-                    <option value="cepat" id="optSqFast">Fast</option>
-                    <option value="seimbang" id="optSqBal" selected>Balanced</option>
-                    <option value="halus" id="optSqHigh">High</option>
-                    <option value="lembut" id="optSqSoft">Very Soft</option>
-                </select>
-                <label><span id="txtLblShadowSoft">Shadow Softness:</span> <span id="valShadowSoft">3</span></label>
-                <input type="range" id="shadowSoft" min="0" max="14" step="1" value="3">
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-top:4px;">
-                    <input type="checkbox" id="chkPBR" style="margin:0; width:14px; height:14px; cursor:pointer;">
-                    <span id="txtLblPBR">PBR Materials</span>
-                </label>
-                <div id="pbrHint" style="font-size:10px; color:#71717a; margin-top:4px; line-height:1.35;">Physically based surfaces: roughness, metalness, normal maps and environment reflections.</div>
-            </div>
-
-            <div class="sidebar-section">
-                <h4 id="txtSec4">Properties</h4>
-                <div id="emptySelectionMsg">Select object on canvas.</div>
-                
                 <div id="edit-panel-content" style="display: none;">
-                    
-                    <div id="variantControls" style="display: none; margin-bottom: 10px;">
-                        <label id="txtLblVariant">Style / Variant:</label>
+                    <div class="sel-head">
+                        <div class="sel-ico" id="selIcon"></div>
+                        <div class="sel-name" id="selTitle">Object</div>
+                    </div>
+
+                    <div id="variantControls" class="field" style="display: none;">
+                        <div class="field-lbl" id="txtLblVariant">Style / Variant:</div>
                         <select id="editVariant"></select>
                     </div>
 
                     <div id="wallLineControls" style="display: none;">
-                        <label style="margin-bottom:0; color:#2563eb;"><span id="txtLblWallLen">Wall Length:</span> <span id="valWallLen">0</span> m</label>
+                        <div class="stat"><span id="txtLblWallLen">Wall Length:</span> <b><span id="valWallLen">0</span> m</b></div>
                         <div class="wall-grid">
                             <div><label id="txtLblWLen2">Length (m)</label><input type="number" id="editWallLen" step="0.1" min="0.1" value="1"></div>
                             <div><label id="txtLblWAng">Angle (&deg;)</label><input type="number" id="editWallAng" step="1" value="0"></div>
                             <div><label id="txtLblWH2">Height (m)</label><input type="number" id="editWallH" step="0.1" min="0.2" value="3"></div>
                             <div><label id="txtLblWT2">Thick (m)</label><input type="number" id="editWallT" step="0.01" min="0.02" value="0.15"></div>
                         </div>
-                        <button id="btnWallReset" class="edit-btn-secondary" style="margin-top:6px;">Reset H/T to Global</button>
-                        <div style="text-align:left; margin-top:6px;">
-                            <label id="txtLblWallType">Type:</label>
-                            <select id="editWallType" style="margin-bottom:8px;">
+                        <button id="btnWallReset" class="edit-btn-secondary">Reset H/T to Global</button>
+                        <div class="field">
+                            <div class="field-lbl" id="txtLblWallType">Type:</div>
+                            <select id="editWallType">
                                 <option value="">Wall</option>
                                 <option value="kaca">Railing - Glass</option>
                                 <option value="besi">Railing - Steel</option>
                                 <option value="kayu">Railing - Wood</option>
                             </select>
                         </div>
-                        <div style="text-align:left; margin-top:6px;">
-                            <label id="txtLblWallMat">Wall Finish:</label>
-                            <select id="editWallMat" style="margin-bottom:8px;"></select>
+                        <div class="field">
+                            <div class="field-lbl" id="txtLblWallMat">Wall Finish:</div>
+                            <select id="editWallMat"></select>
                         </div>
-                        <div id="colorControls" style="display:none; margin-bottom:4px; text-align:left;">
-                            <label id="txtLblColorA">Wall Side A:</label>
-                            <input type="color" id="editColorA" value="#efefef" style="width:100%; height:30px; padding:2px; margin-bottom:8px; cursor:pointer;">
-                            <label id="txtLblColorB">Wall Side B:</label>
-                            <input type="color" id="editColorB" value="#efefef" style="width:100%; height:30px; padding:2px; cursor:pointer;">
+                        <div id="colorControls" class="color-pair" style="display:none;">
+                            <label class="color-field"><input type="color" id="editColorA" value="#efefef"><span id="txtLblColorA">Wall Side A:</span></label>
+                            <label class="color-field"><input type="color" id="editColorB" value="#efefef"><span id="txtLblColorB">Wall Side B:</span></label>
                         </div>
-                        <div id="wallGizmoHint" style="font-size:10px; color:#71717a; margin-top:8px; line-height:1.35; text-align:left;">Gizmo 3D: Move / Rotate / Scale works on this wall too.</div>
+                        <div id="wallGizmoHint" class="hint">Gizmo 3D: Move / Rotate / Scale works on this wall too.</div>
                     </div>
 
                     <div id="wallObjectControls">
-                        <label><span id="txtLblPos">Slide Pos:</span> <span id="valPos">50</span>%</label>
-                        <input type="range" id="editPos" min="0" max="100" step="1" value="50">
-                        <label><span id="txtLblWidth">Width:</span> <span id="valWidth">0.9</span> m</label>
-                        <input type="range" id="editWidth" min="0.4" max="4.0" step="0.1" value="0.9">
-                        
+                        <div class="sl"><div class="sl-row"><span id="txtLblPos">Slide Pos:</span><b><span id="valPos">50</span>%</b></div><input type="range" id="editPos" min="0" max="100" step="1" value="50"></div>
+                        <div class="sl"><div class="sl-row"><span id="txtLblWidth">Width:</span><b><span id="valWidth">0.9</span> m</b></div><input type="range" id="editWidth" min="0.4" max="4.0" step="0.1" value="0.9"></div>
                         <div id="heightElevControls" style="display: none;">
-                            <label><span id="txtLblHeight">Height:</span> <span id="valHeight">1.2</span> m</label>
-                            <input type="range" id="editHeight" min="0.4" max="3.0" step="0.1" value="1.2">
-                            <label><span id="txtLblElev">Elevation:</span> <span id="valElev">0.9</span> m</label>
-                            <input type="range" id="editElev" min="0" max="2.0" step="0.1" value="0.9">
+                            <div class="sl"><div class="sl-row"><span id="txtLblHeight">Height:</span><b><span id="valHeight">1.2</span> m</b></div><input type="range" id="editHeight" min="0.4" max="3.0" step="0.1" value="1.2"></div>
+                            <div class="sl"><div class="sl-row"><span id="txtLblElev">Elevation:</span><b><span id="valElev">0.9</span> m</b></div><input type="range" id="editElev" min="0" max="2.0" step="0.1" value="0.9"></div>
                         </div>
-                        
                         <div id="doorControls">
-                            <label><span id="txtLblSwing">Rotation:</span> <span id="valSwing">45</span>°</label>
-                            <input type="range" id="editSwing" min="-180" max="180" step="5" value="45">
+                            <div class="sl"><div class="sl-row"><span id="txtLblSwing">Rotation:</span><b><span id="valSwing">45</span>&deg;</b></div><input type="range" id="editSwing" min="-180" max="180" step="5" value="45"></div>
                             <button id="flipHingeBtn" class="edit-btn-secondary">Flip Hinge</button>
                         </div>
-                        <div id="windowControls" style="display:none; text-align:left; margin-top:6px;">
-                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:6px;"><input type="checkbox" id="chkWinCurtain" style="margin:0; width:14px; height:14px; cursor:pointer;"><span id="txtLblWinCurtain">Curtain</span></label>
-                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:6px;"><input type="checkbox" id="chkWinCurtainClosed" style="margin:0; width:14px; height:14px; cursor:pointer;"><span id="txtLblWinCurtainClosed">Curtain closed</span></label>
-                            <label id="rowWinOpen" style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:6px;"><input type="checkbox" id="chkWinOpen" style="margin:0; width:14px; height:14px; cursor:pointer;"><span id="txtLblWinOpen">Window open</span></label>
+                        <div id="windowControls" style="display:none;">
+                            <label class="switch"><input type="checkbox" id="chkWinCurtain"><span id="txtLblWinCurtain">Curtain</span></label>
+                            <label class="switch"><input type="checkbox" id="chkWinCurtainClosed"><span id="txtLblWinCurtainClosed">Curtain closed</span></label>
+                            <label class="switch" id="rowWinOpen"><input type="checkbox" id="chkWinOpen"><span id="txtLblWinOpen">Window open</span></label>
                             <button id="flipWinBtn" class="edit-btn-secondary">Swap inside / outside</button>
                         </div>
                     </div>
 
-                    <div id="freeObjectControls" style="display: none; background: #f4f4f5; padding: 10px; border-radius: 6px; border: 1px solid #d4d4d8; margin-bottom: 10px;">
-                        <h5 style="margin: 0 0 8px 0; font-size: 11px; color: #2563eb;">3D OBJECT EDITOR</h5>
-                        
-                        <div style="display: flex; gap: 6px; margin-bottom: 12px;">
-                            <button id="btnFlipX" class="edit-btn-secondary" style="margin-bottom: 0; padding: 6px; font-size: 10px; font-weight:bold; background:#e0e7ff; color:#4f46e5;">Flip X</button>
-                            <button id="btnFlipZ" class="edit-btn-secondary" style="margin-bottom: 0; padding: 6px; font-size: 10px; font-weight:bold; background:#e0e7ff; color:#4f46e5;">Flip Z</button>
-                        </div>
-
-                        <label><span>Elevasi (Naik/Turun):</span> <span id="valObjElev">0</span> m</label>
-                        <input type="range" id="editObjElev" min="-1.0" max="5.0" step="0.1" value="0">
-                        <label><span>Rotasi Y (Kiri/Kanan):</span> <span id="valRotY">0</span>°</label>
-                        <input type="range" id="editRotY" min="0" max="360" step="5" value="0">
-                        <label><span>Rotasi X (Tunduk/Tengadah):</span> <span id="valRotX">0</span>°</label>
-                        <input type="range" id="editRotX" min="-180" max="180" step="5" value="0">
-                        <label><span>Rotasi Z (Miring):</span> <span id="valRotZ">0</span>°</label>
-                        <input type="range" id="editRotZ" min="-180" max="180" step="5" value="0">
-                    
-                        <label><span>Skala Global (Uniform):</span> <span id="valScaleU">1.0</span>x</label>
-                        <input type="range" id="editScaleU" min="0.1" max="5.0" step="0.1" value="1.0">
-                        <hr style="border: 0; border-top: 1px dashed #d4d4d8; margin: 8px 0;">
-
-                        <label><span>Skala X (Lebar):</span> <span id="valScaleX">1.0</span>x</label>
-                        <input type="range" id="editScaleX" min="0.1" max="5.0" step="0.1" value="1.0">
-                        <label><span>Skala Y (Tinggi):</span> <span id="valScaleY">1.0</span>x</label>
-                        <input type="range" id="editScaleY" min="0.1" max="5.0" step="0.1" value="1.0">
-                        <label><span>Skala Z (Dalam):</span> <span id="valScaleZ">1.0</span>x</label>
-                        <input type="range" id="editScaleZ" min="0.1" max="5.0" step="0.1" value="1.0">
-
-                        <div id="objMatControls" style="display:none; margin-bottom:10px;">
-                            <label id="txtLblObjMat">Material / Texture:</label>
+                    <div id="freeObjectControls" style="display: none;">
+                        <div id="objMatControls" class="field" style="display:none;">
+                            <div class="field-lbl" id="txtLblObjMat">Material / Texture:</div>
                             <select id="editObjMat"></select>
                         </div>
-                        <div id="objColorControls" style="display:none; margin-bottom:10px;">
-                            <label id="txtLblObjColor">Color:</label>
-                            <input type="color" id="editObjColor" value="#9b59b6" style="width:100%; height:30px; padding:2px; cursor:pointer;">
+                        <div id="objColorControls" style="display:none;">
+                            <label class="color-field"><input type="color" id="editObjColor" value="#9b59b6"><span id="txtLblObjColor">Color:</span></label>
                         </div>
 
-                        <div id="lightControls" style="display:none; border-top:1px dashed #d4d4d8; padding-top:8px; margin-top:4px;">
-                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
-                                <input type="checkbox" id="chkLightOn" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
-                                <span id="txtLblLightOn">Light On</span>
-                            </label>
-                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
-                                <input type="checkbox" id="chkLightShadow" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
-                                <span id="txtLblLightShadow">Cast Shadow</span>
-                            </label>
-                            <label><span id="txtLblLightInt">Brightness:</span> <span id="valLightInt">2.6</span></label>
-                            <input type="range" id="editLightInt" min="0" max="8" step="0.2" value="2.6">
-                            <label><span id="txtLblLightRange">Reach:</span> <span id="valLightRange">20</span> m</label>
-                            <input type="range" id="editLightRange" min="3" max="40" step="1" value="20">
-                            <label><span id="txtLblLightTemp">Light Color:</span> <span id="valLightTemp">2700</span> K</label>
-                            <input type="range" id="editLightTemp" min="1800" max="7000" step="100" value="2700">
+                        <div class="group-lbl" id="txtGrpPos">Position</div>
+                        <div class="sl"><div class="sl-row"><span id="txtLblObjElev">Elevation</span><b><span id="valObjElev">0</span> m</b></div><input type="range" id="editObjElev" min="-1.0" max="5.0" step="0.1" value="0"></div>
+                        <div class="sl"><div class="sl-row"><span id="txtLblRotY">Rotation</span><b><span id="valRotY">0</span>&deg;</b></div><input type="range" id="editRotY" min="0" max="360" step="5" value="0"></div>
+                        <div class="sl"><div class="sl-row"><span id="txtLblScaleU">Size</span><b><span id="valScaleU">1.0</span>&times;</b></div><input type="range" id="editScaleU" min="0.1" max="5.0" step="0.1" value="1.0"></div>
+                        <div class="btn-row">
+                            <button id="btnFlipX" class="edit-btn-secondary">Flip X</button>
+                            <button id="btnFlipZ" class="edit-btn-secondary">Flip Z</button>
+                        </div>
+                        <details class="more">
+                            <summary id="txtMoreTransform">Tilt &amp; per-axis size</summary>
+                            <div class="sl"><div class="sl-row"><span id="txtLblRotX">Tilt X</span><b><span id="valRotX">0</span>&deg;</b></div><input type="range" id="editRotX" min="-180" max="180" step="5" value="0"></div>
+                            <div class="sl"><div class="sl-row"><span id="txtLblRotZ">Tilt Z</span><b><span id="valRotZ">0</span>&deg;</b></div><input type="range" id="editRotZ" min="-180" max="180" step="5" value="0"></div>
+                            <div class="sl"><div class="sl-row"><span id="txtLblScaleX">Width</span><b><span id="valScaleX">1.0</span>&times;</b></div><input type="range" id="editScaleX" min="0.1" max="5.0" step="0.1" value="1.0"></div>
+                            <div class="sl"><div class="sl-row"><span id="txtLblScaleY">Height</span><b><span id="valScaleY">1.0</span>&times;</b></div><input type="range" id="editScaleY" min="0.1" max="5.0" step="0.1" value="1.0"></div>
+                            <div class="sl"><div class="sl-row"><span id="txtLblScaleZ">Depth</span><b><span id="valScaleZ">1.0</span>&times;</b></div><input type="range" id="editScaleZ" min="0.1" max="5.0" step="0.1" value="1.0"></div>
+                        </details>
+
+                        <div id="lightControls" style="display:none;">
+                            <div class="group-lbl" id="txtGrpLamp">Lamp</div>
+                            <label class="switch"><input type="checkbox" id="chkLightOn" checked><span id="txtLblLightOn">Light On</span></label>
+                            <label class="switch"><input type="checkbox" id="chkLightShadow" checked><span id="txtLblLightShadow">Cast Shadow</span></label>
+                            <div class="sl"><div class="sl-row"><span id="txtLblLightInt">Brightness:</span><b><span id="valLightInt">2.6</span></b></div><input type="range" id="editLightInt" min="0" max="8" step="0.2" value="2.6"></div>
+                            <div class="sl"><div class="sl-row"><span id="txtLblLightRange">Reach:</span><b><span id="valLightRange">20</span> m</b></div><input type="range" id="editLightRange" min="3" max="40" step="1" value="20"></div>
+                            <div class="sl"><div class="sl-row"><span id="txtLblLightTemp">Light Color:</span><b><span id="valLightTemp">2700</span> K</b></div><input type="range" id="editLightTemp" class="kelvin" min="1800" max="7000" step="100" value="2700"></div>
                         </div>
 
                         <div id="voidControls" style="display:none;">
+                            <div class="group-lbl" id="txtGrpVoid">Void</div>
                             <div class="wall-grid">
                                 <div><label id="txtLblVoidW">Width (m)</label><input type="number" id="editVoidW" step="0.1" min="0.3" value="2"></div>
                                 <div><label id="txtLblVoidD">Depth (m)</label><input type="number" id="editVoidD" step="0.1" min="0.3" value="2"></div>
                             </div>
-                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:6px 0;">
-                                <input type="checkbox" id="chkVoidRailing" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
-                                <span id="txtLblVoidRailing">Railing around the void</span>
-                            </label>
-                            <select id="editVoidRailing" style="margin-bottom:8px;"><option value="kaca">Glass</option><option value="besi">Steel</option><option value="kayu">Wood</option></select>
-                            <div id="voidHint" style="font-size:10px; color:#71717a; margin:6px 0 4px 0; line-height:1.35; text-align:left;">This opening cuts a hole in the floor slab of the level it sits on.</div>
+                            <label class="switch"><input type="checkbox" id="chkVoidRailing" checked><span id="txtLblVoidRailing">Railing around the void</span></label>
+                            <select id="editVoidRailing"><option value="kaca">Glass</option><option value="besi">Steel</option><option value="kayu">Wood</option></select>
+                            <div id="voidHint" class="hint">This opening cuts a hole in the floor slab of the level it sits on.</div>
                         </div>
 
                         <div id="stairsControls">
-                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:8px;">
-                                <input type="checkbox" id="chkStairVoid" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
-                                <span id="txtLblStairVoid">Cut opening above</span>
-                            </label>
-                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:6px;">
-                                <input type="checkbox" id="chkStairRailing" checked style="margin:0; width:14px; height:14px; cursor:pointer;">
-                                <span id="txtLblStairRailing">Railing around the opening</span>
-                            </label>
-                            <select id="editStairRailing" style="margin-bottom:8px;"><option value="kaca">Glass</option><option value="besi">Steel</option><option value="kayu">Wood</option></select>
-                            <div id="stairInfo" style="font-size:10px; line-height:1.4; margin-bottom:8px; padding:6px; border-radius:5px; background:#eef2ff; color:#3730a3;"></div>
-                            <label><span id="txtLblSteps">Steps:</span> <span id="valSteps">14</span></label>
-                            <input type="range" id="editSteps" min="5" max="25" step="1" value="14">
-                            <label><span id="txtLblStairW">Stairs W:</span> <span id="valStairW">1.0</span> m</label>
-                            <input type="range" id="editStairW" min="0.8" max="2.5" step="0.1" value="1.0">
+                            <div class="group-lbl" id="txtGrpStairs">Stairs</div>
+                            <div id="stairInfo" class="info-box"></div>
+                            <div class="sl"><div class="sl-row"><span id="txtLblSteps">Steps:</span><b><span id="valSteps">14</span></b></div><input type="range" id="editSteps" min="5" max="25" step="1" value="14"></div>
+                            <div class="sl"><div class="sl-row"><span id="txtLblStairW">Stairs W:</span><b><span id="valStairW">1.0</span> m</b></div><input type="range" id="editStairW" min="0.8" max="2.5" step="0.1" value="1.0"></div>
+                            <label class="switch"><input type="checkbox" id="chkStairVoid" checked><span id="txtLblStairVoid">Cut opening above</span></label>
+                            <label class="switch"><input type="checkbox" id="chkStairRailing" checked><span id="txtLblStairRailing">Railing around the opening</span></label>
+                            <select id="editStairRailing"><option value="kaca">Glass</option><option value="besi">Steel</option><option value="kayu">Wood</option></select>
                         </div>
                     </div>
 
-                    <button id="delObjBtn" class="btn-danger" style="margin-top: 5px;">Delete</button>
+                    <button id="delObjBtn" class="btn-danger ico i-trash">Delete</button>
+                </div>
+            </section>
+
+            <!-- ---------- TAB LANTAI ---------- -->
+            <section class="tab-body" data-body="floor">
+                <div class="group-lbl" id="txtSecFloor">Floors / Levels</div>
+                <div id="floorList" class="floor-list"></div>
+                <div class="btn-row">
+                    <button id="addFloorBtn" class="ico i-plus" title="Add floor above"><span id="txtAddFloor">Add</span></button>
+                    <button id="dupFloorBtn" class="ico i-copy" title="Duplicate active floor"><span id="txtDupFloor">Copy</span></button>
+                    <button id="delFloorBtn" class="btn-danger ico i-trash" title="Delete floor"><span id="txtDelFloor">Del</span></button>
+                </div>
+                <div class="field">
+                    <div class="field-lbl" id="txtLblFloorMat">Floor Finish (active level):</div>
+                    <div class="mat-row"><select id="floorMat"></select><input type="color" id="floorMatColor" value="#d4d4d8"></div>
+                </div>
+                <div class="field">
+                    <div class="field-lbl" id="txtLblFloorView">Other Floors (3D):</div>
+                    <select id="floorViewMode">
+                        <option value="ghost" id="optFvGhost">Ghost (transparent)</option>
+                        <option value="solid" id="optFvSolid">Solid</option>
+                        <option value="hidden" id="optFvHidden">Hidden</option>
+                    </select>
+                </div>
+                <label class="switch"><input type="checkbox" id="chkFloorRef" checked><span id="txtLblFloorRef">2D Underlay Ref</span></label>
+
+                <div class="group-lbl" id="txtGrpWalls">Walls</div>
+                <div class="wall-grid">
+                    <div><label id="txtLblWallH">Wall Height (m)</label><input type="number" id="valWallH" value="3.0" step="0.1"></div>
+                    <div><label id="txtLblWallT">Wall Thick (m)</label><input type="number" id="valWallT" value="0.15" step="0.05"></div>
+                </div>
+                <label class="switch"><input type="checkbox" id="chkShowRoof"><span id="txtLblRoof">Show Roof</span></label>
+            </section>
+
+            <!-- ---------- TAB CAHAYA ---------- -->
+            <section class="tab-body" data-body="light">
+                <div class="group-lbl" id="txtSecLight">Lighting</div>
+                <div class="field">
+                    <div class="field-lbl" id="txtLblSuasana">Time of Day:</div>
+                    <div class="seg seg-full" id="segWaktu">
+                        <button data-v="siang"></button><button data-v="sore"></button><button data-v="malam"></button>
+                    </div>
+                    <select id="suasanaSel" hidden>
+                        <option value="siang" id="optWaktuSiang">Day</option>
+                        <option value="sore" id="optWaktuSore">Golden Hour</option>
+                        <option value="malam" id="optWaktuMalam">Night</option>
+                        <option value="kustom" id="optWaktuKustom">Custom</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <div class="field-lbl" id="txtLblKualitas">Render Quality:</div>
+                    <div class="seg seg-full" id="segKualitas">
+                        <button data-v="sinematik"></button><button data-v="standar"></button>
+                    </div>
+                    <select id="kualitasSel" hidden>
+                        <option value="sinematik" id="optKualitasSin">Cinematic</option>
+                        <option value="standar" id="optKualitasStd">Standard (fast)</option>
+                    </select>
+                </div>
+                <label class="switch"><input type="checkbox" id="chkShadow" checked><span id="txtLblShadow">Enable Shadows</span></label>
+                <label class="switch"><input type="checkbox" id="chkPBR"><span id="txtLblPBR">PBR Materials</span></label>
+                <div id="pbrHint" class="hint">Physically based surfaces: roughness, metalness, normal maps and environment reflections.</div>
+
+                <details class="more">
+                    <summary id="txtMoreLight">Sun &amp; advanced</summary>
+                    <label class="switch"><input type="checkbox" id="chkSun" checked><span id="txtLblSun">Sun</span></label>
+                    <div class="sl"><div class="sl-row"><span id="txtLblSunInt">Sun Intensity:</span><b id="valSunInt">1.15</b></div><input type="range" id="sunInt" min="0" max="3" step="0.05" value="1.15"></div>
+                    <div class="sl"><div class="sl-row"><span id="txtLblSunAzim">Sun Direction:</span><b><span id="valSunAzim">45</span>&deg;</b></div><input type="range" id="sunAzim" min="0" max="360" step="5" value="45"></div>
+                    <div class="sl"><div class="sl-row"><span id="txtLblSunElev">Sun Height:</span><b><span id="valSunElev">55</span>&deg;</b></div><input type="range" id="sunElev" min="5" max="90" step="1" value="55"></div>
+                    <div class="sl"><div class="sl-row"><span id="txtLblSunTemp">Sun Color:</span><b><span id="valSunTemp">5200</span> K</b></div><input type="range" id="sunTemp" class="kelvin" min="2000" max="10000" step="100" value="5200"></div>
+                    <div class="sl"><div class="sl-row"><span id="txtLblAmbient">Ambient / Sky:</span><b id="valAmbient">0.45</b></div><input type="range" id="ambInt" min="0" max="2" step="0.05" value="0.45"></div>
+                    <div class="sl"><div class="sl-row"><span id="txtLblExposure">Exposure:</span><b id="valExposure">1.00</b></div><input type="range" id="expo" min="0.3" max="2.5" step="0.05" value="1"></div>
+                    <div class="field">
+                        <div class="field-lbl" id="txtLblShadowQ">Shadow Quality:</div>
+                        <select id="shadowQ">
+                            <option value="cepat" id="optSqFast">Fast</option>
+                            <option value="seimbang" id="optSqBal" selected>Balanced</option>
+                            <option value="halus" id="optSqHigh">High</option>
+                            <option value="lembut" id="optSqSoft">Very Soft</option>
+                        </select>
+                    </div>
+                    <div class="sl"><div class="sl-row"><span id="txtLblShadowSoft">Shadow Softness:</span><b id="valShadowSoft">3</b></div><input type="range" id="shadowSoft" min="0" max="14" step="1" value="3"></div>
+                </details>
+            </section>
+            </div>
+        </aside>
+
+        <div id="main-container">
+            <div id="workspace-container">
+                <div id="workspace">
+                    <img id="floorplan-img" src="">
+                    <canvas id="draw-canvas"></canvas>
+                </div>
+                <div id="zoomCtl" class="float-ctl">
+                    <button id="btnZoomOut" class="ico i-minus only" title="Zoom out" aria-label="Zoom out"></button>
+                    <button id="btnZoomIn" class="ico i-plus only" title="Zoom in" aria-label="Zoom in"></button>
+                    <button id="btnFit" class="ico i-fit"><span id="txtFit">Fit</span></button>
+                </div>
+                <div id="hintBar"></div>
+                <button id="editChip" class="ico i-edit"><span id="editChipTxt">Edit</span></button>
+                <div id="helpModal">
+                    <div class="help-content">
+                        <button class="close-help" id="closeHelpBtn">&times;</button>
+                        <h3 id="txtGuideTitle">Quick Guide</h3>
+                        <ul>
+                            <li id="txtGuide1"><b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.</li>
+                            <li id="txtGuide2"><b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.</li>
+                            <li id="txtGuide3"><b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.</li>
+                            <li id="txtGuide4"><b>Floors:</b> Add / copy levels in the "Floors" panel.</li>
+                            <li id="txtGuide7"><b>Walk (POV):</b> Press <b>Walk</b> above the 3D view.</li>
+                            <li id="txtGuide6"><b>Void / Opening:</b> Use the <b>Void</b> tool.</li>
+                            <li id="txtGuide5"><b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo.</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
-            <div class="sidebar-section" style="border-bottom: none;">
-                <h4 id="txtSec5">Output</h4>
-                <button id="arBtn" class="btn-purple" style="margin-bottom: 8px;">View AR</button>
-                <button id="exportBtn" class="btn-primary" style="margin-bottom: 8px;">Export GLB</button>
-                <button id="exportObjBtn" class="btn-primary" style="background: #f59e0b; border-color: #d97706;">Export OBJ</button>
+            <div id="render-container">
+                <div id="transformUI">
+                    <div class="seg dark">
+                        <button id="btnTrMv" class="active" title="Move (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3"/></svg><span class="lbl" id="txtTrMv">Move</span></button>
+                        <button id="btnTrRt" title="Rotate (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg><span class="lbl" id="txtTrRt">Rotate</span></button>
+                        <button id="btnTrSc" title="Scale (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span class="lbl" id="txtTrSc">Scale</span></button>
+                    </div>
+                    <div class="paint-grp">
+                        <input type="color" id="paintColor" value="#d9c7a7" title="Paint color">
+                        <button id="btnPaint" title="Tap a surface in 3D to paint it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/><path d="M20 6h1v6h-9v3"/><rect x="10" y="15" width="4" height="7" rx="1"/></svg><span class="lbl" id="txtTrPaint">Paint</span></button>
+                    </div>
+                    <button id="btnTrSpace" title="Toggle Local/World Space">World</button>
+                    <button id="btnWalk" title="First person walk">Walk</button>
+                </div>
+                <div id="walkUI">
+                    <div id="walkInfo"></div>
+                    <div id="walkCross"></div>
+                    <div id="walkAim"></div>
+                    <div id="walkJoy"><div id="walkKnob"></div></div>
+                    <button id="walkRun" type="button">RUN</button>
+                    <button id="walkWaktu" type="button">Day</button>
+                    <button id="walkFull" type="button">Fullscreen</button>
+                    <button id="walkExit" type="button">&times; Exit</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="main-container">
-        <div id="workspace-container">
-            <div id="workspace">
-                <img id="floorplan-img" src="">
-                <canvas id="draw-canvas"></canvas>
-            </div>
-            <button id="helpBtnToggle" title="Panduan">?</button>
-            <div id="helpModal">
-                <div class="help-content">
-                    <button class="close-help" id="closeHelpBtn">&times;</button>
-                    <h3 id="txtGuideTitle">Quick Guide</h3>
-                    <ul>
-                        <li id="txtGuide1"><b>Free Draw:</b> Start drawing right away! Each grid box = 1 meter.</li>
-                        <li id="txtGuide2"><b>Wall:</b> Tap 1x start point, tap other pos. Tap 2x (or ESC) to finish the wall line.</li>
-                        <li id="txtGuide3"><b>Edit & Delete Wall:</b> Use 'Select/Edit' mode, click any wall line to drag it around or delete it.</li>
-                        <li id="txtGuide4"><b>Floors:</b> Add / copy levels in the "Floors" panel. The active floor is the one you draw on; the others show as a ghost in 3D and a dashed underlay in 2D.</li>
-                        <li id="txtGuide7"><b>Walk (POV):</b> Press <b>Walk</b> above the 3D view to stand inside the plan. Drag to look, use the joystick or WASD to move, and stairs are climbed automatically &mdash; so you can walk up to the next floor. Point at a lamp, TV, door, window or curtain and the crosshair turns yellow: tap (or press E) to switch it on/off or open/close it. The time button at the top right switches Day / Golden Hour / Night &mdash; at night rooms are lit only by their lamps. Window curtains are added from the window panel; for a balcony railing, draw a line and set its <b>Type</b> to Railing.</li>
-                        <li id="txtGuide6"><b>Void / Opening:</b> Stairs cut their own opening in the floor above. For any other hole &mdash; a double-height space or a mezzanine &mdash; use the <b>Void</b> tool: activate the floor that should have the hole, drop a void on it, then set its Width and Depth.</li>
-                        <li id="txtGuide5"><b>Wall Transform (3D):</b> Click a wall in the 3D view to grab it with the gizmo &mdash; Move, Rotate, and Scale (X = length, Y = height, Z = thickness), or type exact numbers in Properties.</li>
-                    </ul>
-                </div>
-            </div>
+    <!-- ===== KATALOG FURNITUR ===== -->
+    <div id="katalog" role="dialog" aria-labelledby="txtKatalogTitle">
+        <div class="kt-head">
+            <b id="txtKatalogTitle">Furniture &amp; objects</b>
+            <input type="search" id="ktCari" placeholder="Search…" autocomplete="off">
+            <button class="ico i-close only" id="ktTutup" aria-label="Close"></button>
         </div>
-        
-        <div id="render-container">
-            <div id="transformUI" style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 6px; background: rgba(24, 24, 27, 0.92); padding: 8px; border-radius: 8px; transform: translateZ(0); will-change: transform; isolation: isolate;">
-                <button id="btnTrMv" class="active" style="width:auto; padding:6px 12px; background:#2563eb; color:#fff; border:none; font-weight:bold; border-radius:4px;">Move</button>
-                <button id="btnTrRt" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Rotate</button>
-                <button id="btnTrSc" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;">Scale</button>
-                <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
-                <input type="color" id="paintColor" value="#d9c7a7" title="Warna cat" style="width:34px; height:30px; padding:2px; border:none; border-radius:4px; cursor:pointer; background:#3f3f46;">
-                <button id="btnPaint" style="width:auto; padding:6px 12px; background:#3f3f46; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Ketuk permukaan di tampilan 3D untuk mengecat">Paint</button>
-                <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
-                <button id="btnTrSpace" style="width:auto; padding:6px 12px; background:#ca8a04; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="Toggle Local/World Space">World</button>
-                <div style="width: 1px; background: #71717a; margin: 0 4px;"></div>
-                <button id="btnWalk" style="width:auto; padding:6px 12px; background:#10b981; color:#fff; border:none; font-weight:bold; border-radius:4px;" title="First person walk">Walk</button>
-            </div>
-            <div id="walkUI">
-                <div id="walkInfo"></div>
-                <div id="walkCross"></div>
-                <div id="walkAim"></div>
-                <div id="walkJoy"><div id="walkKnob"></div></div>
-                <button id="walkRun" type="button">RUN</button>
-                <button id="walkWaktu" type="button">Day</button>
-                <button id="walkFull" type="button">Fullscreen</button>
-                <button id="walkExit" type="button">&times; Exit</button>
-            </div>
-        </div>
+        <div class="kt-body" id="ktIsi"></div>
+        <select id="furnitureSelect" hidden>
+            <option value="" id="txtOptDefault">+ Add Furniture...</option>
+            <optgroup label="Living Area" id="optGrp1">
+                <option value="bed" id="optBed">Bed</option>
+                <option value="sofa" id="optSofa">Sofa</option>
+                <option value="table" id="optTable">Table</option>
+                <option value="chair" id="optChair">Chair</option>
+                <option value="tv" id="optTv">TV</option>
+                <option value="buffet" id="optBuffet">Sideboard</option>
+                <option value="wardrobe" id="optWardrobe">Wardrobe</option>
+                <option value="bookshelf" id="optBookshelf">Bookshelf / Partition</option>
+                <option value="head_cabinet" id="optHeadCab">Head Cabinet</option>
+                <option value="desk" id="optDesk">Desk / Work Table</option>
+            </optgroup>
+            <optgroup label="Kitchen" id="optGrp2">
+                <option value="kitchen_set" id="optKitchen">Kitchen Set</option>
+                <option value="stove" id="optStove">Stove</option>
+                <option value="fridge" id="optFridge">Fridge</option>
+            </optgroup>
+            <optgroup label="Bathroom" id="optGrp3">
+                <option value="toilet" id="optToilet">Toilet/WC</option>
+                <option value="shower" id="optShower">Shower</option>
+                <option value="bathtub" id="optBathtub">Bathtub</option>
+                <option value="washbasin" id="optWashbasin">Washbasin / Sink</option>
+            </optgroup>
+            <optgroup label="Utility" id="optGrp6">
+                <option value="washing_machine" id="optWashing">Washing Machine</option>
+                <option value="ac_unit" id="optAc">Air Conditioner</option>
+            </optgroup>
+            <optgroup label="Lighting" id="optGrp5">
+                <option value="spot_light" id="optSpot">Spotlight</option>
+                <option value="area_light" id="optArea">Area Panel</option>
+                <option value="pendant_lamp" id="optPendant">Pendant Lamp</option>
+            </optgroup>
+            <optgroup label="Decor & Plants" id="optGrp4">
+                <option value="standing_lamp" id="optLamp">Standing Lamp</option>
+                <option value="carpet" id="optCarpet">Carpet</option>
+                <option value="curtain" id="optCurtain">Curtain</option>
+                <option value="plant" id="optPlant">Indoor Plant</option>
+                <option value="tree" id="optTree">Tree</option>
+                <option value="painting" id="optPainting">Painting / Wall Art</option>
+                <option value="mirror" id="optMirror">Mirror</option>
+                <option value="wall_clock" id="optClock">Wall Clock</option>
+                <option value="vase" id="optVase">Vase</option>
+                <option value="fireplace" id="optFireplace">Fireplace</option>
+            </optgroup>
+        </select>
     </div>
 
     <div id="ar-modal">
@@ -841,12 +1018,12 @@
             id: {
                 title: "Floorplan Tracer", sec1: "File & Sistem", sec2: "Alat Gambar", sec4: "Properti Objek", sec5: "Output",
                 lblUpload: "Upload Denah:", saveProj: "Simpan Proyek (.json)", loadProj: "Muat Proyek:", undo: "Undo", redo: "Redo", clear: "Reset Baru",
-                sel: "Pilih / Edit", wall: "Tembok", door: "Pintu", win: "Jendela", stairs: "Tangga",
+                sel: "Pilih / Edit", selShort: "Pilih", wall: "Tembok", door: "Pintu", win: "Jendela", stairs: "Tangga",
                 optDef: "+ Tambah Mebel...", grp1: "Ruang Utama", grp2: "Dapur", grp3: "Kamar Mandi", grp4: "Dekorasi & Tanaman", snapBtn: "Snap (Magnet)", charBtn: "Tambah Karakter",
                 bed: "Kasur", sofa: "Sofa", table: "Meja", chair: "Kursi", tv: "TV", buffet: "Bufet", wardrobe: "Lemari", bookshelf: "Rak Buku / Partisi", headCab: "Head Cabinet",
                 kitchen: "Kitchen Set", stove: "Kompor", fridge: "Kulkas", toilet: "Kloset / Toilet", shower: "Shower", bathtub: "Bathtub",
                 lamp: "Lampu Lantai", grp5: "Pencahayaan", spot: "Lampu Sorot", area: "Panel Area", secLight: "Pencahayaan", lblShadow: "Aktifkan Bayangan", lblSun: "Matahari", lblSunInt: "Kekuatan Matahari:", lblSunAzim: "Arah Matahari:", lblSunElev: "Ketinggian Matahari:", lblLightOn: "Lampu Nyala", lblLightShadow: "Hasilkan Bayangan", lblLightInt: "Terang:", lblLightRange: "Jangkauan:", lblColorA: "Warna Sisi A:", lblColorB: "Warna Sisi B:", lblObjColor: "Warna:", carpet: "Karpet", curtain: "Tirai", plant: "Tanaman Dalam", tree: "Pohon",
-                lblWallH: "Tinggi Tembok (m)", lblWallT: "Tebal Tembok (m)", lblRoof: "Tampilkan Atap", emptyMsg: "Pilih objek di kanvas.",
+                lblWallH: "Tinggi Tembok (m)", lblWallT: "Tebal Tembok (m)", lblRoof: "Tampilkan Atap", emptyMsg: "Belum ada yang dipilih",
                 lblVariant: "Tipe / Varian:", lblPos: "Geser Posisi:", lblWidth: "Lebar:", lblHeight: "Tinggi:", lblElev: "Elevasi (Tinggi dr Lantai):",
                 lblSwing: "Rotasi Pintu:", flipBtn: "Balik Engsel", lblWinCurtain: "Pasang tirai (korden)", lblWinCurtainClosed: "Tirai tertutup", lblWinOpen: "Jendela terbuka", flipWinBtn: "Tukar sisi dalam / luar",
                 lblWallType: "Jenis:", optWall: "Tembok", optRailKaca: "Railing - Kaca", optRailBesi: "Railing - Besi", optRailKayu: "Railing - Kayu",
@@ -878,6 +1055,26 @@
                 lblLightTemp: "Warna Lampu:", lblWallMat: "Finishing Tembok:", lblObjMat: "Material / Tekstur:",
                 lblFloorMat: "Finishing Lantai (level aktif):",
                 btnWalk: "Jalan", btnWalkExit: "Keluar", btnWalkFull: "Layar Penuh",
+                fileMenu: "File", mnUpload: "Upload gambar denah", mnOpen: "Buka proyek…", mnImport3D: "Impor model 3D…",
+                undoT: "Urungkan", redoT: "Ulangi", tabEdit: "Properti", tabFloor: "Lantai", tabLight: "Cahaya",
+                modeFurniture: "Furnitur", snapShort: "Magnet", charShort: "Orang", fit: "Paskan", zoomIn: "Perbesar", zoomOut: "Perkecil",
+                view2d: "Hanya denah 2D", viewSplit: "2D + 3D berdampingan", view3d: "Hanya tampilan 3D", helpT: "Panduan", panelT: "Tampilkan / sembunyikan panel",
+                tip1: "Pilih alat <b>Pilih/Edit</b> di kiri, lalu ketuk tembok, pintu, atau objek.",
+                tip2: "Seret di denah 2D untuk memindah; pakai gizmo 3D untuk tinggi dan putaran.",
+                tip3: "Dua jari atau scroll mouse untuk zoom. Tombol <b>Paskan</b> menampilkan seluruh denah.",
+                grpPos: "Posisi & ukuran", lblObjElev: "Elevasi", lblRotY: "Putar", lblScaleU: "Ukuran", moreTransform: "Kemiringan & ukuran per sumbu",
+                lblRotX: "Miring X", lblRotZ: "Miring Z", lblScaleX: "Lebar", lblScaleY: "Tinggi", lblScaleZ: "Dalam",
+                grpLamp: "Lampu", grpVoid: "Void", grpStairs: "Tangga", grpWalls: "Tembok", moreLight: "Matahari & pengaturan lanjutan",
+                katalogTitle: "Furnitur & objek", cari: "Cari…", katalogKosong: "Tidak ada yang cocok.",
+                trMv: "Geser", trRt: "Putar", trSc: "Skala", trPaint: "Cat", editChip: "Edit", namaVoid: "Void",
+                hint_select: "Ketuk tembok, pintu, atau objek untuk mengedit · seret untuk memindah",
+                hint_wall: "Ketuk untuk mulai tembok, ketuk lagi di tiap sudut · ketuk 2x atau <b>ESC</b> untuk selesai",
+                hint_door: "Ketuk sebuah tembok untuk memasang <b>pintu</b>",
+                hint_window: "Ketuk sebuah tembok untuk memasang <b>jendela</b>",
+                hint_stairs: "Ketuk di denah untuk menaruh <b>tangga</b>",
+                hint_void: "Ketuk di denah untuk menaruh <b>void</b> (lubang lantai)",
+                hint_voidtrace: "Ketuk tiap sudut void · ketuk titik pertama atau <b>ESC</b> untuk menutup",
+                hint_furniture: "Ketuk di denah untuk menaruh <b>{n}</b>",
                 lblKualitas: "Kualitas Render:", kualitasSin: "Sinematik", kualitasStd: "Standar (cepat)",
                 lblSuasana: "Suasana Waktu:", waktu_siang: "Siang", waktu_sore: "Sore", waktu_malam: "Malam", waktu_kustom: "Kustom",
                 walkHint: "Seret untuk menoleh &middot; joystick / WASD untuk jalan &middot; ketuk objek untuk memakainya &middot; ESC keluar",
@@ -894,12 +1091,12 @@
             en: {
                 title: "Floorplan Tracer", sec1: "File & System", sec2: "Draw Tools", sec4: "Properties", sec5: "Output",
                 lblUpload: "Upload Floorplan:", saveProj: "Save Project (.json)", loadProj: "Load Project:", undo: "Undo", redo: "Redo", clear: "Reset Plan",
-                sel: "Select/Edit", wall: "Wall", door: "Door", win: "Window", stairs: "Stairs",
+                sel: "Select/Edit", selShort: "Select", wall: "Wall", door: "Door", win: "Window", stairs: "Stairs",
                 optDef: "+ Add Furniture...", grp1: "Living Area", grp2: "Kitchen", grp3: "Bathroom", grp4: "Decor & Plants", snapBtn: "Snap (Magnet)", charBtn: "Add Character",
                 bed: "Bed", sofa: "Sofa", table: "Table", chair: "Chair", tv: "TV", buffet: "Sideboard", wardrobe: "Wardrobe", bookshelf: "Bookshelf / Partition", headCab: "Head Cabinet",
                 kitchen: "Kitchen Set", stove: "Stove", fridge: "Fridge", toilet: "Toilet/WC", shower: "Shower", bathtub: "Bathtub",
                 lamp: "Standing Lamp", grp5: "Lighting", spot: "Spotlight", area: "Area Panel", secLight: "Lighting", lblShadow: "Enable Shadows", lblSun: "Sun", lblSunInt: "Sun Intensity:", lblSunAzim: "Sun Direction:", lblSunElev: "Sun Height:", lblLightOn: "Light On", lblLightShadow: "Cast Shadow", lblLightInt: "Brightness:", lblLightRange: "Reach:", lblColorA: "Wall Side A:", lblColorB: "Wall Side B:", lblObjColor: "Color:", carpet: "Carpet", curtain: "Curtain", plant: "Indoor Plant", tree: "Tree",
-                lblWallH: "Wall Height (m)", lblWallT: "Wall Thick (m)", lblRoof: "Show Roof", emptyMsg: "Select object on canvas.",
+                lblWallH: "Wall Height (m)", lblWallT: "Wall Thick (m)", lblRoof: "Show Roof", emptyMsg: "Nothing selected",
                 lblVariant: "Style / Variant:", lblPos: "Slide Pos:", lblWidth: "Width:", lblHeight: "Height:", lblElev: "Elevation (from floor):",
                 lblSwing: "Door Swing:", flipBtn: "Flip Hinge", lblWinCurtain: "Add curtain", lblWinCurtainClosed: "Curtain closed", lblWinOpen: "Window open", flipWinBtn: "Swap inside / outside",
                 lblWallType: "Type:", optWall: "Wall", optRailKaca: "Railing - Glass", optRailBesi: "Railing - Steel", optRailKayu: "Railing - Wood",
@@ -931,6 +1128,26 @@
                 lblLightTemp: "Light Color:", lblWallMat: "Wall Finish:", lblObjMat: "Material / Texture:",
                 lblFloorMat: "Floor Finish (active level):",
                 btnWalk: "Walk", btnWalkExit: "Exit", btnWalkFull: "Fullscreen",
+                fileMenu: "File", mnUpload: "Upload floorplan image", mnOpen: "Open project…", mnImport3D: "Import 3D model…",
+                undoT: "Undo", redoT: "Redo", tabEdit: "Properties", tabFloor: "Floors", tabLight: "Light",
+                modeFurniture: "Furniture", snapShort: "Snap", charShort: "People", fit: "Fit", zoomIn: "Zoom in", zoomOut: "Zoom out",
+                view2d: "2D plan only", viewSplit: "2D + 3D side by side", view3d: "3D view only", helpT: "Guide", panelT: "Show / hide panel",
+                tip1: "Pick <b>Select/Edit</b> on the left, then tap a wall, door or object.",
+                tip2: "Drag in the 2D plan to move things; use the 3D gizmo for height and rotation.",
+                tip3: "Two fingers or the mouse wheel zoom. <b>Fit</b> shows the whole plan again.",
+                grpPos: "Position & size", lblObjElev: "Elevation", lblRotY: "Rotation", lblScaleU: "Size", moreTransform: "Tilt & per-axis size",
+                lblRotX: "Tilt X", lblRotZ: "Tilt Z", lblScaleX: "Width", lblScaleY: "Height", lblScaleZ: "Depth",
+                grpLamp: "Lamp", grpVoid: "Void", grpStairs: "Stairs", grpWalls: "Walls", moreLight: "Sun & advanced settings",
+                katalogTitle: "Furniture & objects", cari: "Search…", katalogKosong: "No matches.",
+                trMv: "Move", trRt: "Rotate", trSc: "Scale", trPaint: "Paint", editChip: "Edit", namaVoid: "Void",
+                hint_select: "Tap a wall, door or object to edit it · drag to move",
+                hint_wall: "Tap to start a wall, tap again at each corner · double-tap or <b>ESC</b> to finish",
+                hint_door: "Tap a wall to place a <b>door</b>",
+                hint_window: "Tap a wall to place a <b>window</b>",
+                hint_stairs: "Tap the plan to place <b>stairs</b>",
+                hint_void: "Tap the plan to place a <b>void</b> (floor opening)",
+                hint_voidtrace: "Tap each corner of the void · tap the first point or <b>ESC</b> to close",
+                hint_furniture: "Tap the plan to place a <b>{n}</b>",
                 lblKualitas: "Render Quality:", kualitasSin: "Cinematic", kualitasStd: "Standard (fast)",
                 lblSuasana: "Time of Day:", waktu_siang: "Day", waktu_sore: "Golden Hour", waktu_malam: "Night", waktu_kustom: "Custom",
                 walkHint: "Drag to look &middot; joystick / WASD to move &middot; tap an object to use it &middot; ESC to exit",
@@ -953,11 +1170,11 @@
             currentLang = lang; const t = texts[currentLang];
             document.getElementById('btnLangID').classList.toggle('active', lang === 'id'); document.getElementById('btnLangEN').classList.toggle('active', lang === 'en');
             document.getElementById('txtTitle').innerText = t.title; document.getElementById('txtSec1').innerText = t.sec1;
-            document.getElementById('txtSec2').innerText = t.sec2; document.getElementById('txtSec4').innerText = t.sec4; document.getElementById('txtSec5').innerText = t.sec5; 
-            document.getElementById('txtLblUpload').innerText = t.lblUpload; document.getElementById('saveProjBtn').innerText = t.saveProj; document.getElementById('txtLblLoadProj').innerText = t.loadProj;
-            if(document.getElementById('txtLblLoad3D')) document.getElementById('txtLblLoad3D').innerText = t.lblLoad3D;
-            document.getElementById('undoBtn').innerText = t.undo; document.getElementById('redoBtn').innerText = t.redo; document.getElementById('clearBtn').innerText = t.clear; 
-            document.getElementById('txtModeSelect').innerText = t.sel; document.getElementById('txtModeWall').innerText = t.wall; 
+            document.getElementById('txtSec2').innerText = t.sec2; document.getElementById('txtSec4').innerText = t.tabEdit; document.getElementById('txtSec5').innerText = t.sec5; 
+            document.getElementById('txtLblUpload').innerText = t.mnUpload; document.getElementById('saveProjBtn').innerText = t.saveProj; document.getElementById('txtLblLoadProj').innerText = t.mnOpen;
+            if(document.getElementById('txtLblLoad3D')) document.getElementById('txtLblLoad3D').innerText = t.mnImport3D;
+            ['undoBtn', 'redoBtn'].forEach((id, i) => { const b = document.getElementById(id); b.title = i ? t.redoT : t.undoT; b.setAttribute('aria-label', b.title); }); document.getElementById('clearBtn').innerText = t.clear; 
+            document.getElementById('txtModeSelect').innerText = t.selShort; document.getElementById('txtModeWall').innerText = t.wall; 
             document.getElementById('txtModeDoor').innerText = t.door; document.getElementById('txtModeWindow').innerText = t.win; document.getElementById('txtModeStairs').innerText = t.stairs;
             document.getElementById('txtOptDefault').innerText = t.optDef; document.getElementById('optGrp1').label = t.grp1; document.getElementById('optGrp2').label = t.grp2; 
             document.getElementById('optGrp3').label = t.grp3; document.getElementById('optGrp4').label = t.grp4;
@@ -979,7 +1196,7 @@
                 document.getElementById('txtLblColorB').innerText = t.lblColorB;
                 document.getElementById('txtLblObjColor').innerText = t.lblObjColor;
             }
-            document.getElementById('txtBtnSnap').innerText = t.snapBtn; if (document.getElementById('txtBtnCharacter')) document.getElementById('txtBtnCharacter').innerText = t.charBtn; document.getElementById('txtLblWallLen').innerText = t.lblWallLen;
+            document.getElementById('txtBtnSnap').innerText = t.snapShort; if (document.getElementById('txtBtnCharacter')) document.getElementById('txtBtnCharacter').innerText = t.charShort; document.getElementById('txtLblWallLen').innerText = t.lblWallLen;
             document.getElementById('optBed').innerText = t.bed; document.getElementById('optSofa').innerText = t.sofa; document.getElementById('optTable').innerText = t.table; document.getElementById('optChair').innerText = t.chair;
             document.getElementById('optTv').innerText = t.tv; document.getElementById('optBuffet').innerText = t.buffet; document.getElementById('optWardrobe').innerText = t.wardrobe;
             if (document.getElementById('optBookshelf')) document.getElementById('optBookshelf').innerText = t.bookshelf;
@@ -1025,6 +1242,7 @@
             setTxt('txtLblSuasana', t.lblSuasana); setTxt('optWaktuSiang', t.waktu_siang); setTxt('optWaktuSore', t.waktu_sore);
             setTxt('optWaktuMalam', t.waktu_malam); setTxt('optWaktuKustom', t.waktu_kustom);
             perbaruiTombolWaktu();
+            terapkanTeksUI(t);
             setTxt('txtLblLightTemp', t.lblLightTemp); setTxt('txtLblWallMat', t.lblWallMat);
             setTxt('txtLblObjMat', t.lblObjMat); setTxt('txtLblFloorMat', t.lblFloorMat);
             if (bahanSiap) {
@@ -1047,11 +1265,11 @@
         setLanguage('en'); document.getElementById('btnLangID').addEventListener('click', () => setLanguage('id')); document.getElementById('btnLangEN').addEventListener('click', () => setLanguage('en'));
 
         const sidebar = document.getElementById('sidebar'); const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-        function updateToggleIcon() { sidebarToggleBtn.innerHTML = sidebar.classList.contains('collapsed') ? '&gt;' : '&lt;'; }
+        function updateToggleIcon() { sidebarToggleBtn.classList.toggle('active', !sidebar.classList.contains('collapsed')); if (typeof perbaruiChipEdit === 'function') perbaruiChipEdit(); setTimeout(() => { if (typeof resizeViewports === 'function') resizeViewports(); }, 320); }
         if (window.innerWidth <= 1100) { sidebar.classList.add('collapsed'); updateToggleIcon(); }
 
         const helpBtnToggle = document.getElementById('helpBtnToggle'); const helpModal = document.getElementById('helpModal'); const closeHelpBtn = document.getElementById('closeHelpBtn');
-        helpBtnToggle.addEventListener('click', () => { helpModal.style.display = 'flex'; }); closeHelpBtn.addEventListener('click', () => { helpModal.style.display = 'none'; });
+        helpBtnToggle.addEventListener('click', () => { helpModal.style.display = 'flex'; tutupMenuMenu(); }); closeHelpBtn.addEventListener('click', () => { helpModal.style.display = 'none'; });
         window.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.style.display = 'none'; }); sidebarToggleBtn.addEventListener('click', () => { sidebar.classList.toggle('collapsed'); updateToggleIcon(); });
 
         const workspaceContainer = document.getElementById('workspace-container'); const workspace = document.getElementById('workspace');
@@ -1061,7 +1279,7 @@
         const inputWallH = document.getElementById('valWallH'); const inputWallT = document.getElementById('valWallT'); const chkShowRoof = document.getElementById('chkShowRoof');
         const furnitureSelect = document.getElementById('furnitureSelect'); const btnSnap = document.getElementById('btnSnap');
 
-        btnSnap.addEventListener('click', () => { isSnappingEnabled = !isSnappingEnabled; btnSnap.classList.toggle('active', isSnappingEnabled); btnSnap.style.opacity = isSnappingEnabled ? '1' : '0.55'; draw2D(); });
+        btnSnap.addEventListener('click', () => { isSnappingEnabled = !isSnappingEnabled; btnSnap.classList.toggle('active', isSnappingEnabled); draw2D(); });
         
         [inputWallH, inputWallT].forEach(el => {
             el.addEventListener('pointerdown', () => beginUndoStep());
@@ -1167,6 +1385,7 @@
                 const nilai = parseFloat(e.target.value);
                 document.getElementById(map[id]).innerText = (id === 'expo') ? nilai.toFixed(2) : e.target.value;
                 const pilih = document.getElementById('suasanaSel'); if (pilih) pilih.value = 'kustom';
+                sinkronSegmen();
                 updateSun();
             });
         });
@@ -1273,6 +1492,8 @@
                     }
                     if (!sceneIsEmpty()) {
                         update3D(); draw2D();
+                        /* denah tersimpan langsung tampil utuh di layar */
+                        setTimeout(() => { if (typeof paskanDenah === 'function') paskanDenah(); }, 120);
                         idbGetAllModels()
                             .then(models => restoreCustomModels(models))
                             .catch(() => restoreCustomModels(loadedData.customModelSrc));
@@ -1494,7 +1715,7 @@
             selectedItem = baru; openEditPanel(baru); updateTransformControlSelection(baru); draw2D();
         }
         document.getElementById('modeSelect').onclick = (e) => setMode('select', e.currentTarget); document.getElementById('modeWall').onclick = (e) => setMode('wall', e.currentTarget); document.getElementById('modeDoor').onclick = (e) => setMode('door', e.currentTarget); document.getElementById('modeWindow').onclick = (e) => setMode('window', e.currentTarget); document.getElementById('modeStairs').onclick = (e) => setMode('stairs', e.currentTarget); document.getElementById('modeVoid').onclick = (e) => setMode('void', e.currentTarget); document.getElementById('modeVoidTrace').onclick = (e) => setMode('voidtrace', e.currentTarget); furnitureSelect.addEventListener('change', (e) => { if(e.target.value) setMode(e.target.value, null); });
-        function setMode(newMode, btn) { stopDrawing(); mode = newMode; document.querySelectorAll('#sidebar .tool-btn, #sidebar .tool-btn-wide').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); if (mode !== 'select') closeEditPanel(); if(window.innerWidth <= 1100 && mode !== 'select' && !sidebar.classList.contains('collapsed')){ sidebar.classList.add('collapsed'); updateToggleIcon(); } draw2D(); }
+        function setMode(newMode, btn) { stopDrawing(); mode = newMode; document.querySelectorAll('.tool-btn, .tool-btn-wide').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); else if (['select', 'wall', 'door', 'window', 'stairs', 'void', 'voidtrace'].indexOf(newMode) < 0) document.getElementById('modeFurniture').classList.add('active'); tutupKatalog(); perbaruiHint(); if (mode !== 'select') closeEditPanel(); if(window.innerWidth <= 1100 && mode !== 'select' && !sidebar.classList.contains('collapsed')){ sidebar.classList.add('collapsed'); updateToggleIcon(); } draw2D(); }
         window.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
             if (jejakVoid && jejakVoid.length >= 3) selesaikanJejakVoid(); else stopDrawing();
@@ -1514,7 +1735,7 @@
             lines.forEach((l, index) => { const l2 = Math.pow(l.end.x - l.start.x, 2) + Math.pow(l.end.y - l.start.y, 2); if (l2 === 0) return; let t = Math.max(0, Math.min(1, ((px - l.start.x) * (l.end.x - l.start.x) + (py - l.start.y) * (l.end.y - l.start.y)) / l2)); const projX = l.start.x + t * (l.end.x - l.start.x); const projY = l.start.y + t * (l.end.y - l.start.y); const dist = Math.hypot(px - projX, py - projY); if (dist < minDist) { minDist = dist; result = { index, ratio: t }; } }); return result;
         }
 
-        const emptySelectionMsg = document.getElementById('emptySelectionMsg'); const editPanelContent = document.getElementById('edit-panel-content');
+        const emptySelectionMsg = document.getElementById('emptyState'); const editPanelContent = document.getElementById('edit-panel-content');
         const wallLineControls = document.getElementById('wallLineControls'); const variantControls = document.getElementById('variantControls'); const editVariant = document.getElementById('editVariant');
         const wallObjectControls = document.getElementById('wallObjectControls'); const freeObjectControls = document.getElementById('freeObjectControls');
         const editPos = document.getElementById('editPos'); const editWidth = document.getElementById('editWidth'); const editSwing = document.getElementById('editSwing'); 
@@ -1528,6 +1749,7 @@
 
         function openEditPanel(item) {
             emptySelectionMsg.style.display = 'none'; editPanelContent.style.display = 'block';
+            tampilkanKepalaObjek(item);
             document.getElementById('lightControls').style.display = 'none';
             document.getElementById('colorControls').style.display = 'none';
             document.getElementById('objColorControls').style.display = 'none';
@@ -1622,7 +1844,7 @@
             el.style.color = nyaman ? '#3730a3' : '#92400e';
         }
 
-        function closeEditPanel() { emptySelectionMsg.style.display = 'block'; editPanelContent.style.display = 'none'; selectedItem = null; }
+        function closeEditPanel() { emptySelectionMsg.style.display = 'block'; editPanelContent.style.display = 'none'; selectedItem = null; perbaruiChipEdit(); }
 
         /* ---------- EDITOR PER-TEMBOK (numerik) ---------- */
         function tinggiTembokEfektif(l) { return (parseFloat(l.height) > 0.2) ? parseFloat(l.height) : floorHeight(currentFloor); }
@@ -2296,6 +2518,7 @@
             scene.background = teksturLangit();
         }
         function perbaruiTombolWaktu() {
+            if (typeof sinkronSegmen === 'function') sinkronSegmen();
             const el = document.getElementById('walkWaktu');
             if (!el || typeof texts === 'undefined') return;
             const t = texts[currentLang];
@@ -2694,6 +2917,7 @@
             kualitasRender = (nilai === 'standar') ? 'standar' : 'sinematik';
             const sel = document.getElementById('kualitasSel'); if (sel) sel.value = kualitasRender;
             aturResolusi();
+            if (typeof sinkronSegmen === 'function') sinkronSegmen();
         }
 
         /* Nyala/padam lampu memudar 0,3 detik, seperti lampu sungguhan, bukan meloncat. */
@@ -2745,6 +2969,7 @@
             
             updateWalkers();
 
+            if (document.body.classList.contains('lihat-2d')) return;   /* panel 3D disembunyikan */
             renderAdegan();
         } 
         animate();
@@ -5661,6 +5886,7 @@
                     terapkanPengaturanRender(loadedData.render);
                     syncFloorUI();
                     undoStack = []; redoStack = []; releaseGizmo(); stopDrawing(); closeEditPanel(); draw2D(); update3D();
+                    paskanDenah();
                     restoreCustomModels(loadedData.customModelSrc);
                     Object.entries(loadedData.customModelSrc || {}).forEach(([id, rec]) => {
                         unpackModel(rec)
@@ -6645,6 +6871,173 @@
             }
             aturSumbuGizmo();
         }
+
+        /* ---------- UI: menu, tab panel, katalog, petunjuk, zoom, tampilan ---------- */
+        var EMOJI_OBJEK = {
+            bed: '🛏️', sofa: '🛋️', table: '🍽️', chair: '🪑', tv: '📺', buffet: '🗄️', wardrobe: '👔', bookshelf: '📚', head_cabinet: '🗃️', desk: '🖥️',
+            kitchen_set: '🍳', stove: '🔥', fridge: '🧊', toilet: '🚽', shower: '🚿', bathtub: '🛁', washbasin: '🚰', washing_machine: '🧺', ac_unit: '❄️',
+            spot_light: '💡', area_light: '🔆', pendant_lamp: '🏮', standing_lamp: '🪔', carpet: '🟫', curtain: '🪟', plant: '🪴', tree: '🌳',
+            painting: '🖼️', mirror: '🪞', wall_clock: '🕰️', vase: '🏺', fireplace: '🪵', stairs: '🪜', void: '⬚', wall: '🧱', door: '🚪', window: '🪟',
+            custom_glb: '📦', custom_obj: '📦'
+        };
+        function namaTipe(tipe) {
+            const t = texts[currentLang];
+            const o = document.querySelector('#furnitureSelect option[value="' + tipe + '"]');
+            if (o) return o.textContent;
+            return { wall: t.wall, door: t.door, window: t.win, stairs: t.stairs, void: t.namaVoid, custom_glb: '3D model', custom_obj: '3D model' }[tipe] || tipe;
+        }
+        function terapkanTeksUI(t) {
+            const set = (id, v, html) => { const el = document.getElementById(id); if (!el || v === undefined) return; if (html) el.innerHTML = v; else el.innerText = v; };
+            const judul = (id, v) => { const el = document.getElementById(id); if (el && v) { el.title = v; el.setAttribute('aria-label', v); } };
+            set('txtFileMenu', t.fileMenu); set('txtTabFloor', t.tabFloor); set('txtTabLight', t.tabLight); set('txtModeFurniture', t.modeFurniture);
+            set('txtFit', t.fit); set('txtTip1', t.tip1, true); set('txtTip2', t.tip2, true); set('txtTip3', t.tip3, true);
+            ['GrpPos', 'GrpLamp', 'GrpVoid', 'GrpStairs', 'GrpWalls', 'MoreTransform', 'MoreLight', 'TrMv', 'TrRt', 'TrSc', 'TrPaint', 'KatalogTitle'].forEach(k => set('txt' + k, t[k.charAt(0).toLowerCase() + k.slice(1)]));
+            ['ObjElev', 'RotY', 'ScaleU', 'RotX', 'RotZ', 'ScaleX', 'ScaleY', 'ScaleZ'].forEach(k => set('txtLbl' + k, t['lbl' + k]));
+            set('editChipTxt', t.editChip);
+            judul('btnZoomIn', t.zoomIn); judul('btnZoomOut', t.zoomOut); judul('btnFit', t.fit);
+            judul('viewBtn2d', t.view2d); judul('viewBtnSplit', t.viewSplit); judul('viewBtn3d', t.view3d);
+            judul('helpBtnToggle', t.helpT); judul('sidebarToggleBtn', t.panelT);
+            const cari = document.getElementById('ktCari'); if (cari) cari.placeholder = t.cari;
+            if (typeof perbaruiHint === 'function') perbaruiHint();
+            if (typeof sinkronSegmen === 'function') sinkronSegmen();
+            const k = document.getElementById('katalog'); if (k && k.classList.contains('open')) isiKatalog();
+        }
+
+        /* Menu File */
+        const menuFile = document.getElementById('fileMenu'), tombolMenu = document.getElementById('btnFileMenu');
+        function tutupMenuMenu() { menuFile.classList.remove('open'); tombolMenu.setAttribute('aria-expanded', 'false'); }
+        tombolMenu.addEventListener('click', (e) => { e.stopPropagation(); const buka = !menuFile.classList.contains('open'); tutupKatalog(); menuFile.classList.toggle('open', buka); tombolMenu.setAttribute('aria-expanded', String(buka)); });
+        menuFile.addEventListener('click', (e) => { if (e.target.closest('.mn-item')) setTimeout(tutupMenuMenu, 0); });
+        document.getElementById('mnUpload').addEventListener('click', () => document.getElementById('upload').click());
+        document.getElementById('mnOpen').addEventListener('click', () => document.getElementById('loadProj').click());
+        document.getElementById('mnImport3D').addEventListener('click', () => document.getElementById('upload3DModel').click());
+        document.addEventListener('pointerdown', (e) => {
+            if (!e.target.closest('.menu-wrap')) tutupMenuMenu();
+            if (!e.target.closest('#katalog') && !e.target.closest('#modeFurniture')) tutupKatalog();
+        });
+
+        /* Tab panel */
+        function pilihTab(nama) {
+            document.querySelectorAll('#sidebar .tab').forEach(b => b.classList.toggle('active', b.dataset.tab === nama));
+            document.querySelectorAll('#sidebar .tab-body').forEach(b => b.classList.toggle('active', b.dataset.body === nama));
+        }
+        document.querySelectorAll('#sidebar .tab').forEach(b => b.addEventListener('click', () => pilihTab(b.dataset.tab)));
+        document.getElementById('btnPanelClose').addEventListener('click', () => { sidebar.classList.add('collapsed'); updateToggleIcon(); });
+
+        /* Kepala objek terpilih + tombol "Edit" mengambang untuk layar sempit */
+        function tampilkanKepalaObjek(item) {
+            const tipe = item.isWall ? 'wall' : item.type;
+            document.getElementById('selIcon').textContent = EMOJI_OBJEK[tipe] || '◻️';
+            document.getElementById('selTitle').textContent = namaTipe(tipe);
+            pilihTab('edit');
+            perbaruiChipEdit();
+        }
+        function perbaruiChipEdit() {
+            const chip = document.getElementById('editChip');
+            if (!chip) return;
+            const tampil = !!selectedItem && sidebar.classList.contains('collapsed');
+            chip.classList.toggle('show', tampil);
+            if (tampil) document.getElementById('editChipTxt').innerText = texts[currentLang].editChip + ' · ' + namaTipe(selectedItem.isWall ? 'wall' : selectedItem.type);
+        }
+        document.getElementById('editChip').addEventListener('click', () => { sidebar.classList.remove('collapsed'); pilihTab('edit'); updateToggleIcon(); });
+
+        /* Petunjuk sesuai alat yang aktif */
+        function perbaruiHint() {
+            const el = document.getElementById('hintBar');
+            if (!el || typeof mode === 'undefined') return;
+            const t = texts[currentLang];
+            let teks = t['hint_' + mode];
+            if (teks === undefined) teks = t.hint_furniture.replace('{n}', namaTipe(mode));
+            el.innerHTML = teks;
+        }
+
+        /* Katalog furnitur, dibangun dari pilihan di <select> tersembunyi (sudah diterjemahkan) */
+        const katalog = document.getElementById('katalog');
+        function isiKatalog() {
+            const isi = document.getElementById('ktIsi'), q = (document.getElementById('ktCari').value || '').trim().toLowerCase();
+            isi.innerHTML = '';
+            let ada = 0;
+            document.querySelectorAll('#furnitureSelect optgroup').forEach(grp => {
+                const opsi = Array.from(grp.querySelectorAll('option')).filter(o => !q || o.textContent.toLowerCase().includes(q));
+                if (!opsi.length) return;
+                const h = document.createElement('div'); h.className = 'kt-grp'; h.textContent = grp.label; isi.appendChild(h);
+                const grid = document.createElement('div'); grid.className = 'kt-grid';
+                opsi.forEach(o => {
+                    const b = document.createElement('button'); b.className = 'kt-item'; b.type = 'button';
+                    b.innerHTML = '<span class="em"></span><span class="nm"></span>';
+                    b.querySelector('.em').textContent = EMOJI_OBJEK[o.value] || '◻️';
+                    b.querySelector('.nm').textContent = o.textContent;
+                    b.addEventListener('click', () => { furnitureSelect.value = o.value; furnitureSelect.dispatchEvent(new Event('change')); });
+                    grid.appendChild(b); ada++;
+                });
+                isi.appendChild(grid);
+            });
+            if (!ada) { const k = document.createElement('div'); k.className = 'kt-kosong'; k.textContent = texts[currentLang].katalogKosong; isi.appendChild(k); }
+        }
+        function bukaKatalog() { tutupMenuMenu(); document.getElementById('ktCari').value = ''; isiKatalog(); katalog.classList.add('open'); }
+        function tutupKatalog() { const k = document.getElementById('katalog'); if (k) k.classList.remove('open'); }
+        document.getElementById('modeFurniture').addEventListener('click', () => { katalog.classList.contains('open') ? tutupKatalog() : bukaKatalog(); });
+        document.getElementById('ktTutup').addEventListener('click', tutupKatalog);
+        document.getElementById('ktCari').addEventListener('input', isiKatalog);
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { tutupKatalog(); tutupMenuMenu(); } });
+
+        /* Zoom & paskan denah 2D */
+        function zoomDenah(f) {
+            const r = workspaceContainer.getBoundingClientRect(), cx = r.width / 2, cy = r.height / 2;
+            const baru = Math.min(Math.max(0.05, scale * f), 10);
+            panX = cx - (cx - panX) * (baru / scale); panY = cy - (cy - panY) * (baru / scale); scale = baru; applyTransform();
+        }
+        function paskanDenah() {
+            let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+            const makan = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+            floors.forEach(f => { f.lines.forEach(l => { makan(l.start.x, l.start.y); makan(l.end.x, l.end.y); }); f.freeObjects.forEach(o => makan(o.x, o.y)); });
+            const w = workspaceContainer.clientWidth, h = workspaceContainer.clientHeight;
+            if (!isFinite(x0)) {
+                if (imgElement.style.display !== 'none' && imgElement.width) { x0 = 0; y0 = 0; x1 = imgElement.width; y1 = imgElement.height; }
+                else { x0 = canvas.width / 2 - 400; x1 = canvas.width / 2 + 400; y0 = canvas.height / 2 - 400; y1 = canvas.height / 2 + 400; }
+            }
+            const pad = 120 / scale3D * 0.02;
+            x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
+            scale = Math.min(Math.max(0.05, Math.min(w / (x1 - x0), h / (y1 - y0))), 4);
+            panX = w / 2 - ((x0 + x1) / 2) * scale; panY = h / 2 - ((y0 + y1) / 2) * scale;
+            applyTransform();
+        }
+        document.getElementById('btnZoomIn').addEventListener('click', () => zoomDenah(1.25));
+        document.getElementById('btnZoomOut').addEventListener('click', () => zoomDenah(0.8));
+        document.getElementById('btnFit').addEventListener('click', paskanDenah);
+        ['zoomCtl', 'editChip', 'hintBar'].forEach(id => document.getElementById(id).addEventListener('pointerdown', (e) => e.stopPropagation()));
+
+        /* Tampilan 2D / 2D+3D / 3D (diingat per perangkat) */
+        function aturTampilan(v) {
+            if (['2d', 'split', '3d'].indexOf(v) < 0) v = 'split';
+            document.body.classList.remove('lihat-2d', 'lihat-3d');
+            if (v !== 'split') document.body.classList.add('lihat-' + v);
+            document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+            try { localStorage.setItem('fp_tampilan', v); } catch (e) {}
+            setTimeout(() => { resizeViewports(); if (v !== '3d') draw2D(); }, 30);
+        }
+        document.querySelectorAll('#viewSeg button').forEach(b => b.addEventListener('click', () => aturTampilan(b.dataset.view)));
+        try { aturTampilan(localStorage.getItem('fp_tampilan') || 'split'); } catch (e) { aturTampilan('split'); }
+
+        /* Tombol segmen untuk waktu & kualitas render (mengendalikan <select> tersembunyi) */
+        function sinkronSegmen() {
+            [['segWaktu', 'suasanaSel'], ['segKualitas', 'kualitasSel']].forEach(([sg, sl]) => {
+                const seg = document.getElementById(sg), sel = document.getElementById(sl);
+                if (!seg || !sel) return;
+                seg.querySelectorAll('button').forEach(b => {
+                    const o = sel.querySelector('option[value="' + b.dataset.v + '"]');
+                    if (o) b.textContent = o.textContent;
+                    b.classList.toggle('active', sel.value === b.dataset.v);
+                });
+            });
+        }
+        document.querySelectorAll('#segWaktu button, #segKualitas button').forEach(b => b.addEventListener('click', () => {
+            const sel = document.getElementById(b.parentElement.id === 'segWaktu' ? 'suasanaSel' : 'kualitasSel');
+            sel.value = b.dataset.v; sel.dispatchEvent(new Event('change')); sinkronSegmen();
+        }));
+
+        terapkanTeksUI(texts[currentLang]);
+        updateToggleIcon();
     </script>
 </body>
 </html>
